@@ -88,3 +88,13 @@ button:hover {
   background-size: cover;
 
 }
+
+.create {
+
+  width: 50%;
+  height: 50%;
+  color: 2rem;
+  text-align: center;
+  border-radius: 2rem;
+
+}

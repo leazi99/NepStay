@@ -48,3 +48,4 @@ export const getCompanyById=async(req,res)=>{
     })
   }
 }
+

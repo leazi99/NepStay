@@ -4,6 +4,7 @@ import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
 import EmailVerify from './pages/EmailVerify.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
+// import Landing from './pages/Landing.jsx'
 const App = () => {
   return (
     <div >
@@ -12,7 +13,7 @@ const App = () => {
         <Route path='/login' element={<Login />} />
         <Route path='/email-verify' element={<EmailVerify />} />
         <Route path='/reset-password' element={<ResetPassword/>}/>
-        
+        {/* <Route path='/landing ' element={< Landing/ >}/> */}
       </Routes>
     </div>
   )
