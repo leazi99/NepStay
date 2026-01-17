@@ -13,7 +13,7 @@ const App = () => {
         <Route path='/login' element={<Login />} />
         <Route path='/email-verify' element={<EmailVerify />} />
         <Route path='/reset-password' element={<ResetPassword/>}/>
-        {/* <Route path='/landing ' element={< Landing/ >}/> */}
+       
       </Routes>
     </div>
   )
