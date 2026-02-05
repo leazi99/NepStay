@@ -4,6 +4,23 @@
 @tailwind components;
 @tailwind utilities;
 
+@theme {
+  --font-display: 'Outfit', sans-serif;
+  --breakpoint-3xl: 1920px;
+  --color-primary: #00A7F3;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-display);
+  }
+
+  body {
+    background-color: white;
+    overflow-x: hidden;
+  }
+}
+
 * {
   font-family: "Outfit", sans-serif;
 }
