@@ -2,6 +2,12 @@ import React from 'react'
 import assets from '../assets/assets.js'
 import '../styles/header.css'
 
+import{motion} from 'framer-motion';
+import{BriefCase} from 'lucide-react';
+import{useNavigate} from 'react-router-dom';
+
+
+
 const Header = () => {
   return (
     <div className='box'>

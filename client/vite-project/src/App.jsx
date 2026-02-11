@@ -1,17 +1,14 @@
 import React from 'react'
-import Home from './pages/Home.jsx'
-import Login from './pages/Login.jsx'
-import EmailVerify from './pages/EmailVerify.jsx'
-import ResetPassword from './pages/ResetPassword.jsx'
+
+import Login from './pages/Auth/Login.jsx'
 
 import {
-  BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
-}from 'react-router-dom';
+} from 'react-router-dom';
 
-import {Toaster} from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
 import LandingPage from './pages/LandingPage/LandingPage.jsx'
 import SignUp from './pages/Auth/SignUp.jsx'
 import JobDashboard from './pages/JobSeeker/JobDashboard.jsx'
@@ -30,34 +27,32 @@ const App = () => {
   return (
     <div >
       <Toaster
-      toastOptions={{
-        className: '',
-        style:{
-          fontSize:'13px',
-        }
-      }}></Toaster>
-      <Router>
+        toastOptions={{
+          className: '',
+          style: {
+            fontSize: '13px',
+          }
+        }}></Toaster>
       <Routes>
         <Route path='/' element={<LandingPage />} />
         <Route path='/login' element={<Login />} />
         <Route path='/signup' element={<SignUp />} />
-        <Route path='/find-jobs' element={<JobDashboard/>}/>
-        <Route path='/job/:jobId' element={<JobDetails/>}/>
-        <Route path='/saved-jobs' element={<SavedJobs/>}/>
-        <Route path='/profile' element={<UserProfile/>}/>
+        <Route path='/find-jobs' element={<JobDashboard />} />
+        <Route path='/job/:jobId' element={<JobDetails />} />
+        <Route path='/saved-jobs' element={<SavedJobs />} />
+        <Route path='/profile' element={<UserProfile />} />
 
 
-        <Route element={<ProtectedRoutes requiredRole="employer"/>}>
-          <Route path='/employer-dashboard' element={<EmployerDashboard/>}/>
-          <Route path='/post-job' element={<JobPostingForm/>}/>
-          <Route path='/manage-jobs' element={<ManageJobs/>}/>
-          <Route path='/applicants/:jobId' element={<ApplicationView/>}/>
-           <Route path='/company-profile' element={<EmployerProfile/>}/>
+        <Route element={<ProtectedRoutes requiredRole="employer" />}>
+          <Route path='/employer-dashboard' element={<EmployerDashboard />} />
+          <Route path='/post-job' element={<JobPostingForm />} />
+          <Route path='/manage-jobs' element={<ManageJobs />} />
+          <Route path='/applicants/:jobId' element={<ApplicationView />} />
+          <Route path='/company-profile' element={<EmployerProfile />} />
         </Route>
 
-        <Route path='*' element={<Navigate to='/' replace/>}/>
+        <Route path='*' element={<Navigate to='/' replace />} />
       </Routes>
-      </Router>
     </div>
   )
 }

@@ -3,7 +3,7 @@ import {Navigate,Outlet,useLocation}from 'react-router-dom';
 
 
 const ProtectedRoutes = ({requiredRole}) => {
-  return<Outlet />
+  return<Outlet />;
 }
 
 export default ProtectedRoutes
