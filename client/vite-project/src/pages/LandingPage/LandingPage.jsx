@@ -1,9 +1,10 @@
 import React from 'react'
+import Header from './components/Header';
 
 const LandingPage = () => {
   return (
-    <div>
-      <h1>Landing Page</h1>
+    <div className='min-h-screen'>
+     <Header />
     </div>
   )
 }
