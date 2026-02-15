@@ -16,7 +16,7 @@ const Header = () => {
     <div className='container mx-auto px-4 '>
       <div className='flex items-center justify-between h-16'>
         <div className='flex items-center space-x-3'>
-          <div className='w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center'>
+          <div className='w-8 h-8 bg-gradient-to-r from-orange-600 to-orange-600 rounded-lg flex items-center justify-center'>
             <Briefcase className='w-5 h-5 text-white' />
           </div>
           <span className='text-xl font-bold text-gray-900'>KaamSathi</span>
@@ -32,7 +32,7 @@ const Header = () => {
               <span className=''>Welcome, {user?.fullName}</span>
               <a
                 href={user?.role === 'employer' ? "/employer-dashboard" : "/find-jobs"}
-                className='text-gray-600 hover:text-gray-900 transition-colors font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-sm hover:shadow-md rounded-lg px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                className='text-gray-600 hover:text-gray-900 transition-colors font-medium hover:from-orange-700 hover:to-orange-700 transition-all duration-300 shadow-sm hover:shadow-md rounded-lg px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-600 text-white'
               >
                 Dashboard
               </a>
@@ -42,7 +42,7 @@ const Header = () => {
               <a href="/login" className='text-gray-600 hover:text-gray-900 transition-colors font-medium'>
                 Login
               </a>
-              <a href="/signup" className='bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors'>
+              <a href="/signup" className='bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors'>
                 Sign Up
               </a>
             </>
