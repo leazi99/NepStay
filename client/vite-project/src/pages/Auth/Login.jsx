@@ -10,6 +10,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { validateEmail } from '../../utils/helper';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -26,9 +27,11 @@ const Login = () => {
   });
 
   const validateEmail = (email) => {
-    return String(email)
-      .toLowerCase()
-      .match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
+    if(!email.trim()) return "Email is Required";
+    const emailRegex="/^[^\s@]+@[^\s@]+\.[^\s@]+$/";
+    if(!emailRegex.test(email))
+      return "Please eneter a valid email address";
+    return"";
   };
 
   const handleChange = (e) => {
@@ -37,7 +40,7 @@ const Login = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-    // Clear error when user starts typing
+    
     if (formState.errors[name]) {
       setFormState(prev => ({
         ...prev,
@@ -53,7 +56,7 @@ const Login = () => {
     else if (!validateEmail(formData.email)) errors.email = 'Invalid email format';
 
     if (!formData.password) errors.password = 'Password is required';
-    else if (formData.password.length < 6) errors.password = 'Password must be at least 6 characters';
+    else if (formData.password.length < 8) errors.password = 'Password must be at least 8 characters';
 
     if (Object.keys(errors).length > 0) {
       setFormState(prev => ({ ...prev, errors }));
@@ -62,12 +65,31 @@ const Login = () => {
 
     setFormState(prev => ({ ...prev, loading: true }));
 
-    // Simulate API call
+
     setTimeout(() => {
       setFormState(prev => ({ ...prev, loading: false, success: true }));
-      // navigate('/dashboard');
+  
     }, 1500);
   };
+
+  if(formState.success){
+    return(
+      <div className=''>
+        <motion.div
+        initial={{opacity:0, scale:0.9}}
+        animate={{opacity:1,scale:1}}
+        className=''>
+          <CheckCircle className='"w-16 h-16 text-green-500 mx-auto mb-4 '/>
+          <h2 className='text-2xl font-bold text-gray-900 mb-2'>Welcome Back</h2>
+          <p className='text-gray-600 mb-4'>
+            You have been successfully logged in.
+          </p>
+          <div className='animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent' />
+          <p className='text-sm text-gray-500 mt-2'>Redirecting to your dashborad.</p>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className='min-h-screen flex items-center justify-center bg-gray-50 px-4'>
