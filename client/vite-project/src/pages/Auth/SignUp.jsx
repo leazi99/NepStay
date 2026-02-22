@@ -87,26 +87,26 @@ const handleChange = (e) => {
   
 
   return (
-    <div className=''>
+    <div className='min-h-screen flex items-center justify-center bg-gray-50 px-4'>
       <motion.div
       initial={{opacity:0,y:20}}
       animate={{opacity:1,y:0}}
       transition={{duration:0.6}}
-      className=''
+      className='bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-gray-100'
       >
-        <div className=''>
-          <h2 className=''>Create Account</h2>
-          <p className=''>Join thousands of professionals finding their dream jobs</p>
+        <div className='text-center mb-10'>
+          <h2 className='text-3xl font-bold text-gray-900 mb-2'>Create Account</h2>
+          <p className='text-gray-500'>Join thousands of professionals finding their dream jobs</p>
         </div>
 
-        <form onSubmit={handleSubmit} className=''>
+        <form onSubmit={handleSubmit} className='space-y-6'>
           <div >
-            <label className=''>
+            <label className='block text-sm font-medium text-gray-700 mb-1.5'>
               FullName
             </label>
 
-            <div className=''>
-              <User className=''/>
+            <div className='relative'>
+              <User className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5'/>
               <input type="text"
               name="fullName"
               value={formData.fullName}
@@ -122,18 +122,18 @@ const handleChange = (e) => {
             </div>
 
             {formState.errors.fullName && (
-              <p className=''>
-                <AlertCircle className='' />
+              <p className='text-red-500 text-xs mt-1.5 flex items-center gap-1'>
+                <AlertCircle className='w-3.5 h-3.5' />
                 {formState.errors.fullName}
               </p>
             )}
 
             <div>
-              <label className=''>
+              <label className='block text-sm font-medium text-gray-700 mb-1.5'>
                 Email Address
               </label>
-              <div className=''>
-                <Mail className=''/>
+              <div className='relative'>
+                <Mail className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5'/>
                 <input type="email" 
                 name="email"
                 value={formData.email}
@@ -157,13 +157,25 @@ const handleChange = (e) => {
             </div>
 
             <div>
-              <label className=''>
+              <label className='block text-sm font-medium text-gray-700 mb-1.5'>
                 Password
               </label>
-              <div className=''>
-                <Lock className='' />
-                
+              <div className='relative'>
+                <Lock className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5' />
+                <input 
+                name='password'
+                type={formState.showPassword?"text":"password"}
+                value={formData.password}
+                onChange={handleChange}
+                  className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
+                  formState.errors.email ?"border-red-500 ":"border-gray-300"}focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                  placeholder='Create a Strong password'
+
+
+                ></input>
               </div>
+
+
             </div>
           </div>
         </form>
