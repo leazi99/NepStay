@@ -1,10 +1,10 @@
-import express from "express";
-import userAuth from "../middleware/userAuth.js";
-import { get } from "mongoose";
-import { getAllUser } from "../controllers/userController.js";
+// import express from "express";
+// import userAuth from "../middleware/userAuth.js";
+// import { get } from "mongoose";
+// import { getAllUser } from "../controllers/userController.js";
 
-const userRouter = express.Router();
+// const userRouter = express.Router();
 
-userRouter.get("/data", userAuth, getAllUser);
+// userRouter.get("/data", userAuth, getAllUser);
 
-export default userRouter;
+// export default userRouter;
