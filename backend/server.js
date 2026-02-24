@@ -1,31 +1,37 @@
 import express from "express";
 import cors from "cors";
-import "dotenv/config";
-import cookieParser from "cookie-parser";
 import connectDB from "./config/mongodb.js";
+import cookieParser from "cookie-parser";
 import authRouter from "./routes/authRoutes.js";
-// import userRouter from "./routes/userRoute.js";
-// import proposalRoutes from "./routes/proposalRoutes.js";
+import "dotenv/config";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const port = process.env.PORT || 4000;
 
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
-  next();
-});
-
-app.use(express.json());
-connectDB();
-app.use(cookieParser());
+// CORS
 app.use(
   cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   }),
 );
 
+connectDB();
+
+app.use(express.json());
+app.use(cookieParser());
+
 app.get("/", (req, res) => res.send("KaamSathi backend is running"));
 
 app.use("/api/auth", authRouter);
-// app.use("/api/user", userRouter);
-// app.use("/api/proposals", proposalRoutes);
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+const port = process.env.PORT || 4000;
 app.listen(port, () => console.log(`Server is running on port ${port}`));

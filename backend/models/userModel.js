@@ -19,6 +19,14 @@ const userSchema = new mongoose.Schema({
     enum: ["Client", "Freelancer", "Admin"],
     default: "Freelancer",
   },
+  avatar: {
+    type: String,
+    default: "",
+  },
+  resume:String,
+  companyName: String,
+  companyDescription: String,
+  companyLogo: String,
   verifyOtp: {
     type: String,
     default: "",

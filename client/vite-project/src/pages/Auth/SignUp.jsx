@@ -77,7 +77,7 @@ const SignUp = () => {
     setFormData((prev) => ({ ...prev, avatar: file }));
   };
 
-  /* ── validation ── */
+
   const validateForm = () => {
     const errors = {};
     if (!formData.name.trim()) errors.name = 'Full name is required';
@@ -90,7 +90,7 @@ const SignUp = () => {
     return Object.keys(errors).length === 0;
   };
 
-  /* ── submit ── */
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -121,7 +121,7 @@ const SignUp = () => {
     }
   };
 
-  /* ── success screen ── */
+
   if (formState.success) {
     return (
       <div style={styles.page}>
@@ -149,7 +149,7 @@ const SignUp = () => {
     );
   }
 
-  /* ── main form ── */
+
   return (
     <div style={styles.page}>
       {/* background blobs */}
@@ -170,7 +170,7 @@ const SignUp = () => {
 
         <form onSubmit={handleSubmit} style={styles.form} noValidate>
 
-          {/* Full Name */}
+
           <div style={styles.field}>
             <label style={styles.label}>Full Name</label>
             <div style={styles.inputWrap}>
@@ -383,7 +383,7 @@ const SignUp = () => {
   );
 };
 
-/* ─── styles ─────────────────────────────────────────────────────── */
+
 const styles = {
   page: {
     minHeight: '100vh',
@@ -496,7 +496,7 @@ const styles = {
   roleBtnActive: { background: GRAD, color: '#fff', borderColor: 'transparent', boxShadow: '0 4px 14px rgba(124,58,237,0.3)' },
   roleBtnInactive: { background: '#f8fafc', color: '#374151', borderColor: '#e2e8f0' },
 
-  /* avatar upload */
+
   avatarRow: { display: 'flex', alignItems: 'center', gap: 20 },
   avatarCircle: {
     width: 68,
@@ -530,7 +530,7 @@ const styles = {
   },
   uploadHint: { color: '#9ca3af', fontSize: 12, margin: 0 },
 
-  /* error banner */
+
   errorBanner: {
     display: 'flex',
     alignItems: 'center',
@@ -545,7 +545,7 @@ const styles = {
     overflow: 'hidden',
   },
 
-  /* submit button */
+
   submitBtn: {
     display: 'flex',
     alignItems: 'center',
@@ -565,11 +565,11 @@ const styles = {
     fontFamily: "'Inter', sans-serif",
   },
 
-  /* footer */
+
   loginPrompt: { textAlign: 'center', fontSize: 13, color: '#6b7280', marginTop: 24, fontWeight: 500 },
   loginLink: { color: PURPLE, fontWeight: 700, textDecoration: 'none' },
 
-  /* success screen */
+
   successCard: {
     background: '#fff',
     borderRadius: 20,
