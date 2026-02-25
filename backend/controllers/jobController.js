@@ -1,6 +1,8 @@
 import userModel from "../models/userModel.js";
-
-export const getJobbyId = async (req, res) => {
+import jobModel from "../models/jobModel.js";
+import applicationModel from "../models/applicationModel.js";
+import savedModel from "../models/savedModel.js";
+export const createJob = async (req, res) => {
   try {
     const { Id } = req.Id;
     if (!Id) {
@@ -16,3 +18,27 @@ export const getJobbyId = async (req, res) => {
     });
   }
 };
+
+export const getJobs=async(req,res)=>{
+
+}
+
+export const getJobsEmployer=async(req,res)=>{
+
+}
+
+export const getJobById=async(req,res)=>{
+
+}
+
+export const updateJob=async(req,res)=>{
+
+}
+
+export const deleteJob=async(req,res)=>{
+
+}
+
+export const toggleClosJob=async(req,res)=>{
+  
+}

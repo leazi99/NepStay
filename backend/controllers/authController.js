@@ -4,8 +4,8 @@ import userModel from "../models/userModel.js";
 import transporter from "../config/nodemailer.js";
 
 export const register = async (req, res) => {
-  const { name, email, role, password } = req.body;
-  if (!name || !email || !role || !password) {
+  const { name, email, password, role } = req.body;
+  if (!name || !email || !password || !role) {
     return res.json({
       success: false,
       message: "All fields are required",
@@ -25,7 +25,8 @@ export const register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-    });
+      role,
+   });
     await user.save();
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
@@ -87,7 +88,7 @@ export const login = async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
 
@@ -101,8 +102,18 @@ export const login = async (req, res) => {
       success: true,
       message: "Logged in successfully",
       user: {
+        _id: user._id,
+
         name: user.name,
+        email: user.email,
+
         role: user.role,
+        token,
+        avatar: user.avatar || "",
+        companyName: user.companyName || "",
+        companyDescription: user.companyDescription || "",
+        companyLogo: user.companyLogo || "",
+        resume: user.resume || "",
       },
     });
   } catch (error) {

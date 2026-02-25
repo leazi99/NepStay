@@ -16,8 +16,8 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ["Client", "Freelancer", "Admin"],
-    default: "Freelancer",
+    enum: ["jobseeker", "employer", "Admin"],
+    default: "jobseeker",
   },
   avatar: {
     type: String,
