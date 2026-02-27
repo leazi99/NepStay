@@ -5,7 +5,8 @@ import connectDB from "./config/mongodb.js";
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/authRoutes.js";
 import path from "path";
-import jobRoutes from "./routes/authRoutes.js";
+import jobRoutes from "./routes/jobRoutes.js";
+import applicationRoutes from "./routes/applicationRoutes.js";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,6 +34,7 @@ app.get("/", (req, res) => res.send("KaamSathi backend is running"));
 app.use("/api/auth", authRouter);
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use("/api/jobs",jobRoutes);
+app.use("/api/jobs", jobRoutes);
+app.use("/api/applications", applicationRoutes);
 const port = process.env.PORT || 4000;
 app.listen(port, () => console.log(`Server is running on port ${port}`));
