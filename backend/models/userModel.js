@@ -16,14 +16,15 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ["jobseeker", "employer", "Admin"],
+    enum: ["jobseeker", "employer"],
     default: "jobseeker",
+    required: true,
   },
   avatar: {
     type: String,
     default: "",
   },
-  resume:String,
+  resume: String,
   companyName: String,
   companyDescription: String,
   companyLogo: String,

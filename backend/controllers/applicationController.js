@@ -55,7 +55,7 @@ export const applyToJob = async (req, res) => {
 export const getMyApplications = async (req, res) => {
   try {
     const userId = req.user.id;
-    const applications = await applicationModel
+    const apps = await applicationModel
       .find({ applicant: userId })
       .populate({
         path: "job",
@@ -91,7 +91,6 @@ export const getApplicationsForJob = async (req, res) => {
       });
     }
 
-    // Verify if the requester is the owner of the job
     if (job.company.toString() !== userId) {
       return res.json({
         success: false,
