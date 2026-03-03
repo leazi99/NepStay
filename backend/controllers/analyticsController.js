@@ -82,6 +82,38 @@ export const getEmployerAlaytics = async (req, res) => {
     });
 
     const hiredTrend = getTrend(hiredLast7, hiredPrev7);
+
+    const recentJobs = await Job.find({ company: companyId })
+      .sort({
+        createdAt: -1,
+      })
+      .limit(5)
+      .select("title location type createdAt isClosed");
+
+    const recentApplications = await Application.find({
+      job: { $in: jobIds },
+    })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate("applicant", "name email avatar")
+      .populate("job", "title");
+
+    res.json({
+      counts: {
+        totalActiveJobs,
+        totalApplications,
+        totalHired,
+        trends: {
+          activeJobs: activateJobTrend,
+          totalApplications: applicantTrend,
+          totalHired: hiredTrend,
+        },
+      },
+      data: {
+        recentJobs,
+        recentApplications,
+      },
+    });
   } catch (error) {
     return res.status(500).json({
       message: "Failed to fetch analytics",

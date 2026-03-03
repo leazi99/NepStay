@@ -33,4 +33,13 @@ export const API_PATHS = {
     UNSAVE_JOB: (id) => `/api/save-jobs/${id}`,
     GET_SAVED_JOBS: `api/save-jobs/user`,
   },
+
+  APPLICATIONS:{
+    APPLY_TO_JOB:(id)=>`/api/applications/${id}`,
+    GET_ALL_APPLICATIONS:(id) =>`/api/applications/job/${id}`,
+    UPDATE_STATUS:(id)=>`api/applications/${id}/status`
+  },
+  IMAGE:{
+    UPLOAD_IMAGE:"/api/auth/upload-image",
+  },
 };
