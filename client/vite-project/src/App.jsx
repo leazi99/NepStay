@@ -21,8 +21,7 @@ import EmployerProfile from './pages/Employer/EmployerProfile.jsx'
 import EmployerDashboard from './pages/Employer/EmployerDashboard.jsx'
 import SavedJobs from './pages/JobSeeker/SavedJobs.jsx'
 import JobDetails from './pages/JobSeeker/JobDetails.jsx'
-// import Dashboard from './pages/Dashboard.jsx'
-// import Landing from './pages/Landing.jsx'
+
 const App = () => {
   return (
     <div >

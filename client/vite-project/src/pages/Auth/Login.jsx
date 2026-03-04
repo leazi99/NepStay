@@ -67,7 +67,7 @@ const Login = () => {
     try {
       const { data } = await axios.post(
         '/api/auth/login',
-        { email: formData.email, password: formData.password },
+        { email: formData.email, password: formData.password,rememberMe:formData.rememberMe},
         { withCredentials: true }
       );
       if (!data.success) {

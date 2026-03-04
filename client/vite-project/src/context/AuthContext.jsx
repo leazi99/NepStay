@@ -39,15 +39,12 @@ export const AuthProvider=({children})=>{
   };
 
   const login=(userData,token)=>{
-    try{
       localStorage.setItem('token',token);
       localStorage.setItem('user',JSON.stringify(userData));
 
       setUser(userData);
       setIsAuthenticated(true);
-    }catch(error){
-      console.error('login failed:',error);
-    }
+
   };
 
   const logout=()=>{
@@ -57,9 +54,13 @@ export const AuthProvider=({children})=>{
 
    setUser(null);
    setIsAuthenticated(false);
+   window.location.href='/'
   };
 
-  const updateUser=(updatedUserData)=>{};
+  const updateUser=(updatedUserData)=>{
+    const newUserData={...user, ...updatedUserData};
+    setUser(newUserData);
+  };
 
   const value={
     user,

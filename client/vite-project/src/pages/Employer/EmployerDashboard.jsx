@@ -1,52 +1,53 @@
-import React from 'react'
-import{
-  plus,
+import React, { useState, useEffect } from 'react'
+import {
+  Plus,
   Briefcase,
   Users,
   Building2,
   TrendingUp,
   CheckCircle2,
-}from "lucide-react";
+} from "lucide-react";
 
-import moment from"moment";
+import moment from "moment";
 
-import {useNavigate} from"react-router-dom";
-import axiosInstance from'../../utils/axiosInstance';
-import{API_PATHS} from'../../utils/apiPaths';
+import { useNavigate } from "react-router-dom";
+import axiosInstance from '../../utils/axiosInstance';
+import { API_PATHS } from '../../utils/apiPaths';
 
 
 
 const EmployerDashboard = () => {
-  const navigate=useNavigate();
+  const navigate = useNavigate();
 
-  const [dashboardData,setDashboardData]=React.useState(null);
-  const [isLoading,setIsLoading]=useState(false);
+  const [dashboardData, setDashboardData] = React.useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const getDashboardOverview=async()=>{
-    try{
+  const getDashboardOverview = async () => {
+    try {
       setIsLoading(true);
 
-      const response=await axiosInstance.get(API_PATHS.DASHBOARD.OVERVIEW);
-      if(response.status===200){
+      const response = await axiosInstance.get(API_PATHS.DASHBOARD.OVERVIEW);
+      if (response.status === 200) {
         setDashboardData(response.data);
       }
-    }catch(error){
+    } catch (error) {
       console.log("error");
-    }finally{
+    } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(()=>{
+  useEffect(() => {
     getDashboardOverview();
-    return()=>{};
+    return () => { };
 
-  },[])
+  }, [])
+  
 
   return (
-    <div>
+    <DashboardLayout >
       Employer Dashboard
-    </div>
+    </DashboardLayout>
   )
 }
 

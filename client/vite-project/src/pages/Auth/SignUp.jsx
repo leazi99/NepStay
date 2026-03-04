@@ -98,7 +98,7 @@ const SignUp = () => {
     try {
       const { data } = await axios.post(
         '/api/auth/register',
-        { name: formData.name, email: formData.email, password: formData.password, role: formData.role },
+        { name: formData.name, email: formData.email, password: formData.password, role: formData.role  },
         { withCredentials: true }
       );
 
@@ -152,7 +152,7 @@ const SignUp = () => {
 
   return (
     <div style={styles.page}>
-      {/* background blobs */}
+
       <div style={{ ...styles.blob, ...styles.blob1 }} />
       <div style={{ ...styles.blob, ...styles.blob2 }} />
 

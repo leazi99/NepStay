@@ -1,7 +1,9 @@
 import express from "express";
-import { Router } from "express";
-import userAuth from "../middleware/userAuth";
+import userAuth from "../middleware/userAuth.js";
+import getEmployerAnalytics from "../controllers/analyticsController.js";
 
-import getEmployerAlaytics from "../controllers/analyticsController.js";
+const analyticsRouter = express.Router();
 
-export default Router;
+analyticsRouter.get("/overview", userAuth, getEmployerAnalytics);
+
+export default analyticsRouter;
