@@ -13,6 +13,8 @@ import moment from "moment";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
+import DashboardLayout from '../../components/layout/DashboardLayout.jsx';
+import LoadingSpinner from '../../components/LoadingSpinner.jsx';
 
 
 
@@ -41,12 +43,18 @@ const EmployerDashboard = () => {
     getDashboardOverview();
     return () => { };
 
-  }, [])
-  
+  }, []);
+
 
   return (
-    <DashboardLayout >
-      Employer Dashboard
+    <DashboardLayout activeMenu='employer-dashboard'>
+      {
+        isLoading ? <LoadingSpinner /> :
+          <div className='max-w-7xl mx-auto space-y-8'>
+            Employer Dashboard
+          </div>
+      }
+
     </DashboardLayout>
   )
 }
