@@ -16,7 +16,7 @@ import ProfileDropdown from "./ProfileDropdown";
 const NavigationItem = ({
   item, isActive, onClick, isCollapsed
 }) => {
-  const Icon = item.Icon
+  const Icon = item.icon
 
   return <button
     onClick={() => onClick(item.id)}
@@ -26,7 +26,7 @@ const NavigationItem = ({
       }`}
   >
     <Icon
-      className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-blur-600" : "text-gray-500"
+      className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-blue-600" : "text-gray-500"
         }`}
     />
     {!isCollapsed && <span className=''>{item.name}</span>}
@@ -89,10 +89,10 @@ const DashboardLayout = ({ activeMenu, children }) => {
         <div className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 transform ${isMobile ? (sidebarOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0"
           } ${sidebarCollapsed ? "w-16" : "w-64"} bg-white border-r border-gray-200`}>
 
-          <div className='flex itmes-center h-16 border-b border-gray-200 pl-6'>
+          <div className='flex items-center h-16 border-b border-gray-200 pl-6'>
             {sidebarCollapsed ?
               (<Link className="flex items-center space-x-3" to='/'>
-                <div className='h-8 w-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex itmes-center justify-center '>
+                <div className='h-8 w-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center '>
                   <Briefcase className='h-5 w-5 text-white' />
 
                 </div>
@@ -124,60 +124,61 @@ const DashboardLayout = ({ activeMenu, children }) => {
             </button>
           </div>
         </div>
-      </div>
 
-      {
-        isMobile && sidebarOpen && (
-          <div
-            className='fixed inset-0 bg-black bg-opacity-25 z-40 backdrop-blur-sm'
-            onClick={() => setSidebarOpen(false)}
-          />
-        )
-      }
-
-      <div
-        className={`flex-1 flex flex-col transition-all duration-300 ${isMobile ? "ml-0" : sidebarCollapsed ? "ml-16" : "ml-64"}`}
-      >
-        <header className='bg-white/80 backdrop-blur-sm border-b border-gray-200 h-16 flex items-center justify-between px-6 sticky top-0  z-30'>
-          <div className='flex items-center space-x-4'>
-            {isMobile && (
-              <button
-                onClick={toggleSidebar}
-                className='p-2 rounded-xl hover:bg-gray-100 transition-colors duration-200'
-              >
-                {sidebarOpen ? (
-                  <X className='h-5 w-5 text-gray-600' />
-                ) : (
-                  <Menu className='h-5 w-5 text-gray-600' />
-
-                )}
-              </button>
-            )}
-            <div >
-              <h1 className='text-base font-semibold text-gray-900'>Welcome Back</h1>
-              <p className='text-sm text-gray-500 hidden sm:block'>
-                Here's what's happening with your jobs today.
-              </p>
-            </div>
-          </div>
-          <div className='flex items-center space-x-3'>
-            <ProfileDropdown
-              isOpen={profileDropdownOpen}
-              onToggle={(e) => {
-                e.stopPropagation();
-                setProfileDropdownOpen(!profileDropdownOpen);
-              }}
-              avatar={user?.avatar || ""}
-              companyName={user?.name || ""}
-              email={user?.email || ""}
-              onLogout={logout}
+        {
+          isMobile && sidebarOpen && (
+            <div
+              className='fixed inset-0 bg-black bg-opacity-25 z-40 backdrop-blur-sm'
+              onClick={() => setSidebarOpen(false)}
             />
+          )
+        }
 
-          </div>
-        </header>
-        <main className='flex-1 overflow-auto p-6'>
-          {children}
-        </main>
+        <div
+          className={`flex-1 flex flex-col transition-all duration-300 ${isMobile ? "ml-0" : sidebarCollapsed ? "ml-16" : "ml-64"}`}
+        >
+          <header className='bg-white/80 backdrop-blur-sm border-b border-gray-200 h-16 flex items-center justify-between px-6 sticky top-0  z-30'>
+            <div className='flex items-center space-x-4'>
+              {isMobile && (
+                <button
+                  onClick={toggleSidebar}
+                  className='p-2 rounded-xl hover:bg-gray-100 transition-colors duration-200'
+                >
+                  {sidebarOpen ? (
+                    <X className='h-5 w-5 text-gray-600' />
+                  ) : (
+                    <Menu className='h-5 w-5 text-gray-600' />
+
+                  )}
+                </button>
+              )}
+              <div >
+                <h1 className='text-base font-semibold text-gray-900'>Welcome Back</h1>
+                <p className='text-sm text-gray-500 hidden sm:block'>
+                  Here's what's happening with your jobs today.
+                </p>
+              </div>
+            </div>
+            <div className='flex items-center space-x-3'>
+              <ProfileDropdown
+                isOpen={profileDropdownOpen}
+                onToggle={(e) => {
+                  e.stopPropagation();
+                  setProfileDropdownOpen(!profileDropdownOpen);
+                }}
+                avatar={user?.avatar || ""}
+                companyName={user?.fullName || user?.name || ""}
+                email={user?.email || ""}
+                role={user?.role}
+                onLogout={logout}
+              />
+
+            </div>
+          </header>
+          <main className='flex-1 overflow-auto p-6'>
+            {children}
+          </main>
+        </div>
       </div>
     </>
   );

@@ -8,9 +8,13 @@ const ProfileDropdown = ({
   avatar,
   companyName,
   email,
+  role,
   onLogout
 }) => {
   const navigate = useNavigate();
+
+  const displayName = companyName || "User";
+  const displayEmail = email || "";
 
   return <div className='relative'>
     <button
@@ -25,13 +29,13 @@ const ProfileDropdown = ({
       ) : (
         <div className='h-8 w-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center'>
           <span className='text-white font-semibold text-sm'>
-            {companyName.charAt(0).toUpperCase()}
+            {displayName.charAt(0).toUpperCase()}
           </span>
         </div>
       )}
       <div className='hidden sm:block text-left'>
-        <p className='text-sm font-medium text-gray-900'>{companyName}</p>
-        <p className='text-xs text-gray-500'>Employer</p>
+        <p className='text-sm font-medium text-gray-900'>{displayName}</p>
+        <p className='text-xs text-gray-500'>{role === 'employer' ? 'Employer' : 'Job Seeker'}</p>
       </div>
       <ChevronDown className='h-4 w-4 text-gray-400' />
     </button>
@@ -39,12 +43,12 @@ const ProfileDropdown = ({
       <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
 
         <div className='px-4 py-3 border-b border-gray-100'>
-          <p className='text-sm font-medium text-gray-900'>{companyName}
+          <p className='text-sm font-medium text-gray-900'>{displayName}
           </p>
-          <p className='text-xs text-gray-500'>{email}</p>
+          <p className='text-xs text-gray-500'>{displayEmail}</p>
         </div>
         <a
-          onClick={() => navigate(userRole === 'jobseeker' ? '/profile' : '/company-profile')}
+          onClick={() => navigate(role === 'jobseeker' ? '/profile' : '/company-profile')}
           className='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors'>
           View Profile</a>
 

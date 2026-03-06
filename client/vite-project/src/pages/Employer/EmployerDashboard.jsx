@@ -8,9 +8,6 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-import moment from "moment";
-
-import { useNavigate } from "react-router-dom";
 import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
 import DashboardLayout from '../../components/layout/DashboardLayout.jsx';
@@ -18,22 +15,17 @@ import LoadingSpinner from '../../components/LoadingSpinner.jsx';
 
 
 
-const EmployerDashboard = () => {
-  const navigate = useNavigate();
 
-  const [dashboardData, setDashboardData] = React.useState(null);
+const EmployerDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const getDashboardOverview = async () => {
     try {
       setIsLoading(true);
 
-      const response = await axiosInstance.get(API_PATHS.DASHBOARD.OVERVIEW);
-      if (response.status === 200) {
-        setDashboardData(response.data);
-      }
+      await axiosInstance.get(API_PATHS.DASHBOARD.OVERVIEW);
     } catch (error) {
-      console.log("error");
+      console.log("error fetching dashboard overview:", error);
     } finally {
       setIsLoading(false);
     }
@@ -47,7 +39,7 @@ const EmployerDashboard = () => {
 
 
   return (
-    <DashboardLayout activeMenu='employer-dashboard'>
+    <DashboardLayout activeMenu='/employer-dashboard'>
       {
         isLoading ? <LoadingSpinner /> :
           <div className='max-w-7xl mx-auto space-y-8'>
