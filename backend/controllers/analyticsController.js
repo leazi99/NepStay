@@ -14,7 +14,7 @@ const getEmployerAnalytics = async (req, res) => {
       });
     }
 
-    const companyId = req.user._id;
+    const companyId = req.user.id;
 
     const now = new Date();
 

@@ -55,7 +55,7 @@ export const applyToJob = async (req, res) => {
 export const getMyApplications = async (req, res) => {
   try {
     const userId = req.user.id;
-    const apps = await applicationModel
+    const applications = await applicationModel
       .find({ applicant: userId })
       .populate({
         path: "job",
