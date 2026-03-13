@@ -12,6 +12,20 @@ export const register = async (req, res) => {
     });
   }
   try {
+    const normalizedRole =
+      String(role).toLowerCase() === "freelancer"
+        ? "jobseeker"
+        : String(role).toLowerCase() === "client"
+          ? "employer"
+          : String(role).toLowerCase();
+
+    if (!["jobseeker", "employer"].includes(normalizedRole)) {
+      return res.json({
+        success: false,
+        message: "Invalid role",
+      });
+    }
+
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
       return res.json({
@@ -25,8 +39,8 @@ export const register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role,
-   });
+      role: normalizedRole,
+    });
     await user.save();
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
@@ -40,20 +54,29 @@ export const register = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    user.verifyOtp = otp;
+    user.verifyOtpExpireAt = Date.now() + 60 * 60 * 1000;
+    await user.save();
+
     const mailOption = {
       from: process.env.SENDER_EMAIL,
       to: email,
-      subject: "Welcome to KaamSathi",
-      text: `Hello ${name},Welcome to KaamSathi! We're excited to have you on board.Your account has been successfully created ${email}. .`,
+      subject: "Verify your KaamSathi account",
+      text: `Hello ${name}, your OTP for email verification is ${otp}. It is valid for 1 hour.`,
     };
 
     await transporter.sendMail(mailOption);
     return res.json({
       success: true,
-      message: "Registered successfully",
+      message:
+        "Registered successfully. Please verify your email before login.",
       user: {
+        _id: user._id,
         name: user.name,
+        email: user.email,
         role: user.role,
+        isVerified: user.isVerified,
       },
     });
   } catch (error) {
@@ -88,6 +111,15 @@ export const login = async (req, res) => {
       });
     }
 
+    if (!user.isVerified) {
+      return res.json({
+        success: false,
+        requiresVerification: true,
+        message: "Please verify your email before login",
+        email: user.email,
+      });
+    }
+
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
@@ -108,6 +140,7 @@ export const login = async (req, res) => {
         email: user.email,
 
         role: user.role,
+        isVerified: user.isVerified,
         token,
         avatar: user.avatar || "",
         companyName: user.companyName || "",
@@ -145,8 +178,17 @@ export const logout = async (req, res) => {
 
 export const sendVerifyOtp = async (req, res) => {
   try {
-    const { userId } = req.body;
-    const user = await userModel.findById(userId);
+    const { userId, email } = req.body;
+    const user = userId
+      ? await userModel.findById(userId)
+      : await userModel.findOne({ email });
+
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
     if (user.isVerified) {
       return res.json({
@@ -154,7 +196,7 @@ export const sendVerifyOtp = async (req, res) => {
         message: "User is already verified",
       });
     }
-    const otp = String(Math.floor(100000 + Math.random() * 90000));
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
 
     user.verifyOtp = otp;
     user.verifyOtpExpireAt = Date.now() + 60 * 60 * 1000;
@@ -167,6 +209,10 @@ export const sendVerifyOtp = async (req, res) => {
       text: `Your OTP for account verification is ${otp}.Verify your account within 1 hour.`,
     };
     await transporter.sendMail(mailOptions);
+    return res.json({
+      success: true,
+      message: "Verification OTP sent successfully",
+    });
   } catch (error) {
     res.json({
       success: false,
@@ -176,22 +222,24 @@ export const sendVerifyOtp = async (req, res) => {
 };
 
 export const verifyEmail = async (req, res) => {
-  const { userId, otp } = req.body;
-  if (!userId || !otp) {
+  const { userId, email, otp } = req.body;
+  if ((!userId && !email) || !otp) {
     return res.json({
       success: false,
-      message: "Otp are required",
+      message: "Email/UserId and OTP are required",
     });
   }
   try {
-    const user = await userModel.findById(userId);
+    const user = userId
+      ? await userModel.findById(userId)
+      : await userModel.findOne({ email });
     if (!user) {
       return res.json({
         success: false,
         message: "User not found",
       });
     }
-    if (user.isVerified === "" || user.isVerified !== otp) {
+    if (user.verifyOtp === "" || user.verifyOtp !== otp) {
       return res.json({
         success: false,
         message: "Invalid OTP",
@@ -248,7 +296,7 @@ export const sendResetOtp = async (req, res) => {
         message: "User not found",
       });
     }
-    const otp = String(Math.floor(100000 + Math.random() * 90000));
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
 
     user.resetOtp = otp;
     user.resetOtpExpireAt = Date.now() + 15 * 60 * 1000;

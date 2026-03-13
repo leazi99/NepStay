@@ -9,14 +9,16 @@ import {
   AlertCircle,
   CheckCircle,
   ArrowRight,
-  Briefcase,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../../utils/axiosInstance';
+import { API_PATHS } from '../../utils/apiPaths';
+import { useAuth } from '../../context/AuthContext';
 import { validateEmail } from '../../utils/helper';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -65,12 +67,15 @@ const Login = () => {
     if (!validateForm()) return;
     setFormState((prev) => ({ ...prev, loading: true, errors: {} }));
     try {
-      const { data } = await axios.post(
-        '/api/auth/login',
-        { email: formData.email, password: formData.password,rememberMe:formData.rememberMe},
-        { withCredentials: true }
-      );
+      const { data } = await axiosInstance.post(API_PATHS.AUTH.LOGIN, {
+        email: formData.email,
+        password: formData.password,
+      });
       if (!data.success) {
+        if (data.requiresVerification) {
+          navigate(`/verify-email?email=${encodeURIComponent(data.email || formData.email)}`);
+          return;
+        }
         setFormState((prev) => ({
           ...prev,
           loading: false,
@@ -78,10 +83,12 @@ const Login = () => {
         }));
         return;
       }
+      // Save user + token to localStorage via AuthContext
+      login(data.user, data.user.token);
       setFormState((prev) => ({ ...prev, loading: false, success: true }));
       const role = data.user?.role;
       setTimeout(() => {
-        navigate(role === 'employer' ? '/employer-dashboard' : '/find-jobs');
+        navigate(role === 'employer' ? '/employer-dashboard' : '/freelancer-dashboard');
       }, 1500);
     } catch (error) {
       setFormState((prev) => ({
@@ -134,7 +141,7 @@ const Login = () => {
       <div style={styles.card}>
 
 
- 
+
         <motion.div
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
@@ -179,7 +186,7 @@ const Login = () => {
               </AnimatePresence>
             </div>
 
-          
+
             <div style={styles.field}>
               <label style={styles.label}>Password</label>
               <div style={styles.inputWrap}>
@@ -238,7 +245,14 @@ const Login = () => {
               </Link>
             </div>
 
-          
+            <div style={styles.verifyRow}>
+              <span style={styles.verifyHint}>Didn&apos;t verify your email yet?</span>
+              <Link to="/verify-email" style={styles.verifyLink}>
+                Verify Email
+              </Link>
+            </div>
+
+
             <AnimatePresence>
               {formState.errors.submit && (
                 <motion.div
@@ -254,7 +268,7 @@ const Login = () => {
               )}
             </AnimatePresence>
 
-   
+
             <motion.button
               type="submit"
               disabled={formState.loading}
@@ -289,7 +303,7 @@ const Login = () => {
         </motion.div>
       </div>
 
- 
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -377,13 +391,13 @@ const styles = {
     color: '#0f172a',
     margin: '0 0 6px',
     letterSpacing: '-0.4px',
-    textAlign:'center'
+    textAlign: 'center'
   },
   formSub: {
     color: '#64748b',
     fontSize: 14,
     margin: 0,
-    textAlign:'center'
+    textAlign: 'center'
   },
 
 
@@ -484,6 +498,23 @@ const styles = {
     fontSize: 13,
     fontWeight: 600,
     color: PURPLE,
+    textDecoration: 'none',
+  },
+  verifyRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: -8,
+  },
+  verifyHint: {
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: 500,
+  },
+  verifyLink: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: '#2563eb',
     textDecoration: 'none',
   },
 

@@ -48,7 +48,7 @@ const Hero = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="group bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-2"
-              onClick={() => navigate("/find-jobs")}
+              onClick={() => navigate("/freelancer-dashboard")}
             >
 
               <Search className='w-5 h-5' />
@@ -62,11 +62,24 @@ const Hero = () => {
               className='bg-white border-2 border-gray-200 text-gray-600 px-8 py-4 rounded-xl font-semibold text-lg hover:border-gray-300 hover:bg-gray-50 transition-all  duration-300 shadow-sm hover:shadow-md'
               onClick={() => {
                 navigate(
-                  isAuthenticated && user?.role === "employer" ? "/employer-dashboard" : "/login");
+                  isAuthenticated
+                    ? user?.role === "employer"
+                      ? "/employer-dashboard"
+                      : "/freelancer-dashboard"
+                    : "/login");
 
               }}
             >
               Post a Job
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className='bg-white border-2 border-blue-200 text-blue-700 px-8 py-4 rounded-xl font-semibold text-lg hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 shadow-sm hover:shadow-md'
+              onClick={() => navigate('/verify-email')}
+            >
+              Verify Email
             </motion.button>
           </motion.div>
 

@@ -1,5 +1,13 @@
 import mongoose from "mongoose";
 
+const normalizeRole = (value) => {
+  if (!value) return "jobseeker";
+  const role = String(value).toLowerCase();
+  if (role === "jobseeker" || role === "freelancer") return "jobseeker";
+  if (role === "employer" || role === "client") return "employer";
+  return role;
+};
+
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -19,6 +27,7 @@ const userSchema = new mongoose.Schema({
     enum: ["jobseeker", "employer"],
     default: "jobseeker",
     required: true,
+    set: normalizeRole,
   },
   avatar: {
     type: String,
@@ -48,6 +57,10 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+});
+
+userSchema.pre("validate", function () {
+  this.role = normalizeRole(this.role);
 });
 
 const userModel = mongoose.models.user || mongoose.model("user", userSchema);

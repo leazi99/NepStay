@@ -1,0 +1,9 @@
+{
+  "name": "kaamsathi",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix client/vite-project run dev"
+  }
+}

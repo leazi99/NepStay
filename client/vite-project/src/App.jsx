@@ -1,7 +1,8 @@
 import React from 'react'
 
 import Login from './pages/Auth/Login.jsx'
-
+import ForgotPassword from './pages/Auth/ForgotPassword.jsx'
+import VerifyEmail from './pages/Auth/VerifyEmail.jsx'
 import {
   Routes,
   Route,
@@ -36,7 +37,12 @@ const App = () => {
         <Route path='/' element={<LandingPage />} />
         <Route path='/login' element={<Login />} />
         <Route path='/signup' element={<SignUp />} />
-        <Route path='/find-jobs' element={<JobDashboard />} />
+        <Route path='/forgot-password' element={<ForgotPassword />} />
+        <Route path='/verify-email' element={<VerifyEmail />} />
+        <Route path='/verifyEmail' element={<VerifyEmail />} />
+        <Route path='/verifyemail' element={<VerifyEmail />} />
+        <Route path='/find-jobs' element={<Navigate to='/freelancer-dashboard' replace />} />
+        <Route path='/freelancer-dashboard' element={<JobDashboard />} />
         <Route path='/job/:jobId' element={<JobDetails />} />
         <Route path='/saved-jobs' element={<SavedJobs />} />
         <Route path='/profile' element={<UserProfile />} />

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import {
   User,
   Mail,
@@ -15,7 +15,8 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../../utils/axiosInstance';
+import { API_PATHS } from '../../utils/apiPaths';
 
 
 const PURPLE = '#7c3aed';
@@ -96,11 +97,12 @@ const SignUp = () => {
     if (!validateForm()) return;
     setFormState((prev) => ({ ...prev, loading: true, errors: {} }));
     try {
-      const { data } = await axios.post(
-        '/api/auth/register',
-        { name: formData.name, email: formData.email, password: formData.password, role: formData.role  },
-        { withCredentials: true }
-      );
+      const { data } = await axiosInstance.post(API_PATHS.AUTH.REGISTER, {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      });
 
       if (!data.success) {
         setFormState((prev) => ({
@@ -111,7 +113,7 @@ const SignUp = () => {
         return;
       }
       setFormState((prev) => ({ ...prev, loading: false, success: true }));
-      setTimeout(() => navigate(formData.role === 'employer' ? '/employer-dashboard' : '/find-jobs'), 1500);
+      setTimeout(() => navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`), 1200);
     } catch (err) {
       setFormState((prev) => ({
         ...prev,
@@ -125,26 +127,26 @@ const SignUp = () => {
   if (formState.success) {
     return (
       <div style={styles.page}>
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
           style={styles.successCard}
         >
-          <motion.div
+          <Motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
             style={styles.successIcon}
           >
             <CheckCircle size={40} color="#fff" />
-          </motion.div>
+          </Motion.div>
           <h2 style={styles.successTitle}>Account Created!</h2>
-          <p style={styles.successSub}>Welcome to KaamSathi. Redirecting to your dashboard…</p>
+          <p style={styles.successSub}>Please verify your email with OTP to continue.</p>
           <div style={styles.successSpinner}>
             <div style={styles.spinnerRing} />
           </div>
-        </motion.div>
+        </Motion.div>
       </div>
     );
   }
@@ -156,7 +158,7 @@ const SignUp = () => {
       <div style={{ ...styles.blob, ...styles.blob1 }} />
       <div style={{ ...styles.blob, ...styles.blob2 }} />
 
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.55, ease: 'easeOut' }}
@@ -189,9 +191,9 @@ const SignUp = () => {
             </div>
             <AnimatePresence>
               {formState.errors.name && (
-                <motion.p key="fn-err" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={styles.errorMsg}>
+                <Motion.p key="fn-err" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={styles.errorMsg}>
                   <AlertCircle size={13} /> {formState.errors.name}
-                </motion.p>
+                </Motion.p>
               )}
             </AnimatePresence>
           </div>
@@ -215,9 +217,9 @@ const SignUp = () => {
             </div>
             <AnimatePresence>
               {formState.errors.email && (
-                <motion.p key="em-err" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={styles.errorMsg}>
+                <Motion.p key="em-err" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={styles.errorMsg}>
                   <AlertCircle size={13} /> {formState.errors.email}
-                </motion.p>
+                </Motion.p>
               )}
             </AnimatePresence>
           </div>
@@ -249,9 +251,9 @@ const SignUp = () => {
             </div>
             <AnimatePresence>
               {formState.errors.password && (
-                <motion.p key="pw-err" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={styles.errorMsg}>
+                <Motion.p key="pw-err" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={styles.errorMsg}>
                   <AlertCircle size={13} /> {formState.errors.password}
-                </motion.p>
+                </Motion.p>
               )}
             </AnimatePresence>
           </div>
@@ -261,7 +263,7 @@ const SignUp = () => {
             <label style={styles.label}>I am a…</label>
             <div style={styles.roleRow}>
               {[
-                { value: 'jobseeker', label: 'Job Seeker', icon: <UserCheck size={17} /> },
+                { value: 'jobseeker', label: 'Freelancer', icon: <UserCheck size={17} /> },
                 { value: 'employer', label: 'Employer', icon: <Building2 size={17} /> },
               ].map(({ value, label, icon }) => {
                 const active = formData.role === value;
@@ -283,9 +285,9 @@ const SignUp = () => {
             </div>
             <AnimatePresence>
               {formState.errors.role && (
-                <motion.p key="role-err" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={styles.errorMsg}>
+                <Motion.p key="role-err" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={styles.errorMsg}>
                   <AlertCircle size={13} /> {formState.errors.role}
-                </motion.p>
+                </Motion.p>
               )}
             </AnimatePresence>
           </div>
@@ -319,9 +321,9 @@ const SignUp = () => {
             </div>
             <AnimatePresence>
               {formState.errors.avatar && (
-                <motion.p key="av-err" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={styles.errorMsg}>
+                <Motion.p key="av-err" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={styles.errorMsg}>
                   <AlertCircle size={13} /> {formState.errors.avatar}
-                </motion.p>
+                </Motion.p>
               )}
             </AnimatePresence>
           </div>
@@ -329,7 +331,7 @@ const SignUp = () => {
           {/* Submit error banner */}
           <AnimatePresence>
             {formState.errors.submit && (
-              <motion.div
+              <Motion.div
                 key="submit-err"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -338,12 +340,12 @@ const SignUp = () => {
               >
                 <AlertCircle size={15} style={{ flexShrink: 0 }} />
                 <span>{formState.errors.submit}</span>
-              </motion.div>
+              </Motion.div>
             )}
           </AnimatePresence>
 
           {/* Submit button */}
-          <motion.button
+          <Motion.button
             type="submit"
             disabled={formState.loading}
             whileHover={!formState.loading ? { scale: 1.02 } : {}}
@@ -365,14 +367,18 @@ const SignUp = () => {
                 <ArrowRight size={18} />
               </>
             )}
-          </motion.button>
+          </Motion.button>
         </form>
 
         <p style={styles.loginPrompt}>
           Already have an account?{' '}
           <Link to="/login" style={styles.loginLink}>Sign In</Link>
         </p>
-      </motion.div>
+        <p style={styles.verifyPrompt}>
+          Already registered but not verified?{' '}
+          <Link to="/verify-email" style={styles.verifyLink}>Verify Email</Link>
+        </p>
+      </Motion.div>
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -568,6 +574,8 @@ const styles = {
 
   loginPrompt: { textAlign: 'center', fontSize: 13, color: '#6b7280', marginTop: 24, fontWeight: 500 },
   loginLink: { color: PURPLE, fontWeight: 700, textDecoration: 'none' },
+  verifyPrompt: { textAlign: 'center', fontSize: 12.5, color: '#64748b', marginTop: 8, fontWeight: 500 },
+  verifyLink: { color: BLUE, fontWeight: 700, textDecoration: 'none' },
 
 
   successCard: {

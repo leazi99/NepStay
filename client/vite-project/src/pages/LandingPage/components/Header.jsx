@@ -22,17 +22,17 @@ const Header = () => {
           <span className='text-xl font-bold text-gray-900'>KaamSathi</span>
         </div>
         <nav className='hidden md:flex items-center space-x-8'>
-          <a href="" onClick={() => navigate("/find-jobs")} className=' text-gray-600 hover:text-gray-900 transition-colors font-medium'>Find Jobs</a>
+          <a href="" onClick={() => navigate("/freelancer-dashboard")} className=' text-gray-600 hover:text-gray-900 transition-colors font-medium'>Find Jobs</a>
           <a href="" onClick={() => navigate(isAuthenticated && user?.role === "employer" ? "/employer-dashboard" : "/login")} className='text-gray-600 hover:text-gray-900 transition-colors font-medium'>For Employer</a>
         </nav>
 
         <div className=''>
           {isAuthenticated ? (
             <div className='flex items-center space-x-3'>
-              <span className=''>Welcome, {user?.fullName}</span>
+              <span className=''>Welcome, {user?.name || user?.fullName}</span>
               <a
-                href={user?.role === 'employer' ? "/employer-dashboard" : "/find-jobs"}
-                className='text-gray-600 hover:text-gray-900 transition-colors font-medium hover:from-orange-700 hover:to-orange-700 transition-all duration-300 shadow-sm hover:shadow-md rounded-lg px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-600 text-white'
+                href={user?.role === 'employer' ? "/employer-dashboard" : "/freelancer-dashboard"}
+                className='font-medium hover:from-orange-700 hover:to-orange-700 transition-all duration-300 shadow-sm hover:shadow-md rounded-lg px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-600 text-white'
               >
                 Dashboard
               </a>

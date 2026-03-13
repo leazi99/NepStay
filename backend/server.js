@@ -17,10 +17,20 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+const defaultAllowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+];
+const envOrigins = (process.env.ALLOWED_ORIGIN || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowedOrigins = envOrigins.length ? envOrigins : defaultAllowedOrigins;
+
 // CORS
 app.use(
   cors({
-    origin: "*",
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
