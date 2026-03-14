@@ -103,7 +103,7 @@ const EmployerDashboard = () => {
         </div>
       ) : (
         <div className="max-w-7xl mx-auto space-y-8">
-          {/* Header */}
+
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
@@ -153,9 +153,8 @@ const EmployerDashboard = () => {
             />
           </div>
 
-          {/* Recent Jobs + Recent Applicants */}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Recent Jobs */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                 <h2 className="font-semibold text-gray-900">Recent Jobs</h2>
