@@ -27,9 +27,10 @@ const getEmployerAnalytics = async (req, res) => {
       company: companyId,
       isClosed: false,
     });
-    const jobs = await jobModel.find({
-      company: companyId,
-    })
+    const jobs = await jobModel
+      .find({
+        company: companyId,
+      })
       .select("_id")
       .lean();
 
@@ -41,7 +42,7 @@ const getEmployerAnalytics = async (req, res) => {
 
     const totalHired = await applicationModel.countDocuments({
       job: { $in: jobIds },
-      status: "Accepted",
+      status: { $in: ["Accepted", "Hired"] },
     });
 
     const activeJobsLast7 = await jobModel.countDocuments({
@@ -70,28 +71,30 @@ const getEmployerAnalytics = async (req, res) => {
 
     const hiredLast7 = await applicationModel.countDocuments({
       job: { $in: jobIds },
-      status: "Accepted",
+      status: { $in: ["Accepted", "Hired"] },
       createdAt: { $gte: last7Days, $lte: now },
     });
 
     const hiredPrev7 = await applicationModel.countDocuments({
       job: { $in: jobIds },
-      status: "Accepted",
+      status: { $in: ["Accepted", "Hired"] },
       createdAt: { $gte: prev7Days, $lte: last7Days },
     });
 
     const hiredTrend = getTrend(hiredLast7, hiredPrev7);
 
-    const recentJobs = await jobModel.find({ company: companyId })
+    const recentJobs = await jobModel
+      .find({ company: companyId })
       .sort({
         createdAt: -1,
       })
       .limit(5)
       .select("title location type createdAt isClosed");
 
-    const recentApplications = await applicationModel.find({
-      job: { $in: jobIds },
-    })
+    const recentApplications = await applicationModel
+      .find({
+        job: { $in: jobIds },
+      })
       .sort({ createdAt: -1 })
       .limit(5)
       .populate("applicant", "name email avatar")

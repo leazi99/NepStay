@@ -16,13 +16,22 @@ import {
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { useAuth } from "../../context/AuthContext";
-import { JOB_TYPES, CATEGORIES } from "../../utils/data";
+import { JOB_TYPES } from "../../utils/data";
+import FreelancerNavbar from "../../components/layout/FreelancerNavbar";
 
-const JobCard = ({ job, onSave, onUnsave, onApply }) => {
+const JobCard = ({ job, onSave, onUnsave, onApply, isDark }) => {
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
   const companyName = job.company?.companyName || job.company?.name || "Company";
   const logo = job.company?.companyLogo;
+  const normalizedStatus =
+    job.applicationStatus === "Accepted" || job.applicationStatus === "Hired"
+      ? "Accepted"
+      : job.applicationStatus === "Rejected"
+        ? "Rejected"
+        : job.applicationStatus
+          ? "Pending"
+          : null;
 
   const handleSaveToggle = async (e) => {
     e.stopPropagation();
@@ -37,13 +46,17 @@ const JobCard = ({ job, onSave, onUnsave, onApply }) => {
 
   return (
     <div
-      className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group p-5 flex flex-col gap-4"
+      className={`rounded-2xl border shadow-sm hover:shadow-md transition-all cursor-pointer group p-5 flex flex-col gap-4 ${
+        isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100"
+      }`}
       onClick={() => navigate(`/job/${job._id}`)}
     >
       {/* Top row */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center flex-shrink-0 overflow-hidden border border-blue-100">
+          <div className={`h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden border ${
+            isDark ? "bg-slate-700 border-slate-600" : "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-100"
+          }`}>
             {logo ? (
               <img src={logo} alt={companyName} className="h-full w-full object-cover rounded-xl" />
             ) : (
@@ -51,16 +64,18 @@ const JobCard = ({ job, onSave, onUnsave, onApply }) => {
             )}
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-gray-900 truncate group-hover:text-blue-700 transition-colors">
+            <p className={`font-semibold truncate transition-colors ${isDark ? "text-slate-100 group-hover:text-blue-300" : "text-gray-900 group-hover:text-blue-700"}`}>
               {job.title}
             </p>
-            <p className="text-sm text-gray-500 truncate">{companyName}</p>
+            <p className={`text-sm truncate ${isDark ? "text-slate-400" : "text-gray-500"}`}>{companyName}</p>
           </div>
         </div>
         <button
           onClick={handleSaveToggle}
           disabled={saving}
-          className={`p-2 rounded-xl hover:bg-red-50 transition-colors flex-shrink-0 ${job.isSaved ? "text-red-500" : "text-gray-300 hover:text-red-400"
+          className={`p-2 rounded-xl transition-colors flex-shrink-0 ${
+            isDark ? "hover:bg-red-900/30" : "hover:bg-red-50"
+          } ${job.isSaved ? "text-red-500" : "text-gray-300 hover:text-red-400"
             } ${saving ? "opacity-40" : ""}`}
         >
           <Heart className={`h-5 w-5 ${job.isSaved ? "fill-current" : ""}`} />
@@ -77,27 +92,31 @@ const JobCard = ({ job, onSave, onUnsave, onApply }) => {
           <DollarSign className="h-3 w-3" />
           ${job.salaryMin?.toLocaleString()} – ${job.salaryMax?.toLocaleString()}
         </span>
-        <span className="flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
+        <span className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full ${isDark ? "bg-slate-700 text-slate-300" : "bg-gray-100 text-gray-600"}`}>
           <Clock className="h-3 w-3" />
           {job.duration}
         </span>
       </div>
 
       {/* Description preview */}
-      <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{job.description}</p>
+      <p className={`text-xs line-clamp-2 leading-relaxed ${isDark ? "text-slate-400" : "text-gray-500"}`}>{job.description}</p>
 
       {/* Apply / Status */}
       <div onClick={(e) => e.stopPropagation()}>
-        {job.applicationStatus ? (
+        {normalizedStatus ? (
           <span
-            className={`inline-block px-3 py-1.5 rounded-xl text-xs font-medium ${job.applicationStatus === "Accepted"
+            className={`inline-block px-3 py-1.5 rounded-xl text-xs font-medium ${normalizedStatus === "Accepted"
                 ? "bg-green-100 text-green-700"
-                : job.applicationStatus === "Rejected"
+                : normalizedStatus === "Rejected"
                   ? "bg-red-100 text-red-600"
                   : "bg-amber-100 text-amber-700"
               }`}
           >
-            {job.applicationStatus === "Pending" ? "⏳ Application Pending" : job.applicationStatus === "Accepted" ? "✅ Accepted" : "❌ Rejected"}
+            {normalizedStatus === "Pending"
+              ? "⏳ Application Pending"
+              : normalizedStatus === "Accepted"
+                ? "✅ Accepted"
+                : "❌ Rejected"}
           </span>
         ) : (
           <button
@@ -185,9 +204,11 @@ const JobDashboard = () => {
   };
 
   const hasFilters = appliedFilters.keyword || appliedFilters.location;
+  const isDark = (user?.themePreference || "light") === "dark";
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen ${isDark ? "bg-slate-900" : "bg-gray-50"}`}>
+      <FreelancerNavbar active="dashboard" />
       {/* Hero Search Banner */}
       <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-600 py-14 px-4">
         <div className="max-w-4xl mx-auto text-center space-y-4">
@@ -235,10 +256,10 @@ const JobDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 py-10">
         {/* Filter strip */}
         <div className="flex items-center justify-between mb-6">
-          <p className="text-sm text-gray-600">
+          <p className={`text-sm ${isDark ? "text-slate-300" : "text-gray-600"}`}>
             {isLoading ? "Loading..." : `${jobs.length} job${jobs.length !== 1 ? "s" : ""} found`}
             {hasFilters && (
-              <span className="ml-2 text-gray-400">
+              <span className={`ml-2 ${isDark ? "text-slate-400" : "text-gray-400"}`}>
                 {appliedFilters.keyword && `"${appliedFilters.keyword}"`}
                 {appliedFilters.location && ` · ${appliedFilters.location}`}
               </span>
@@ -247,7 +268,7 @@ const JobDashboard = () => {
           {hasFilters && (
             <button
               onClick={handleClearFilters}
-              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-red-500 transition-colors"
+              className={`flex items-center gap-1.5 text-xs transition-colors ${isDark ? "text-slate-300 hover:text-red-400" : "text-gray-500 hover:text-red-500"}`}
             >
               <FilterX className="h-3.5 w-3.5" />
               Clear filters
@@ -266,7 +287,7 @@ const JobDashboard = () => {
             <button onClick={fetchJobs} className="text-sm text-blue-600 hover:underline">Retry</button>
           </div>
         ) : jobs.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 py-24 text-gray-400">
+          <div className={`flex flex-col items-center gap-4 py-24 ${isDark ? "text-slate-400" : "text-gray-400"}`}>
             <Briefcase className="h-14 w-14 opacity-40" />
             <p className="text-sm">No jobs found</p>
             {hasFilters && (
@@ -282,6 +303,7 @@ const JobDashboard = () => {
                 onSave={handleSave}
                 onUnsave={handleUnsave}
                 onApply={handleApply}
+                isDark={isDark}
               />
             ))}
           </div>

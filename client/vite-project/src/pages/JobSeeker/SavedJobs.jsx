@@ -13,13 +13,17 @@ import {
 } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
+import FreelancerNavbar from "../../components/layout/FreelancerNavbar";
+import { useAuth } from "../../context/AuthContext";
 
 const SavedJobs = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [savedJobs, setSavedJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [unsavingId, setUnsavingId] = useState(null);
+  const isDark = (user?.themePreference || "light") === "dark";
 
   const fetchSaved = async () => {
     try {
@@ -58,7 +62,8 @@ const SavedJobs = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen ${isDark ? "bg-slate-900" : "bg-gray-50"}`}>
+      <FreelancerNavbar active="saved" />
       {/* Header banner */}
       <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-600 py-12 px-4 text-center">
         <h1 className="text-3xl font-bold text-white">Saved Jobs</h1>
@@ -77,7 +82,7 @@ const SavedJobs = () => {
             <button onClick={fetchSaved} className="text-sm text-blue-600 hover:underline">Retry</button>
           </div>
         ) : savedJobs.length === 0 ? (
-          <div className="flex flex-col items-center gap-5 py-24 text-gray-400">
+          <div className={`flex flex-col items-center gap-5 py-24 ${isDark ? "text-slate-400" : "text-gray-400"}`}>
             <Heart className="h-14 w-14 opacity-30" />
             <p className="text-sm">No saved jobs yet</p>
             <button
@@ -89,7 +94,7 @@ const SavedJobs = () => {
           </div>
         ) : (
           <>
-            <p className="text-sm text-gray-500">{savedJobs.length} saved job{savedJobs.length !== 1 ? "s" : ""}</p>
+            <p className={`text-sm ${isDark ? "text-slate-300" : "text-gray-500"}`}>{savedJobs.length} saved job{savedJobs.length !== 1 ? "s" : ""}</p>
             {savedJobs.map((saved) => {
               const job = saved.job;
               if (!job) return null;
@@ -97,11 +102,11 @@ const SavedJobs = () => {
               return (
                 <div
                   key={saved._id}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow"
+                  className={`rounded-2xl border shadow-sm p-5 hover:shadow-md transition-shadow ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100"}`}
                 >
                   <div className="flex items-start gap-4">
                     {/* Company logo */}
-                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center flex-shrink-0 overflow-hidden border border-blue-100">
+                    <div className={`h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden border ${isDark ? "bg-slate-700 border-slate-600" : "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-100"}`}>
                       {job.company?.companyLogo ? (
                         <img src={job.company.companyLogo} alt={companyName} className="h-full w-full object-cover rounded-xl" />
                       ) : (
@@ -112,13 +117,13 @@ const SavedJobs = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="font-semibold text-gray-900">{job.title}</p>
-                          <p className="text-sm text-gray-500 mt-0.5">{companyName}</p>
+                          <p className={`font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>{job.title}</p>
+                          <p className={`text-sm mt-0.5 ${isDark ? "text-slate-400" : "text-gray-500"}`}>{companyName}</p>
                         </div>
                         <button
                           onClick={() => handleUnsave(job._id, saved._id)}
                           disabled={unsavingId === saved._id}
-                          className="p-2 rounded-xl hover:bg-red-50 text-red-400 hover:text-red-500 transition-colors flex-shrink-0 disabled:opacity-40"
+                          className={`p-2 rounded-xl text-red-400 hover:text-red-500 transition-colors flex-shrink-0 disabled:opacity-40 ${isDark ? "hover:bg-red-900/30" : "hover:bg-red-50"}`}
                           title="Remove from saved"
                         >
                           {unsavingId === saved._id ? (
@@ -136,7 +141,7 @@ const SavedJobs = () => {
                         <span className="flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-full font-medium">
                           <DollarSign className="h-3 w-3" /> ${job.salaryMin?.toLocaleString()} – ${job.salaryMax?.toLocaleString()}/mo
                         </span>
-                        <span className="flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
+                        <span className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full ${isDark ? "bg-slate-700 text-slate-300" : "bg-gray-100 text-gray-600"}`}>
                           <Clock className="h-3 w-3" /> {job.duration}
                         </span>
                       </div>
@@ -150,7 +155,7 @@ const SavedJobs = () => {
                         </button>
                         <button
                           onClick={() => navigate(`/job/${job._id}`)}
-                          className="px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-medium rounded-xl transition-colors"
+                          className={`px-4 py-2 border text-xs font-medium rounded-xl transition-colors ${isDark ? "border-slate-600 text-slate-200 hover:bg-slate-700" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
                         >
                           View Details
                         </button>

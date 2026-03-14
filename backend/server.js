@@ -10,6 +10,10 @@ import applicationRoutes from "./routes/applicationRoutes.js";
 import savedJobsRoutes from "./routes/savedJobsRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 import userRoutes from "./routes/userRoute.js";
+import messageRoutes from "./routes/messageRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import { stripeWebhookHandler } from "./controllers/paymentController.js";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -39,6 +43,12 @@ app.use(
 
 connectDB();
 
+app.post(
+  "/api/payments/webhook",
+  express.raw({ type: "application/json" }),
+  stripeWebhookHandler,
+);
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -52,5 +62,8 @@ app.use("/api/applications", applicationRoutes);
 app.use("/api/save-jobs", savedJobsRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/payments", paymentRoutes);
 const port = process.env.PORT || 4000;
 app.listen(port, () => console.log(`Server is running on port ${port}`));

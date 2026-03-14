@@ -77,6 +77,10 @@ export const register = async (req, res) => {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified,
+        linkedinUrl: user.linkedinUrl || "",
+        bio: user.bio || "",
+        interests: user.interests || [],
+        themePreference: user.themePreference || "light",
       },
     });
   } catch (error) {
@@ -147,6 +151,10 @@ export const login = async (req, res) => {
         companyDescription: user.companyDescription || "",
         companyLogo: user.companyLogo || "",
         resume: user.resume || "",
+        linkedinUrl: user.linkedinUrl || "",
+        bio: user.bio || "",
+        interests: user.interests || [],
+        themePreference: user.themePreference || "light",
       },
     });
   } catch (error) {

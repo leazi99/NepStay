@@ -81,7 +81,7 @@ export const getMyApplications = async (req, res) => {
 export const getApplicationsForJob = async (req, res) => {
   try {
     const { jobId } = req.params;
-    const userId = req.user.id;
+    const userId = String(req.user.id);
 
     const job = await jobModel.findById(jobId);
     if (!job) {
@@ -91,7 +91,7 @@ export const getApplicationsForJob = async (req, res) => {
       });
     }
 
-    if (job.company.toString() !== userId) {
+    if (String(job.company) !== userId) {
       return res.json({
         success: false,
         message: "Unauthorized: Only the job creator can view applications",
@@ -145,7 +145,7 @@ export const updateApplicationStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const userId = req.user.id;
+    const userId = String(req.user.id);
 
     const application = await applicationModel.findById(id).populate("job");
     if (!application) {
@@ -156,7 +156,7 @@ export const updateApplicationStatus = async (req, res) => {
     }
 
     // Verify if the requester is the owner of the job
-    if (application.job.company.toString() !== userId) {
+    if (String(application.job.company) !== userId) {
       return res.json({
         success: false,
         message: "Unauthorized: Only the job creator can update status",

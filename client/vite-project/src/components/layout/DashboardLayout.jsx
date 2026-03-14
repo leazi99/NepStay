@@ -12,9 +12,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { NAVIGATION_MENU } from "../../utils/data";
 import ProfileDropdown from "./ProfileDropdown";
+import axiosInstance from "../../utils/axiosInstance";
+import { API_PATHS } from "../../utils/apiPaths";
 
 const NavigationItem = ({
-  item, isActive, onClick, isCollapsed
+  item, isActive, onClick, isCollapsed, badgeCount
 }) => {
   const Icon = item.icon
 
@@ -30,6 +32,11 @@ const NavigationItem = ({
         }`}
     />
     {!isCollapsed && <span className=''>{item.name}</span>}
+    {badgeCount > 0 && (
+      <span className='ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full text-[11px] font-bold bg-rose-500 text-white'>
+        {badgeCount > 99 ? "99+" : badgeCount}
+      </span>
+    )}
   </button>
 }
 const DashboardLayout = ({ activeMenu, children }) => {
@@ -41,6 +48,8 @@ const DashboardLayout = ({ activeMenu, children }) => {
   const [activeNavItem, setActiveNavItem] = useState(activeMenu || "dashboard");
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [isMobile, setMobile] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   useEffect(() => {
     const handleResize = () => {
@@ -69,6 +78,34 @@ const DashboardLayout = ({ activeMenu, children }) => {
     return () => document.removeEventListener("click", handleClickOutside);
   }, [profileDropdownOpen]);
 
+  useEffect(() => {
+    const fetchUnreadCounts = async () => {
+      try {
+        const response = await axiosInstance.get(API_PATHS.NOTIFICATIONS.GET_ALL);
+        if (!response.data?.success) return;
+
+        const notifications = response.data.notifications || [];
+        const unreadAll = notifications.filter((item) => !item.isRead).length;
+        const unreadMessages = notifications.filter(
+          (item) => !item.isRead && item.type === "message"
+        ).length;
+
+        setUnreadNotificationCount(unreadAll);
+        setUnreadMessageCount(unreadMessages);
+      } catch {
+        setUnreadNotificationCount(0);
+        setUnreadMessageCount(0);
+      }
+    };
+
+    if (!user?._id) return;
+
+    fetchUnreadCounts();
+    const interval = setInterval(fetchUnreadCounts, 20000);
+
+    return () => clearInterval(interval);
+  }, [user?._id]);
+
   const handleNavigation = (itemId) => {
     setActiveNavItem(itemId);
     navigate(`/${itemId}`);
@@ -89,19 +126,13 @@ const DashboardLayout = ({ activeMenu, children }) => {
         <div className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 transform ${isMobile ? (sidebarOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0"
           } ${sidebarCollapsed ? "w-16" : "w-64"} bg-white border-r border-gray-200`}>
 
-          <div className='flex items-center h-16 border-b border-gray-200 pl-6'>
-            {sidebarCollapsed ?
-              (<Link className="flex items-center space-x-3" to='/'>
-                <div className='h-8 w-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center '>
-                  <Briefcase className='h-5 w-5 text-white' />
-
-                </div>
-                <span className='text-gray-900 font-bold text-xl'>KaamSathi</span>
-              </Link>) : (
-                <div className='h-8 w-8 bg-gradient-to-br from-blue-600  to-blue-700 rounded-xl flex items-center justify-center '>
-                  <Building2 className='h-5 w-5 text-white' />
-                </div>
-              )}
+          <div className='flex items-center h-16 border-b border-gray-200 px-5'>
+            <Link className="inline-flex items-center gap-2.5" to='/'>
+              <div className='h-9 w-9 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-sm'>
+                <Briefcase className='h-5 w-5 text-white' />
+              </div>
+              <span className='text-gray-900 font-bold text-lg tracking-tight'>KaamSathi</span>
+            </Link>
           </div>
 
           <nav className=''>
@@ -112,6 +143,13 @@ const DashboardLayout = ({ activeMenu, children }) => {
                 isActive={activeNavItem === item.id}
                 onClick={handleNavigation}
                 isCollapsed={sidebarCollapsed}
+                badgeCount={
+                  item.id === "notifications"
+                    ? unreadNotificationCount
+                    : item.id === "messages"
+                      ? unreadMessageCount
+                      : 0
+                }
               />
             ))}
           </nav>

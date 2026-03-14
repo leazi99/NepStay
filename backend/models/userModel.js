@@ -34,6 +34,23 @@ const userSchema = new mongoose.Schema({
     default: "",
   },
   resume: String,
+  linkedinUrl: {
+    type: String,
+    default: "",
+  },
+  bio: {
+    type: String,
+    default: "",
+  },
+  interests: {
+    type: [String],
+    default: [],
+  },
+  themePreference: {
+    type: String,
+    enum: ["light", "dark"],
+    default: "light",
+  },
   companyName: String,
   companyDescription: String,
   companyLogo: String,
@@ -63,6 +80,6 @@ userSchema.pre("validate", function () {
   this.role = normalizeRole(this.role);
 });
 
-const userModel = mongoose.models.user || mongoose.model("user", userSchema);
+const userModel = mongoose.models.User || mongoose.model("User", userSchema);
 
 export default userModel;

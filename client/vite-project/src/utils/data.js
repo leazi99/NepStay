@@ -11,6 +11,8 @@ import {
   Building2,
   LayoutDashboard,
   Plus,
+  Bell,
+  Wallet,
 } from "lucide-react";
 
 export const jobSeekerFeatures = [
@@ -71,6 +73,9 @@ export const NAVIGATION_MENU = [
   { id: "employer-dashboard", name: "Dashboard", icon: LayoutDashboard },
   { id: "post-job", name: "Post Job", icon: Plus },
   { id: "manage-jobs", name: "Manage Jobs", icon: Briefcase },
+  { id: "payments", name: "Payments", icon: Wallet },
+  { id: "messages", name: "Messages", icon: MessageSquare },
+  { id: "notifications", name: "Notifications", icon: Bell },
   { id: "company-profile", name: "Company Profile", icon: Building2 },
 ];
 

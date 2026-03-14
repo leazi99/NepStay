@@ -111,13 +111,21 @@ const EmployerDashboard = () => {
                 Track your recruitment activity and performance
               </p>
             </div>
-            <button
-              onClick={() => navigate("/post-job")}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm shadow-blue-200"
-            >
-              <Plus className="h-4 w-4" />
-              Post a Job
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate("/payments")}
+                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+              >
+                Payments
+              </button>
+              <button
+                onClick={() => navigate("/post-job")}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm shadow-blue-200"
+              >
+                <Plus className="h-4 w-4" />
+                Post a Job
+              </button>
+            </div>
           </div>
 
           {/* Stats Cards */}

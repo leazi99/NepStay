@@ -20,8 +20,11 @@ import ManageJobs from './pages/Employer/ManageJobs.jsx'
 import ApplicationView from './pages/Employer/ApplicationView.jsx'
 import EmployerProfile from './pages/Employer/EmployerProfile.jsx'
 import EmployerDashboard from './pages/Employer/EmployerDashboard.jsx'
+import Payments from './pages/Employer/Payments.jsx'
 import SavedJobs from './pages/JobSeeker/SavedJobs.jsx'
 import JobDetails from './pages/JobSeeker/JobDetails.jsx'
+import Messages from './pages/Common/Messages.jsx'
+import Notifications from './pages/Common/Notifications.jsx'
 
 const App = () => {
   return (
@@ -45,13 +48,18 @@ const App = () => {
         <Route path='/freelancer-dashboard' element={<JobDashboard />} />
         <Route path='/job/:jobId' element={<JobDetails />} />
         <Route path='/saved-jobs' element={<SavedJobs />} />
-        <Route path='/profile' element={<UserProfile />} />
+        <Route element={<ProtectedRoutes />}>
+          <Route path='/profile' element={<UserProfile />} />
+          <Route path='/messages' element={<Messages />} />
+          <Route path='/notifications' element={<Notifications />} />
+        </Route>
 
 
         <Route element={<ProtectedRoutes requiredRole="employer" />}>
           <Route path='/employer-dashboard' element={<EmployerDashboard />} />
           <Route path='/post-job' element={<JobPostingForm />} />
           <Route path='/manage-jobs' element={<ManageJobs />} />
+          <Route path='/payments' element={<Payments />} />
           <Route path='/applicants/:jobId' element={<ApplicationView />} />
           <Route path='/company-profile' element={<EmployerProfile />} />
         </Route>

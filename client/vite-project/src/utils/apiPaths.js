@@ -39,8 +39,29 @@ export const API_PATHS = {
 
   USERS: {
     UPDATE_PROFILE: "/api/users/update-profile",
+    CHANGE_PASSWORD: "/api/users/change-password",
     DELETE_RESUME: "/api/users/delete-resume",
     GET_PUBLIC_PROFILE: (id) => `/api/users/${id}`,
+  },
+
+  MESSAGES: {
+    GET_ROOMS: "/api/messages/rooms",
+    CREATE_OR_GET_ROOM: "/api/messages/rooms",
+    GET_MESSAGES_BY_ROOM: (roomId) => `/api/messages/${roomId}`,
+    SEND_MESSAGE: (roomId) => `/api/messages/${roomId}`,
+  },
+
+  NOTIFICATIONS: {
+    GET_ALL: "/api/notifications",
+    READ_ALL: "/api/notifications/read-all",
+    READ_ONE: (notificationId) => `/api/notifications/${notificationId}/read`,
+  },
+
+  PAYMENTS: {
+    GET_EMPLOYER_PAYMENTS: "/api/payments",
+    CREATE_PAYMENT: "/api/payments",
+    GET_ELIGIBLE_APPLICATIONS: "/api/payments/eligible-applications",
+    CREATE_STRIPE_CHECKOUT_SESSION: "/api/payments/checkout-session",
   },
 
   IMAGE: {
