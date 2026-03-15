@@ -83,12 +83,17 @@ const Login = () => {
         }));
         return;
       }
-      // Save user + token to localStorage via AuthContext
-      login(data.user, data.user.token);
+      login(data.user);
       setFormState((prev) => ({ ...prev, loading: false, success: true }));
       const role = data.user?.role;
       setTimeout(() => {
-        navigate(role === 'employer' ? '/employer-dashboard' : '/freelancer-dashboard');
+        navigate(
+          role === 'admin'
+            ? '/admin-dashboard'
+            : role === 'employer'
+              ? '/employer-dashboard'
+              : '/freelancer-dashboard'
+        );
       }, 1500);
     } catch (error) {
       setFormState((prev) => ({

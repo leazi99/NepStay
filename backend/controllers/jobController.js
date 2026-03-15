@@ -2,6 +2,7 @@ import userModel from "../models/userModel.js";
 import jobModel from "../models/jobModel.js";
 import applicationModel from "../models/applicationModel.js";
 import savedModel from "../models/savedModel.js";
+import notificationModel from "../models/notificationModel.js";
 
 export const createJob = async (req, res) => {
   try {
@@ -16,6 +17,44 @@ export const createJob = async (req, res) => {
       ...req.body,
       company: req.user.id,
     });
+
+    try {
+      const [employer, jobseekers] = await Promise.all([
+        userModel.findById(req.user.id).select("name companyName"),
+        userModel.find({ role: "jobseeker" }).select("_id"),
+      ]);
+
+      const employerDisplayName =
+        employer?.companyName || employer?.name || "An employer";
+
+      const notifications = [
+        {
+          recipient: req.user.id,
+          sender: null,
+          type: "system",
+          title: "Job posted successfully",
+          body: `Your job \"${job.title}\" has been posted.`,
+          link: `/employer-job/${job._id}`,
+        },
+        ...jobseekers.map((jobseeker) => ({
+          recipient: jobseeker._id,
+          sender: req.user.id,
+          type: "system",
+          title: "New job posted",
+          body: `${employerDisplayName} posted a new job: \"${job.title}\".`,
+          link: `/job/${job._id}`,
+        })),
+      ];
+
+      if (notifications.length) {
+        await notificationModel.insertMany(notifications, { ordered: false });
+      }
+    } catch (notificationError) {
+      console.error(
+        "Failed to create job-post notifications:",
+        notificationError,
+      );
+    }
 
     return res.json({
       success: true,
@@ -131,7 +170,7 @@ export const getJobsEmployer = async (req, res) => {
           ...job,
           applicationCount: applicantCount,
         };
-      })
+      }),
     );
 
     return res.json({

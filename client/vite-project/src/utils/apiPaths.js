@@ -10,6 +10,8 @@ export const API_PATHS = {
     IS_AUTHENTICATED: "/api/auth/isAuthenticated",
     SEND_RESET_OTP: "/api/auth/send-reset-otp",
     RESET_PASSWORD: "/api/auth/reset-password",
+    UPLOAD_RESUME: "/api/auth/upload-resume",
+    UPLOAD_VERIFICATION_DOC: "/api/auth/upload-verification-doc",
   },
 
   JOBS: {
@@ -62,6 +64,15 @@ export const API_PATHS = {
     CREATE_PAYMENT: "/api/payments",
     GET_ELIGIBLE_APPLICATIONS: "/api/payments/eligible-applications",
     CREATE_STRIPE_CHECKOUT_SESSION: "/api/payments/checkout-session",
+  },
+
+  ADMIN: {
+    OVERVIEW: "/api/admin/overview",
+    GET_USERS: "/api/admin/users",
+    UPDATE_USER: (userId) => `/api/admin/users/${userId}`,
+    GET_PAYMENTS: "/api/admin/payments",
+    UPDATE_PAYMENT_STATUS: (paymentId) =>
+      `/api/admin/payments/${paymentId}/status`,
   },
 
   IMAGE: {

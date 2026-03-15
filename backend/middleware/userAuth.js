@@ -2,12 +2,16 @@ import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
 
 const userAuth = async (req, res, next) => {
-  const { token } = req.cookies;
+  const bearer = req.headers.authorization?.startsWith("Bearer ")
+    ? req.headers.authorization.split(" ")[1]
+    : null;
+
+  const token = req.cookies?.token || bearer;
 
   if (!token) {
-    return res.json({
+    return res.status(401).json({
       success: false,
-      message: "Not Authorized.Login Again",
+      message: "Not authorized. Login again.",
     });
   }
   try {
@@ -18,7 +22,7 @@ const userAuth = async (req, res, next) => {
         .select("_id role email name isVerified");
 
       if (!user) {
-        return res.json({
+        return res.status(401).json({
           success: false,
           message: "User not found",
         });
@@ -32,16 +36,16 @@ const userAuth = async (req, res, next) => {
         email: user.email,
       };
     } else {
-      return res.json({
+      return res.status(401).json({
         success: false,
-        message: "Not Authorized.",
+        message: "Not authorized.",
       });
     }
     next();
   } catch (error) {
-    res.json({
+    res.status(401).json({
       success: false,
-      message: error.message,
+      message: "Invalid or expired session",
     });
   }
 };

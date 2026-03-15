@@ -1,4 +1,6 @@
 import React,{createContext,useContext,useState,useEffect} from "react";
+import axiosInstance from "../utils/axiosInstance";
+import { API_PATHS } from "../utils/apiPaths";
 
 const AuthContext=createContext();
 
@@ -22,45 +24,43 @@ export const AuthProvider=({children})=>{
 
   const checkAuthStatus=async()=>{
     try{
-      const token=localStorage.getItem('token');
-      const userStr=localStorage.getItem('user');
-
-      if (token && userStr){
-        const userData=JSON.parse(userStr);
-        setUser(userData);
+      const { data } = await axiosInstance.post(API_PATHS.AUTH.IS_AUTHENTICATED);
+      if (data?.success && data?.user) {
+        setUser(data.user);
         setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
       }
     }catch(error){
       console.error('Auth check failed:',error);
-      logout();
+      setUser(null);
+      setIsAuthenticated(false);
     }finally{
       setLoading(false);
     }
   };
 
-  const login=(userData,token)=>{
-      localStorage.setItem('token',token);
-      localStorage.setItem('user',JSON.stringify(userData));
-
+  const login=(userData)=>{
       setUser(userData);
       setIsAuthenticated(true);
 
   };
 
-  const logout=()=>{
-   localStorage.removeItem('token');
-   localStorage.removeItem('refreshToken');
-   localStorage.removeItem('user');
-
+  const logout=async()=>{
+   try {
+    await axiosInstance.post(API_PATHS.AUTH.LOGOUT);
+   } catch (error) {
+    console.error('Logout failed:', error);
+   }
    setUser(null);
    setIsAuthenticated(false);
    window.location.href='/'
   };
 
   const updateUser=(updatedUserData)=>{
-    const newUserData={...user, ...updatedUserData};
+    const newUserData={...(user || {}), ...updatedUserData};
     setUser(newUserData);
-    localStorage.setItem('user',JSON.stringify(newUserData));
   };
 
   const value={

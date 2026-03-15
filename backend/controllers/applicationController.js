@@ -1,5 +1,7 @@
 import applicationModel from "../models/applicationModel.js";
 import jobModel from "../models/jobModel.js";
+import notificationModel from "../models/notificationModel.js";
+import userModel from "../models/userModel.js";
 
 export const applyToJob = async (req, res) => {
   try {
@@ -38,6 +40,10 @@ export const applyToJob = async (req, res) => {
       applicant: userId,
       resume: resume || "",
     });
+
+    if (typeof resume === "string" && resume.trim()) {
+      await userModel.findByIdAndUpdate(userId, { resume: resume.trim() });
+    }
 
     return res.json({
       success: true,
@@ -147,7 +153,10 @@ export const updateApplicationStatus = async (req, res) => {
     const { status } = req.body;
     const userId = String(req.user.id);
 
-    const application = await applicationModel.findById(id).populate("job");
+    const application = await applicationModel
+      .findById(id)
+      .populate("job", "title company")
+      .populate("applicant", "name");
     if (!application) {
       return res.json({
         success: false,
@@ -163,8 +172,46 @@ export const updateApplicationStatus = async (req, res) => {
       });
     }
 
+    const previousStatus = application.status;
     application.status = status;
     await application.save();
+
+    if (application.status === "Rejected" && previousStatus !== "Rejected") {
+      try {
+        const employer = await userModel
+          .findById(userId)
+          .select("name companyName");
+
+        const employerDisplayName =
+          employer?.companyName || employer?.name || "Employer";
+        const applicantName = application.applicant?.name || "Applicant";
+        const jobTitle = application.job?.title || "the job";
+
+        await notificationModel.insertMany([
+          {
+            recipient: application.applicant._id,
+            sender: application.job.company,
+            type: "system",
+            title: "Application declined",
+            body: `Your application for \"${jobTitle}\" was declined by ${employerDisplayName}.`,
+            link: `/job/${application.job._id}`,
+          },
+          {
+            recipient: application.job.company,
+            sender: null,
+            type: "system",
+            title: "Application declined",
+            body: `You declined ${applicantName}'s application for \"${jobTitle}\".`,
+            link: `/applicants/${application.job._id}`,
+          },
+        ]);
+      } catch (notificationError) {
+        console.error(
+          "Failed to create decline notifications:",
+          notificationError,
+        );
+      }
+    }
 
     return res.json({
       success: true,

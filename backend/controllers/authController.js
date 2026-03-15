@@ -3,6 +3,13 @@ import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
 import transporter from "../config/nodemailer.js";
 
+const authCookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  path: "/",
+};
+
 export const register = async (req, res) => {
   const { name, email, password, role } = req.body;
   if (!name || !email || !password || !role) {
@@ -47,12 +54,7 @@ export const register = async (req, res) => {
       expiresIn: "7d",
     });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, authCookieOptions);
 
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     user.verifyOtp = otp;
@@ -77,6 +79,10 @@ export const register = async (req, res) => {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified,
+        studentIdCard: user.studentIdCard || "",
+        nationalIdCard: user.nationalIdCard || "",
+        identityVerificationStatus:
+          user.identityVerificationStatus || "not_submitted",
         linkedinUrl: user.linkedinUrl || "",
         bio: user.bio || "",
         interests: user.interests || [],
@@ -128,15 +134,11 @@ export const login = async (req, res) => {
       expiresIn: "7d",
     });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, authCookieOptions);
     return res.json({
       success: true,
       message: "Logged in successfully",
+      token,
       user: {
         _id: user._id,
 
@@ -145,12 +147,15 @@ export const login = async (req, res) => {
 
         role: user.role,
         isVerified: user.isVerified,
-        token,
         avatar: user.avatar || "",
         companyName: user.companyName || "",
         companyDescription: user.companyDescription || "",
         companyLogo: user.companyLogo || "",
         resume: user.resume || "",
+        studentIdCard: user.studentIdCard || "",
+        nationalIdCard: user.nationalIdCard || "",
+        identityVerificationStatus:
+          user.identityVerificationStatus || "not_submitted",
         linkedinUrl: user.linkedinUrl || "",
         bio: user.bio || "",
         interests: user.interests || [],
@@ -171,6 +176,7 @@ export const logout = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      path: "/",
     });
     return res.json({
       success: true,
@@ -277,7 +283,24 @@ export const verifyEmail = async (req, res) => {
 
 export const isAuthenticated = async (req, res) => {
   try {
-    return res.json({ success: true, message: "User is authenticated" });
+    const user = await userModel
+      .findById(req.user.id)
+      .select(
+        "_id name email role isVerified avatar companyName companyDescription companyLogo resume studentIdCard nationalIdCard identityVerificationStatus linkedinUrl bio interests themePreference",
+      );
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "User is authenticated",
+      user,
+    });
   } catch (error) {
     res.json({
       success: false,

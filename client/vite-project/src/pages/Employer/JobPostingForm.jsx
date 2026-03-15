@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Briefcase, DollarSign, Clock, MapPin, FileText, CheckSquare, ArrowLeft } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
@@ -59,7 +59,10 @@ const TextAreaField = ({ label, error, ...props }) => (
 
 const JobPostingForm = () => {
   const navigate = useNavigate();
+  const { jobId } = useParams();
+  const isEditMode = Boolean(jobId);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFetchingJob, setIsFetchingJob] = useState(false);
   const [errors, setErrors] = useState({});
 
   const [form, setForm] = useState({
@@ -78,6 +81,40 @@ const JobPostingForm = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
+
+  useEffect(() => {
+    const fetchJob = async () => {
+      if (!isEditMode) return;
+      try {
+        setIsFetchingJob(true);
+        const response = await axiosInstance.get(API_PATHS.JOBS.GET_JOB_BY_ID(jobId));
+        if (!response.data.success || !response.data.job) {
+          toast.error(response.data.message || "Failed to load job details");
+          navigate("/manage-jobs");
+          return;
+        }
+
+        const job = response.data.job;
+        setForm({
+          title: job.title || "",
+          description: job.description || "",
+          requirements: job.requirements || "",
+          location: job.location || "",
+          category: job.category || "",
+          salaryMin: job.salaryMin ?? "",
+          salaryMax: job.salaryMax ?? "",
+          duration: job.duration || "",
+        });
+      } catch (error) {
+        toast.error("Failed to load job details");
+        navigate("/manage-jobs");
+      } finally {
+        setIsFetchingJob(false);
+      }
+    };
+
+    fetchJob();
+  }, [isEditMode, jobId, navigate]);
 
   const validate = () => {
     const newErrors = {};
@@ -108,12 +145,14 @@ const JobPostingForm = () => {
         salaryMin: Number(form.salaryMin),
         salaryMax: Number(form.salaryMax),
       };
-      const response = await axiosInstance.post(API_PATHS.JOBS.POST_JOB, payload);
+      const response = isEditMode
+        ? await axiosInstance.put(API_PATHS.JOBS.UPDATE_JOB(jobId), payload)
+        : await axiosInstance.post(API_PATHS.JOBS.POST_JOB, payload);
       if (response.data.success) {
-        toast.success("Job posted successfully!");
+        toast.success(isEditMode ? "Job updated successfully!" : "Job posted successfully!");
         navigate("/manage-jobs");
       } else {
-        toast.error(response.data.message || "Failed to post job");
+        toast.error(response.data.message || (isEditMode ? "Failed to update job" : "Failed to post job"));
       }
     } catch (err) {
       toast.error("Something went wrong. Please try again.");
@@ -135,10 +174,20 @@ const JobPostingForm = () => {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Post a New Job</h1>
-            <p className="text-sm text-gray-500">Fill in all fields to create a job listing</p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {isEditMode ? "Edit Job" : "Post a New Job"}
+            </h1>
+            <p className="text-sm text-gray-500">
+              {isEditMode ? "Update your job listing details" : "Fill in all fields to create a job listing"}
+            </p>
           </div>
         </div>
+
+        {isFetchingJob ? (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 flex items-center justify-center">
+            <span className="h-5 w-5 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
+          </div>
+        ) : (
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
           {/* Basic Info */}
@@ -269,17 +318,18 @@ const JobPostingForm = () => {
               {isSubmitting ? (
                 <>
                   <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Posting...
+                  {isEditMode ? "Updating..." : "Posting..."}
                 </>
               ) : (
                 <>
                   <CheckSquare className="h-4 w-4" />
-                  Post Job
+                  {isEditMode ? "Update Job" : "Post Job"}
                 </>
               )}
             </button>
           </div>
         </form>
+        )}
       </div>
     </DashboardLayout>
   );

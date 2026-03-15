@@ -252,6 +252,14 @@ const EmployerDashboard = () => {
                       <span className="text-xs text-gray-400 flex-shrink-0">
                         {formatDate(app.createdAt)}
                       </span>
+                      {app.applicant?._id ? (
+                        <button
+                          onClick={() => navigate(`/freelancer/${app.applicant._id}`)}
+                          className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          View Profile
+                        </button>
+                      ) : null}
                     </div>
                   ))
                 )}

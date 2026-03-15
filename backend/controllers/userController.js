@@ -32,6 +32,10 @@ export const getAllUser = async (req, res) => {
         role: user.role,
         avatar: user.avatar || "",
         resume: user.resume || "",
+        studentIdCard: user.studentIdCard || "",
+        nationalIdCard: user.nationalIdCard || "",
+        identityVerificationStatus:
+          user.identityVerificationStatus || "not_submitted",
         linkedinUrl: user.linkedinUrl || "",
         bio: user.bio || "",
         interests: user.interests || [],
@@ -56,6 +60,8 @@ export const updateProfile = async (req, res) => {
       companyDescription,
       companyLogo,
       resume,
+      studentIdCard,
+      nationalIdCard,
       linkedinUrl,
       bio,
       interests,
@@ -73,9 +79,20 @@ export const updateProfile = async (req, res) => {
     if (typeof name === "string") user.name = name.trim() || user.name;
     if (typeof avatar === "string") user.avatar = avatar;
     if (typeof resume === "string") user.resume = resume;
+    if (typeof studentIdCard === "string") user.studentIdCard = studentIdCard;
+    if (typeof nationalIdCard === "string")
+      user.nationalIdCard = nationalIdCard;
     if (typeof linkedinUrl === "string") user.linkedinUrl = linkedinUrl.trim();
     if (typeof bio === "string") user.bio = bio.trim();
     if (interests !== undefined) user.interests = parseInterests(interests);
+
+    if (user.identityVerificationStatus !== "verified") {
+      if (user.studentIdCard && user.nationalIdCard) {
+        user.identityVerificationStatus = "pending";
+      } else {
+        user.identityVerificationStatus = "not_submitted";
+      }
+    }
 
     if (themePreference === "light" || themePreference === "dark") {
       user.themePreference = themePreference;
@@ -100,6 +117,10 @@ export const updateProfile = async (req, res) => {
         role: user.role,
         avatar: user.avatar || "",
         resume: user.resume || "",
+        studentIdCard: user.studentIdCard || "",
+        nationalIdCard: user.nationalIdCard || "",
+        identityVerificationStatus:
+          user.identityVerificationStatus || "not_submitted",
         linkedinUrl: user.linkedinUrl || "",
         bio: user.bio || "",
         interests: user.interests || [],
@@ -194,7 +215,9 @@ export const deleteResume = async (req, res) => {
 
 export const getPublicProfile = async (req, res) => {
   try {
-    const user = await userModel.findById(req.params.id).select("-password");
+    const user = await userModel
+      .findById(req.params.id)
+      .select("-password -studentIdCard -nationalIdCard");
 
     if (!user) {
       return res.status(404).json({

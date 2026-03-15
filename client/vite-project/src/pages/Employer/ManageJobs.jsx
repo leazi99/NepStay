@@ -227,11 +227,18 @@ const ManageJobs = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
                         <button
-                          title="View Applicants"
-                          onClick={() => navigate(`/applicants/${job._id}`)}
+                          title="View Job"
+                          onClick={() => navigate(`/employer-job/${job._id}`)}
                           className="p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
                         >
                           <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          title="Edit Job"
+                          onClick={() => navigate(`/post-job/${job._id}/edit`)}
+                          className="p-2 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-colors"
+                        >
+                          <Pencil className="h-4 w-4" />
                         </button>
                         <button
                           title={job.isClosed ? "Reopen Job" : "Close Job"}

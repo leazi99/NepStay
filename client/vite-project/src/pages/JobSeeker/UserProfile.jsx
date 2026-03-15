@@ -47,6 +47,9 @@ const UserProfile = () => {
     name: "",
     avatar: "",
     resume: "",
+    studentIdCard: "",
+    nationalIdCard: "",
+    identityVerificationStatus: "not_submitted",
     linkedinUrl: "",
     bio: "",
     interests: "",
@@ -61,6 +64,8 @@ const UserProfile = () => {
 
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [resumeUploading, setResumeUploading] = useState(false);
+  const [studentIdUploading, setStudentIdUploading] = useState(false);
+  const [nationalIdUploading, setNationalIdUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [deletingResume, setDeletingResume] = useState(false);
@@ -73,6 +78,9 @@ const UserProfile = () => {
       name: user.name || "",
       avatar: user.avatar || "",
       resume: user.resume || "",
+      studentIdCard: user.studentIdCard || "",
+      nationalIdCard: user.nationalIdCard || "",
+      identityVerificationStatus: user.identityVerificationStatus || "not_submitted",
       linkedinUrl: user.linkedinUrl || "",
       bio: user.bio || "",
       interests: Array.isArray(user.interests) ? user.interests.join(", ") : "",
@@ -144,11 +152,11 @@ const UserProfile = () => {
     if (!file) return;
 
     const formData = new FormData();
-    formData.append("avatar", file);
+    formData.append("resume", file);
 
     setResumeUploading(true);
     try {
-      const response = await axiosInstance.post(API_PATHS.IMAGE.UPLOAD_IMAGE, formData, {
+      const response = await axiosInstance.post(API_PATHS.AUTH.UPLOAD_RESUME, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -157,7 +165,8 @@ const UserProfile = () => {
         return;
       }
 
-      setForm((prev) => ({ ...prev, resume: response.data.imageUrl }));
+      setForm((prev) => ({ ...prev, resume: response.data.resumeUrl }));
+      updateUser({ resume: response.data.resumeUrl });
       toast.success("Resume uploaded successfully");
     } catch {
       toast.error("Failed to upload resume");
@@ -184,6 +193,60 @@ const UserProfile = () => {
       toast.error("Failed to delete resume");
     } finally {
       setDeletingResume(false);
+    }
+  };
+
+  const handleVerificationDocUpload = async (event, type) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("document", file);
+
+    if (type === "student") setStudentIdUploading(true);
+    if (type === "national") setNationalIdUploading(true);
+
+    try {
+      const response = await axiosInstance.post(
+        API_PATHS.AUTH.UPLOAD_VERIFICATION_DOC,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
+
+      if (!response.data.success || !response.data.documentUrl) {
+        toast.error(response.data.message || "Upload failed");
+        return;
+      }
+
+      const documentUrl = response.data.documentUrl;
+
+      setForm((prev) => {
+        const next = {
+          ...prev,
+          studentIdCard: type === "student" ? documentUrl : prev.studentIdCard,
+          nationalIdCard: type === "national" ? documentUrl : prev.nationalIdCard,
+        };
+
+        next.identityVerificationStatus =
+          next.studentIdCard && next.nationalIdCard ? "pending" : "not_submitted";
+
+        return next;
+      });
+
+      updateUser({
+        studentIdCard: type === "student" ? documentUrl : user?.studentIdCard || form.studentIdCard,
+        nationalIdCard: type === "national" ? documentUrl : user?.nationalIdCard || form.nationalIdCard,
+        identityVerificationStatus: "pending",
+      });
+
+      toast.success(`${type === "student" ? "Student ID" : "National ID"} uploaded successfully`);
+    } catch {
+      toast.error("Failed to upload document");
+    } finally {
+      if (type === "student") setStudentIdUploading(false);
+      if (type === "national") setNationalIdUploading(false);
     }
   };
 
@@ -214,6 +277,8 @@ const UserProfile = () => {
         name: form.name,
         avatar: form.avatar,
         resume: form.resume,
+        studentIdCard: form.studentIdCard,
+        nationalIdCard: form.nationalIdCard,
         linkedinUrl: form.linkedinUrl,
         bio: form.bio,
         interests: parseInterests(form.interests),
@@ -290,7 +355,7 @@ const UserProfile = () => {
         <div className="max-w-4xl mx-auto">
           <div>
             <h1 className="text-3xl font-bold text-white">Freelancer Profile</h1>
-            <p className="text-sm mt-2 text-blue-100">Update your details, resume, bio, interests and password</p>
+            <p className="text-sm mt-2 text-blue-100">Update your details, resume, ID cards, bio, interests and password</p>
           </div>
         </div>
       </div>
@@ -458,6 +523,98 @@ const UserProfile = () => {
                     : "border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
                 }`}
               />
+            </div>
+          </div>
+
+          <div className={`rounded-2xl border shadow-sm p-6 space-y-4 ${cardClass}`}>
+            <h2 className={`font-semibold text-base flex items-center gap-2 ${textPrimary}`}>
+              <FileBadge className="h-4 w-4 text-blue-500" />
+              Identity Verification
+            </h2>
+
+            <div className="flex items-center gap-2 text-xs">
+              <span className={`px-2.5 py-1 rounded-full font-medium ${
+                form.identityVerificationStatus === "verified"
+                  ? "bg-green-50 text-green-700"
+                  : form.identityVerificationStatus === "pending"
+                    ? "bg-amber-50 text-amber-700"
+                    : form.identityVerificationStatus === "rejected"
+                      ? "bg-red-50 text-red-700"
+                      : "bg-gray-100 text-gray-600"
+              }`}>
+                {form.identityVerificationStatus === "verified"
+                  ? "Verified"
+                  : form.identityVerificationStatus === "pending"
+                    ? "Verification Pending"
+                    : form.identityVerificationStatus === "rejected"
+                      ? "Verification Rejected"
+                      : "Not Submitted"}
+              </span>
+              <span className={textSecondary}>
+                Upload both documents to submit verification.
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className={`border rounded-xl p-4 ${isDark ? "border-slate-700" : "border-gray-200"}`}>
+                <p className={`text-sm font-medium mb-2 ${textPrimary}`}>Student ID Card</p>
+                {form.studentIdCard ? (
+                  <a
+                    href={form.studentIdCard}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-blue-600 hover:underline break-all"
+                  >
+                    View uploaded Student ID
+                  </a>
+                ) : (
+                  <p className={`text-xs ${textSecondary}`}>Not uploaded</p>
+                )}
+                <label className="mt-3 inline-flex items-center gap-2 cursor-pointer text-xs text-blue-600 hover:text-blue-700 font-medium">
+                  {studentIdUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  {studentIdUploading ? "Uploading..." : "Upload Student ID"}
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    onChange={(event) => handleVerificationDocUpload(event, "student")}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              <div className={`border rounded-xl p-4 ${isDark ? "border-slate-700" : "border-gray-200"}`}>
+                <p className={`text-sm font-medium mb-2 ${textPrimary}`}>National ID Card</p>
+                {form.nationalIdCard ? (
+                  <a
+                    href={form.nationalIdCard}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-blue-600 hover:underline break-all"
+                  >
+                    View uploaded National ID
+                  </a>
+                ) : (
+                  <p className={`text-xs ${textSecondary}`}>Not uploaded</p>
+                )}
+                <label className="mt-3 inline-flex items-center gap-2 cursor-pointer text-xs text-blue-600 hover:text-blue-700 font-medium">
+                  {nationalIdUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  {nationalIdUploading ? "Uploading..." : "Upload National ID"}
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    onChange={(event) => handleVerificationDocUpload(event, "national")}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             </div>
           </div>
 

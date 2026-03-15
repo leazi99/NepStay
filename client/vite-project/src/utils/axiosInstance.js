@@ -14,10 +14,6 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const accessToken = localStorage.getItem("token");
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
     return config;
   },
   (error) => {
@@ -31,9 +27,7 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
-      if (error.response.status === 401) {
-        window.location.href = "/";
-      } else if (error.response.status === 500) {
+      if (error.response.status === 500) {
         console.error("Server error.Please try again later");
       }
     } else if (error.code === "ECONNABORTED") {

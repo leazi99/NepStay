@@ -182,6 +182,14 @@ const ApplicationView = () => {
                           <Clock className="h-3.5 w-3.5" />
                           Applied {formatDate(app.createdAt)}
                         </span>
+                        {app.applicant?._id ? (
+                          <button
+                            onClick={() => navigate(`/freelancer/${app.applicant._id}`)}
+                            className="text-blue-600 hover:text-blue-700 hover:underline"
+                          >
+                            View Profile
+                          </button>
+                        ) : null}
                         {app.resume && (
                           <a
                             href={app.resume}

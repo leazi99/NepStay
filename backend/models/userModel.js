@@ -5,6 +5,7 @@ const normalizeRole = (value) => {
   const role = String(value).toLowerCase();
   if (role === "jobseeker" || role === "freelancer") return "jobseeker";
   if (role === "employer" || role === "client") return "employer";
+  if (role === "admin") return "admin";
   return role;
 };
 
@@ -24,7 +25,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ["jobseeker", "employer"],
+    enum: ["jobseeker", "employer", "admin"],
     default: "jobseeker",
     required: true,
     set: normalizeRole,
@@ -34,6 +35,19 @@ const userSchema = new mongoose.Schema({
     default: "",
   },
   resume: String,
+  studentIdCard: {
+    type: String,
+    default: "",
+  },
+  nationalIdCard: {
+    type: String,
+    default: "",
+  },
+  identityVerificationStatus: {
+    type: String,
+    enum: ["not_submitted", "pending", "verified", "rejected"],
+    default: "not_submitted",
+  },
   linkedinUrl: {
     type: String,
     default: "",
