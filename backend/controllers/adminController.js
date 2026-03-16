@@ -135,6 +135,28 @@ export const updateAdminUser = async (req, res) => {
         });
       }
 
+      if (
+        identityVerificationStatus === "verified" &&
+        (!user.studentIdCard || !user.nationalIdCard)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Both Student ID and National ID are required before verification",
+        });
+      }
+
+      if (
+        identityVerificationStatus === "pending" &&
+        (!user.studentIdCard || !user.nationalIdCard)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Both Student ID and National ID are required before setting pending",
+        });
+      }
+
       user.identityVerificationStatus = identityVerificationStatus;
     }
 
@@ -160,7 +182,7 @@ export const getAdminPayments = async (req, res) => {
   try {
     if (!ensureAdmin(req, res)) return;
 
-    const { status = "all" } = req.query;
+    const { status = "all", search = "" } = req.query;
 
     const payments = await paymentModel
       .find(status === "all" ? {} : { status })
@@ -169,9 +191,35 @@ export const getAdminPayments = async (req, res) => {
       .populate("freelancer", "name email")
       .sort({ createdAt: -1 });
 
+    const normalizedSearch = String(search || "")
+      .trim()
+      .toLowerCase();
+
+    const filteredPayments = normalizedSearch
+      ? payments.filter((payment) => {
+          const jobTitle = payment.job?.title || "";
+          const employerName = payment.employer?.name || "";
+          const employerEmail = payment.employer?.email || "";
+          const freelancerName = payment.freelancer?.name || "";
+          const freelancerEmail = payment.freelancer?.email || "";
+
+          const searchable = [
+            jobTitle,
+            employerName,
+            employerEmail,
+            freelancerName,
+            freelancerEmail,
+          ]
+            .join(" ")
+            .toLowerCase();
+
+          return searchable.includes(normalizedSearch);
+        })
+      : payments;
+
     return res.json({
       success: true,
-      payments,
+      payments: filteredPayments,
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

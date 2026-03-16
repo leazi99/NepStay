@@ -51,7 +51,7 @@ const JobCard = ({ job, onSave, onUnsave, onApply, isDark }) => {
       }`}
       onClick={() => navigate(`/job/${job._id}`)}
     >
-      {/* Top row */}
+     
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className={`h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden border ${
@@ -82,7 +82,7 @@ const JobCard = ({ job, onSave, onUnsave, onApply, isDark }) => {
         </button>
       </div>
 
-      {/* Meta */}
+     
       <div className="flex flex-wrap gap-2">
         <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium">
           <MapPin className="h-3 w-3" />
@@ -98,10 +98,10 @@ const JobCard = ({ job, onSave, onUnsave, onApply, isDark }) => {
         </span>
       </div>
 
-      {/* Description preview */}
+      
       <p className={`text-xs line-clamp-2 leading-relaxed ${isDark ? "text-slate-400" : "text-gray-500"}`}>{job.description}</p>
 
-      {/* Apply / Status */}
+      
       <div onClick={(e) => e.stopPropagation()}>
         {normalizedStatus ? (
           <span

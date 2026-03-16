@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Users, Wallet, Loader2, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import axiosInstance from "../../utils/axiosInstance";
@@ -15,14 +15,32 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("users");
   const [updatingUserId, setUpdatingUserId] = useState("");
   const [updatingPaymentId, setUpdatingPaymentId] = useState("");
+  const [userSearch, setUserSearch] = useState("");
+  const [userRoleFilter, setUserRoleFilter] = useState("all");
+  const [paymentSearch, setPaymentSearch] = useState("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
 
-  const fetchAdminData = async () => {
+  const fetchAdminData = useCallback(async () => {
     setLoading(true);
     try {
+      const usersParams = new URLSearchParams();
+      if (userSearch.trim()) usersParams.set("search", userSearch.trim());
+      if (userRoleFilter !== "all") usersParams.set("role", userRoleFilter);
+
+      const paymentsParams = new URLSearchParams();
+      if (paymentSearch.trim()) paymentsParams.set("search", paymentSearch.trim());
+      if (paymentStatusFilter !== "all") {
+        paymentsParams.set("status", paymentStatusFilter);
+      }
+
       const [overviewRes, usersRes, paymentsRes] = await Promise.all([
         axiosInstance.get(API_PATHS.ADMIN.OVERVIEW),
-        axiosInstance.get(API_PATHS.ADMIN.GET_USERS),
-        axiosInstance.get(API_PATHS.ADMIN.GET_PAYMENTS),
+        axiosInstance.get(
+          `${API_PATHS.ADMIN.GET_USERS}${usersParams.toString() ? `?${usersParams.toString()}` : ""}`,
+        ),
+        axiosInstance.get(
+          `${API_PATHS.ADMIN.GET_PAYMENTS}${paymentsParams.toString() ? `?${paymentsParams.toString()}` : ""}`,
+        ),
       ]);
 
       if (!overviewRes.data.success || !usersRes.data.success || !paymentsRes.data.success) {
@@ -38,11 +56,11 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userSearch, userRoleFilter, paymentSearch, paymentStatusFilter]);
 
   useEffect(() => {
     fetchAdminData();
-  }, []);
+  }, [fetchAdminData]);
 
   const updateUserField = async (userId, payload) => {
     setUpdatingUserId(userId);
@@ -182,13 +200,34 @@ const AdminDashboard = () => {
 
           {activeTab === "users" ? (
             <div className="overflow-x-auto">
+              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60 flex flex-wrap items-center gap-2">
+                <input
+                  value={userSearch}
+                  onChange={(event) => setUserSearch(event.target.value)}
+                  placeholder="Search users by name or email"
+                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm w-full sm:w-72"
+                />
+                <select
+                  value={userRoleFilter}
+                  onChange={(event) => setUserRoleFilter(event.target.value)}
+                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                >
+                  <option value="all">All roles</option>
+                  <option value="jobseeker">Jobseeker</option>
+                  <option value="employer">Employer</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="text-left px-4 py-3 text-gray-500 font-semibold">Name</th>
                     <th className="text-left px-4 py-3 text-gray-500 font-semibold">Email</th>
+                    <th className="text-left px-4 py-3 text-gray-500 font-semibold">Student ID</th>
+                    <th className="text-left px-4 py-3 text-gray-500 font-semibold">National ID</th>
                     <th className="text-left px-4 py-3 text-gray-500 font-semibold">Role</th>
                     <th className="text-left px-4 py-3 text-gray-500 font-semibold">Verification</th>
+                    <th className="text-left px-4 py-3 text-gray-500 font-semibold">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -196,6 +235,34 @@ const AdminDashboard = () => {
                     <tr key={user._id} className="border-t border-gray-100">
                       <td className="px-4 py-3 text-gray-900">{user.name}</td>
                       <td className="px-4 py-3 text-gray-600">{user.email}</td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {user.studentIdCard ? (
+                          <a
+                            href={user.studentIdCard}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-600 hover:text-blue-700 hover:underline"
+                          >
+                            View Student ID
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">Not uploaded</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {user.nationalIdCard ? (
+                          <a
+                            href={user.nationalIdCard}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-600 hover:text-blue-700 hover:underline"
+                          >
+                            View National ID
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">Not uploaded</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <select
                           value={user.role}
@@ -227,6 +294,36 @@ const AdminDashboard = () => {
                           <option value="rejected">Rejected</option>
                         </select>
                       </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() =>
+                              updateUserField(user._id, {
+                                identityVerificationStatus: "verified",
+                              })
+                            }
+                            disabled={
+                              updatingUserId === user._id ||
+                              !user.studentIdCard ||
+                              !user.nationalIdCard
+                            }
+                            className="px-2.5 py-1 rounded bg-green-600 text-white text-xs font-medium hover:bg-green-700 disabled:opacity-50"
+                          >
+                            Verify
+                          </button>
+                          <button
+                            onClick={() =>
+                              updateUserField(user._id, {
+                                identityVerificationStatus: "rejected",
+                              })
+                            }
+                            disabled={updatingUserId === user._id}
+                            className="px-2.5 py-1 rounded bg-red-600 text-white text-xs font-medium hover:bg-red-700 disabled:opacity-50"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -234,6 +331,24 @@ const AdminDashboard = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
+              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60 flex flex-wrap items-center gap-2">
+                <input
+                  value={paymentSearch}
+                  onChange={(event) => setPaymentSearch(event.target.value)}
+                  placeholder="Search payments by job, employer, freelancer"
+                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm w-full sm:w-80"
+                />
+                <select
+                  value={paymentStatusFilter}
+                  onChange={(event) => setPaymentStatusFilter(event.target.value)}
+                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                >
+                  <option value="all">All status</option>
+                  <option value="pending">Pending</option>
+                  <option value="completed">Completed</option>
+                  <option value="failed">Failed</option>
+                </select>
+              </div>
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>

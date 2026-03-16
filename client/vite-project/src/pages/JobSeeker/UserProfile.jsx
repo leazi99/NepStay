@@ -235,11 +235,47 @@ const UserProfile = () => {
         return next;
       });
 
+      const nextStudentIdCard =
+        type === "student" ? documentUrl : form.studentIdCard;
+      const nextNationalIdCard =
+        type === "national" ? documentUrl : form.nationalIdCard;
+      const nextVerificationStatus =
+        nextStudentIdCard && nextNationalIdCard ? "pending" : "not_submitted";
+
       updateUser({
-        studentIdCard: type === "student" ? documentUrl : user?.studentIdCard || form.studentIdCard,
-        nationalIdCard: type === "national" ? documentUrl : user?.nationalIdCard || form.nationalIdCard,
-        identityVerificationStatus: "pending",
+        studentIdCard: nextStudentIdCard,
+        nationalIdCard: nextNationalIdCard,
+        identityVerificationStatus: nextVerificationStatus,
       });
+
+      if (nextStudentIdCard && nextNationalIdCard) {
+        const submitResponse = await axiosInstance.put(API_PATHS.USERS.UPDATE_PROFILE, {
+          studentIdCard: nextStudentIdCard,
+          nationalIdCard: nextNationalIdCard,
+        });
+
+        if (!submitResponse.data.success) {
+          toast.error(
+            submitResponse.data.message || "Failed to submit verification documents",
+          );
+          return;
+        }
+
+        if (submitResponse.data.user) {
+          setForm((prev) => ({
+            ...prev,
+            studentIdCard: submitResponse.data.user.studentIdCard || prev.studentIdCard,
+            nationalIdCard:
+              submitResponse.data.user.nationalIdCard || prev.nationalIdCard,
+            identityVerificationStatus:
+              submitResponse.data.user.identityVerificationStatus ||
+              prev.identityVerificationStatus,
+          }));
+          updateUser(submitResponse.data.user);
+        }
+
+        toast.success("Verification documents submitted successfully");
+      }
 
       toast.success(`${type === "student" ? "Student ID" : "National ID"} uploaded successfully`);
     } catch {
@@ -459,6 +495,7 @@ const UserProfile = () => {
                 />
               </div>
             </div>
+
           </div>
 
           <div className={`rounded-2xl border shadow-sm p-6 space-y-4 ${cardClass}`}>
