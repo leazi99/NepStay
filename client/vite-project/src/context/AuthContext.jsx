@@ -17,6 +17,17 @@ export const AuthProvider=({children})=>{
   const [loading,setLoading]=useState(true);
   const [isAuthenticated,setIsAuthenticated]=useState(false);
 
+  useEffect(() => {
+    const initialTheme = localStorage.getItem("themePreference") || "light";
+    document.documentElement.classList.toggle("dark", initialTheme === "dark");
+  }, []);
+
+  useEffect(() => {
+    const selectedTheme = user?.themePreference || localStorage.getItem("themePreference") || "light";
+    document.documentElement.classList.toggle("dark", selectedTheme === "dark");
+    localStorage.setItem("themePreference", selectedTheme);
+  }, [user?.themePreference]);
+
   useEffect(()=>{
     checkAuthStatus();
 
@@ -44,6 +55,9 @@ export const AuthProvider=({children})=>{
   const login=(userData)=>{
       setUser(userData);
       setIsAuthenticated(true);
+      if (userData?.themePreference) {
+        localStorage.setItem("themePreference", userData.themePreference);
+      }
 
   };
 
@@ -55,12 +69,18 @@ export const AuthProvider=({children})=>{
    }
    setUser(null);
    setIsAuthenticated(false);
+   localStorage.removeItem("themePreference");
+   document.documentElement.classList.remove("dark");
    window.location.href='/'
   };
 
   const updateUser=(updatedUserData)=>{
     const newUserData={...(user || {}), ...updatedUserData};
     setUser(newUserData);
+    if (updatedUserData?.themePreference) {
+      localStorage.setItem("themePreference", updatedUserData.themePreference);
+      document.documentElement.classList.toggle("dark", updatedUserData.themePreference === "dark");
+    }
   };
 
   const value={

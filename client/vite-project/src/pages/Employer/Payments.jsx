@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { DollarSign, Receipt, Wallet, AlertCircle } from "lucide-react";
+import { DollarSign, Receipt, Wallet, AlertCircle, Star } from "lucide-react";
 import DashboardLayout from "../../components/layout/DashboardLayout.jsx";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
@@ -13,6 +13,9 @@ const Payments = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [payments, setPayments] = useState([]);
   const [eligibleApplications, setEligibleApplications] = useState([]);
+  const [eligibleReviews, setEligibleReviews] = useState([]);
+  const [reviewDrafts, setReviewDrafts] = useState({});
+  const [reviewSubmittingId, setReviewSubmittingId] = useState("");
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
@@ -26,9 +29,10 @@ const Payments = () => {
     try {
       setIsLoading(true);
       setError("");
-      const [paymentsRes, eligibleRes] = await Promise.all([
+      const [paymentsRes, eligibleRes, reviewsRes] = await Promise.all([
         axiosInstance.get(API_PATHS.PAYMENTS.GET_EMPLOYER_PAYMENTS),
         axiosInstance.get(API_PATHS.PAYMENTS.GET_ELIGIBLE_APPLICATIONS),
+        axiosInstance.get(API_PATHS.REVIEWS.GET_ELIGIBLE),
       ]);
 
       if (paymentsRes.data?.success) {
@@ -39,6 +43,10 @@ const Payments = () => {
 
       if (eligibleRes.data?.success) {
         setEligibleApplications(eligibleRes.data.applications || []);
+      }
+
+      if (reviewsRes.data?.success) {
+        setEligibleReviews(reviewsRes.data.eligible || []);
       }
     } catch {
       setError("Failed to load payment data");
@@ -141,6 +149,53 @@ const Payments = () => {
       day: "numeric",
       year: "numeric",
     });
+
+  const handleReviewDraftChange = (paymentId, field, value) => {
+    setReviewDrafts((prev) => ({
+      ...prev,
+      [paymentId]: {
+        rating: prev[paymentId]?.rating || "",
+        comment: prev[paymentId]?.comment || "",
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSubmitReview = async (paymentId) => {
+    const draft = reviewDrafts[paymentId] || {};
+    const rating = Number(draft.rating);
+
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      toast.error("Please select rating between 1 and 5");
+      return;
+    }
+
+    setReviewSubmittingId(paymentId);
+    try {
+      const response = await axiosInstance.post(API_PATHS.REVIEWS.CREATE, {
+        paymentId,
+        rating,
+        comment: draft.comment || "",
+      });
+
+      if (!response.data?.success) {
+        toast.error(response.data?.message || "Failed to submit review");
+        return;
+      }
+
+      toast.success("Review submitted");
+      setEligibleReviews((prev) => prev.filter((item) => item.paymentId !== paymentId));
+      setReviewDrafts((prev) => {
+        const next = { ...prev };
+        delete next[paymentId];
+        return next;
+      });
+    } catch (submitError) {
+      toast.error(submitError?.response?.data?.message || "Failed to submit review");
+    } finally {
+      setReviewSubmittingId("");
+    }
+  };
 
   return (
     <DashboardLayout activeMenu="payments">
@@ -274,6 +329,85 @@ const Payments = () => {
                     ))}
                   </tbody>
                 </table>
+              )}
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h2 className="text-base font-semibold text-gray-900">Rate Freelancers</h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Submit rating and feedback after project payment is completed.
+                </p>
+              </div>
+
+              {eligibleReviews.length === 0 ? (
+                <div className="py-12 text-center text-sm text-gray-500">
+                  No pending freelancer reviews.
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {eligibleReviews.map((item) => {
+                    const draft = reviewDrafts[item.paymentId] || {
+                      rating: "",
+                      comment: "",
+                    };
+
+                    return (
+                      <div key={item.paymentId} className="px-6 py-4 space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">
+                              {item.reviewee?.name || "Freelancer"}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {item.job?.title || "Project"} • ${Number(item.amount || 0).toLocaleString()}
+                            </p>
+                          </div>
+                          <span className="text-xs text-gray-400">{formatDate(item.completedAt)}</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-[180px_1fr_auto] gap-2">
+                          <div className="flex items-center gap-1 px-2 py-2 border border-gray-200 rounded-lg bg-white">
+                            {[1, 2, 3, 4, 5].map((star) => {
+                              const selected = Number(draft.rating || 0) >= star;
+                              return (
+                                <button
+                                  key={star}
+                                  type="button"
+                                  onClick={() =>
+                                    handleReviewDraftChange(item.paymentId, "rating", String(star))
+                                  }
+                                  className="p-0.5"
+                                  title={`${star} star${star > 1 ? "s" : ""}`}
+                                >
+                                  <Star
+                                    className={`h-5 w-5 ${selected ? "text-amber-500 fill-amber-500" : "text-gray-300"}`}
+                                  />
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <input
+                            type="text"
+                            value={draft.comment}
+                            onChange={(event) =>
+                              handleReviewDraftChange(item.paymentId, "comment", event.target.value)
+                            }
+                            placeholder="Write feedback"
+                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                          />
+                          <button
+                            onClick={() => handleSubmitReview(item.paymentId)}
+                            disabled={reviewSubmittingId === item.paymentId}
+                            className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-60"
+                          >
+                            {reviewSubmittingId === item.paymentId ? "Submitting..." : "Submit"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </>

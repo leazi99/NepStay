@@ -66,6 +66,13 @@ export const API_PATHS = {
     CREATE_STRIPE_CHECKOUT_SESSION: "/api/payments/checkout-session",
   },
 
+  REVIEWS: {
+    CREATE: "/api/reviews",
+    GET_ELIGIBLE: "/api/reviews/eligible",
+    GET_RECEIVED: "/api/reviews/received",
+    GET_GIVEN: "/api/reviews/given",
+  },
+
   ADMIN: {
     OVERVIEW: "/api/admin/overview",
     GET_USERS: "/api/admin/users",

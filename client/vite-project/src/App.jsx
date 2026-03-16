@@ -27,11 +27,12 @@ import SavedJobs from './pages/JobSeeker/SavedJobs.jsx'
 import JobDetails from './pages/JobSeeker/JobDetails.jsx'
 import Messages from './pages/Common/Messages.jsx'
 import Notifications from './pages/Common/Notifications.jsx'
+import Reviews from './pages/Common/Reviews.jsx'
 import AdminDashboard from './pages/Admin/AdminDashboard.jsx'
 
 const App = () => {
   return (
-    <div >
+    <div className='min-h-screen bg-white text-gray-900 dark:bg-slate-950 dark:text-white'>
       <Toaster
         toastOptions={{
           className: '',
@@ -55,6 +56,7 @@ const App = () => {
           <Route path='/profile' element={<UserProfile />} />
           <Route path='/messages' element={<Messages />} />
           <Route path='/notifications' element={<Notifications />} />
+          <Route path='/reviews' element={<Reviews />} />
         </Route>
 
 

@@ -1,0 +1,21 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ks_bg" x1="18" y1="12" x2="110" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB" />
+      <stop offset="1" stop-color="#1D4ED8" />
+    </linearGradient>
+    <linearGradient id="ks_s" x1="70" y1="34" x2="92" y2="96" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#93C5FD" />
+      <stop offset="1" stop-color="#DBEAFE" />
+    </linearGradient>
+  </defs>
+
+  <rect x="12" y="12" width="104" height="104" rx="28" fill="url(#ks_bg)" />
+  <rect x="12.8" y="12.8" width="102.4" height="102.4" rx="27.2" stroke="white" stroke-opacity="0.18"
+    stroke-width="1.6" />
+
+  <path d="M40 34H52V57.5L72.5 34H87L66 58L88.5 94H74L57.5 66L52 72.5V94H40V34Z" fill="white" />
+  <path
+    d="M82.4 44.5C76.9 44.5 72.7 47.7 72.7 51.6C72.7 55.4 75.9 57.1 82.1 58.6C89.7 60.5 96 63.3 96 72.2C96 81.5 88.1 86.8 79 86.8C72.2 86.8 65.6 84.5 61 80.1L67.5 72.5C71.1 75.7 75 77.4 79.2 77.4C83.8 77.4 86 75.4 86 72.9C86 70.1 83.9 68.9 78 67.4C70.6 65.6 63 62.8 63 52.6C63 43.6 70.6 37 80.8 37C86.7 37 92.3 39 96.5 42.4L90.6 50.2C87.4 47.7 84.9 46.6 82.4 44.5Z"
+    fill="url(#ks_s)" />
+</svg>

@@ -12,6 +12,7 @@ import {
   Lock,
   Link as LinkIcon,
   FileBadge,
+  Star,
 } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
@@ -69,6 +70,11 @@ const UserProfile = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [deletingResume, setDeletingResume] = useState(false);
+  const [eligibleReviews, setEligibleReviews] = useState([]);
+  const [receivedReviews, setReceivedReviews] = useState([]);
+  const [averageRating, setAverageRating] = useState(0);
+  const [submittingReviewPaymentId, setSubmittingReviewPaymentId] = useState("");
+  const [reviewDrafts, setReviewDrafts] = useState({});
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -87,6 +93,33 @@ const UserProfile = () => {
       themePreference: user.themePreference || "light",
     });
   }, [user]);
+
+  useEffect(() => {
+    const loadReviewData = async () => {
+      if (!user?._id) return;
+
+      try {
+        const [eligibleRes, receivedRes] = await Promise.all([
+          axiosInstance.get(API_PATHS.REVIEWS.GET_ELIGIBLE),
+          axiosInstance.get(API_PATHS.REVIEWS.GET_RECEIVED),
+        ]);
+
+        if (eligibleRes.data?.success) {
+          setEligibleReviews(eligibleRes.data.eligible || []);
+        }
+
+        if (receivedRes.data?.success) {
+          setReceivedReviews(receivedRes.data.reviews || []);
+          setAverageRating(receivedRes.data.averageRating || 0);
+        }
+      } catch {
+        setEligibleReviews([]);
+        setReceivedReviews([]);
+      }
+    };
+
+    loadReviewData();
+  }, [user?._id]);
 
   const isDark = form.themePreference === "dark";
 
@@ -339,6 +372,53 @@ const UserProfile = () => {
   const handlePasswordChange = (event) => {
     const { name, value } = event.target;
     setPasswordForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleReviewDraftChange = (paymentId, field, value) => {
+    setReviewDrafts((prev) => ({
+      ...prev,
+      [paymentId]: {
+        rating: prev[paymentId]?.rating || "",
+        comment: prev[paymentId]?.comment || "",
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSubmitReview = async (paymentId) => {
+    const draft = reviewDrafts[paymentId] || {};
+    const rating = Number(draft.rating);
+
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      toast.error("Please select rating between 1 and 5");
+      return;
+    }
+
+    setSubmittingReviewPaymentId(paymentId);
+    try {
+      const response = await axiosInstance.post(API_PATHS.REVIEWS.CREATE, {
+        paymentId,
+        rating,
+        comment: draft.comment || "",
+      });
+
+      if (!response.data?.success) {
+        toast.error(response.data?.message || "Failed to submit review");
+        return;
+      }
+
+      toast.success("Review submitted");
+      setEligibleReviews((prev) => prev.filter((item) => item.paymentId !== paymentId));
+      setReviewDrafts((prev) => {
+        const next = { ...prev };
+        delete next[paymentId];
+        return next;
+      });
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to submit review");
+    } finally {
+      setSubmittingReviewPaymentId("");
+    }
   };
 
   const handleChangePassword = async (event) => {
@@ -721,6 +801,113 @@ const UserProfile = () => {
           <p className={`text-sm mt-2 ${textSecondary}`}>
             <span className="font-semibold">Interests:</span> {form.interests || "Not added"}
           </p>
+        </div>
+
+        <div className={`rounded-2xl border shadow-sm p-6 ${cardClass}`}>
+          <h2 className={`font-semibold text-base mb-3 ${textPrimary}`}>
+            Rate Employers (Completed Projects)
+          </h2>
+          {eligibleReviews.length === 0 ? (
+            <p className={`text-sm ${textSecondary}`}>No pending employer reviews.</p>
+          ) : (
+            <div className="space-y-3">
+              {eligibleReviews.map((item) => {
+                const draft = reviewDrafts[item.paymentId] || {
+                  rating: "",
+                  comment: "",
+                };
+
+                return (
+                  <div
+                    key={item.paymentId}
+                    className={`rounded-xl border p-3 ${isDark ? "border-slate-700" : "border-gray-200"}`}
+                  >
+                    <p className={`text-sm font-medium ${textPrimary}`}>
+                      {item.reviewee?.name || "Employer"}
+                    </p>
+                    <p className={`text-xs mb-2 ${textSecondary}`}>{item.job?.title || "Project"}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr_auto] gap-2">
+                      <div
+                        className={`flex items-center gap-1 px-2 py-2 border rounded-lg ${
+                          isDark
+                            ? "border-slate-700 bg-slate-800"
+                            : "border-gray-200 bg-white"
+                        }`}
+                      >
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          const selected = Number(draft.rating || 0) >= star;
+                          return (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() =>
+                                handleReviewDraftChange(item.paymentId, "rating", String(star))
+                              }
+                              className="p-0.5"
+                              title={`${star} star${star > 1 ? "s" : ""}`}
+                            >
+                              <Star
+                                className={`h-5 w-5 ${selected ? "text-amber-500 fill-amber-500" : "text-gray-300"}`}
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <input
+                        type="text"
+                        value={draft.comment}
+                        onChange={(event) =>
+                          handleReviewDraftChange(item.paymentId, "comment", event.target.value)
+                        }
+                        placeholder="Write feedback"
+                        className={`px-3 py-2 border rounded-lg text-sm ${
+                          isDark
+                            ? "border-slate-700 bg-slate-800 text-slate-100"
+                            : "border-gray-200 bg-white text-gray-900"
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSubmitReview(item.paymentId)}
+                        disabled={submittingReviewPaymentId === item.paymentId}
+                        className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-60"
+                      >
+                        {submittingReviewPaymentId === item.paymentId ? "Submitting..." : "Submit"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className={`rounded-2xl border shadow-sm p-6 ${cardClass}`}>
+          <h2 className={`font-semibold text-base mb-1 ${textPrimary}`}>Your Freelancer Reviews</h2>
+          <p className={`text-sm mb-3 ${textSecondary}`}>
+            Average rating: <span className="font-semibold">{averageRating || 0}</span> / 5
+          </p>
+
+          {receivedReviews.length === 0 ? (
+            <p className={`text-sm ${textSecondary}`}>No reviews yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {receivedReviews.slice(0, 5).map((review) => (
+                <div
+                  key={review._id}
+                  className={`rounded-xl border p-3 ${isDark ? "border-slate-700" : "border-gray-200"}`}
+                >
+                  <p className={`text-sm font-medium ${textPrimary}`}>
+                    {review.reviewer?.name || "User"} • {review.rating}/5
+                  </p>
+                  <p className={`text-xs ${textSecondary}`}>{review.job?.title || "Project"}</p>
+                  {review.comment ? (
+                    <p className={`text-sm mt-1 ${textSecondary}`}>{review.comment}</p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

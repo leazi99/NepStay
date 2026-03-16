@@ -10,10 +10,13 @@ import {
   Loader2,
   MessageSquare,
   Bell,
+  Star,
 } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { useAuth } from "../../context/AuthContext";
+import kaamSathiLogo from "../../assets/kaamsathi-logo.svg";
+import kaamSathiLogoMini from "../../assets/kaamsathi-logo-mini.svg";
 
 const FreelancerNavbar = ({ active = "dashboard" }) => {
   const navigate = useNavigate();
@@ -29,6 +32,7 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
     { id: "saved", label: "Saved Jobs", icon: Heart, path: "/saved-jobs" },
     { id: "messages", label: "Messages", icon: MessageSquare, path: "/messages" },
     { id: "notifications", label: "Alerts", icon: Bell, path: "/notifications" },
+    { id: "reviews", label: "Reviews", icon: Star, path: "/reviews" },
     { id: "profile", label: "Profile", icon: User, path: "/profile" },
   ];
 
@@ -80,20 +84,22 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
 
   return (
     <header className={`sticky top-0 z-30 border-b ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}>
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex flex-wrap items-center gap-2 sm:gap-3">
         <button
           onClick={() => navigate("/freelancer-dashboard")}
-          className="inline-flex items-center gap-2.5 sm:gap-3 flex-shrink-0"
+          className="order-1 inline-flex items-center gap-2.5 sm:gap-3 flex-shrink-0"
         >
-          <span className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center shadow-sm">
-            <Briefcase className="h-5 w-5" />
+          <span className="h-9 w-9 rounded-xl overflow-hidden shadow-sm border border-blue-500/30 bg-blue-600 flex items-center justify-center">
+            <img src={kaamSathiLogoMini} alt="KaamSathi" className="h-full w-full object-cover sm:hidden" />
+            <img src={kaamSathiLogo} alt="KaamSathi" className="h-full w-full object-cover hidden sm:block" />
           </span>
           <span className={`text-base sm:text-lg font-bold tracking-tight ${isDark ? "text-slate-100" : "text-gray-900"}`}>
             KaamSathi
           </span>
         </button>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="order-3 w-full lg:order-2 lg:w-auto lg:flex-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-max">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = active === item.id;
@@ -107,7 +113,7 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
               <button
                 key={item.id}
                 onClick={() => navigate(item.path)}
-                className={`inline-flex items-center gap-1.5 sm:gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                className={`inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
                   isActive
                     ? isDark
                       ? "bg-blue-900/50 text-blue-200"
@@ -127,13 +133,14 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
               </button>
             );
           })}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="order-2 lg:order-3 ml-auto flex items-center gap-1.5 sm:gap-2">
           <button
             onClick={toggleTheme}
             disabled={isSwitchingTheme}
-            className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+            className={`inline-flex items-center gap-2 px-2.5 sm:px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
               isDark
                 ? "text-slate-200 hover:bg-slate-800"
                 : "text-gray-700 hover:bg-gray-100"
@@ -151,7 +158,7 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
 
           <button
             onClick={logout}
-            className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+            className={`inline-flex items-center gap-2 px-2.5 sm:px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
               isDark
                 ? "text-rose-300 hover:bg-rose-900/30"
                 : "text-rose-600 hover:bg-rose-50"

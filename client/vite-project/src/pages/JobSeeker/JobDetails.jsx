@@ -17,17 +17,19 @@ import {
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { useAuth } from "../../context/AuthContext";
+import FreelancerNavbar from "../../components/layout/FreelancerNavbar";
 
 const statusConfig = {
-  Pending: { label: "Application Pending", cls: "bg-amber-50 border-amber-200 text-amber-700" },
-  Accepted: { label: "Application Accepted 🎉", cls: "bg-green-50 border-green-200 text-green-700" },
-  Rejected: { label: "Application Rejected", cls: "bg-red-50 border-red-200 text-red-600" },
+  Pending: { label: "Application Pending", cls: "bg-amber-100 text-amber-700 border border-amber-200" },
+  Accepted: { label: "Application Accepted 🎉", cls: "bg-emerald-100 text-emerald-700 border border-emerald-200" },
+  Rejected: { label: "Application Rejected", cls: "bg-red-100 text-red-700 border border-red-200" },
 };
 
 const JobDetails = () => {
   const { jobId } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated, updateUser } = useAuth();
+  const isDark = (user?.themePreference || "light") === "dark";
 
   const [job, setJob] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -140,18 +142,18 @@ const JobDetails = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="h-10 w-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? "bg-slate-950" : "bg-gray-50"}`}>
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
       </div>
     );
   }
 
   if (error || !job) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4 text-red-500">
-        <AlertCircle className="h-12 w-12" />
-        <p className="text-base">{error || "Job not found"}</p>
-        <button onClick={() => navigate("/freelancer-dashboard")} className="text-sm text-blue-600 hover:underline">
+      <div className={`min-h-screen flex flex-col items-center justify-center gap-4 ${isDark ? "bg-slate-950" : "bg-gray-50"}`}>
+        <AlertCircle className="h-12 w-12 text-red-500" />
+        <p className="text-red-500 text-base">{error || "Job not found"}</p>
+        <button onClick={() => navigate("/freelancer-dashboard")} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors">
           Back to Jobs
         </button>
       </div>
@@ -162,44 +164,44 @@ const JobDetails = () => {
   const companyName = company?.companyName || company?.name || "Company";
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-20">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
+    <div className={`${isDark ? "bg-slate-950 text-slate-100" : "bg-gray-50 text-gray-900"} min-h-screen`}>
+      <FreelancerNavbar active="dashboard" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-5 lg:px-6 py-6">
+        <div className="flex items-center gap-3 mb-4">
           <button
             onClick={() => navigate("/freelancer-dashboard")}
-            className="p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-500"
+            className={`inline-flex items-center justify-center h-10 w-10 rounded-lg border transition ${isDark ? "border-slate-700 hover:bg-slate-800 text-slate-200" : "border-gray-200 hover:bg-gray-100 text-gray-700"}`}
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="text-base font-semibold text-gray-900 truncate">{job.title}</h1>
+          <h1 className={`text-xl sm:text-2xl font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>{job.title}</h1>
         </div>
-      </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         {/* Main */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6">
           {/* Job header card */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div className={`rounded-2xl border p-5 sm:p-6 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}>
             <div className="flex items-start gap-4">
-              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center flex-shrink-0 border border-blue-100 overflow-hidden">
+              <div className={`h-14 w-14 rounded-xl border flex items-center justify-center shrink-0 ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-gray-50"}`}>
                 {company?.companyLogo ? (
-                  <img src={company.companyLogo} alt={companyName} className="h-full w-full object-cover" />
+                  <img src={company.companyLogo} alt={companyName} className="h-full w-full object-cover rounded-xl" />
                 ) : (
                   <Building2 className="h-7 w-7 text-blue-400" />
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <h2 className="text-xl font-bold text-gray-900">{job.title}</h2>
-                <p className="text-gray-500 text-sm mt-0.5">{companyName}</p>
-                <div className="flex flex-wrap gap-2 mt-3">
-                  <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h2 className={`text-lg sm:text-xl font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>{job.title}</h2>
+                <p className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}>{companyName}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${isDark ? "bg-slate-800 text-slate-200" : "bg-blue-50 text-blue-700"}`}>
                     <MapPin className="h-3 w-3" /> {job.location}
                   </span>
-                  <span className="flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-full font-medium">
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${isDark ? "bg-slate-800 text-slate-200" : "bg-emerald-50 text-emerald-700"}`}>
                     <DollarSign className="h-3 w-3" /> ${job.salaryMin?.toLocaleString()} – ${job.salaryMax?.toLocaleString()}/mo
                   </span>
-                  <span className="flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${isDark ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
                     <Clock className="h-3 w-3" /> {job.duration}
                   </span>
                 </div>
@@ -208,53 +210,50 @@ const JobDetails = () => {
           </div>
 
           {/* Description */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+          <div className={`rounded-2xl border p-5 sm:p-6 space-y-5 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}>
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <h3 className={`text-sm font-semibold uppercase tracking-wide mb-2 flex items-center gap-2 ${isDark ? "text-slate-300" : "text-gray-700"}`}>
                 <FileText className="h-4 w-4 text-blue-500" /> Job Description
               </h3>
-              <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{job.description}</p>
+              <p className={`text-sm leading-6 whitespace-pre-line ${isDark ? "text-slate-300" : "text-gray-700"}`}>{job.description}</p>
             </div>
-            <hr className="border-gray-100" />
+            <hr className={isDark ? "border-slate-700" : "border-gray-200"} />
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <h3 className={`text-sm font-semibold uppercase tracking-wide mb-2 flex items-center gap-2 ${isDark ? "text-slate-300" : "text-gray-700"}`}>
                 <CheckCircle className="h-4 w-4 text-blue-500" /> Requirements
               </h3>
-              <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{job.requirements}</p>
+              <p className={`text-sm leading-6 whitespace-pre-line ${isDark ? "text-slate-300" : "text-gray-700"}`}>{job.requirements}</p>
             </div>
           </div>
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-4">
+        <div className="space-y-4 lg:sticky lg:top-24 self-start">
           {/* Application status */}
           {applicationStatus && (
-            <div className={`rounded-2xl border p-4 text-sm font-medium ${statusConfig[applicationStatus]?.cls}`}>
+            <div className={`px-3 py-2 rounded-xl text-sm font-medium ${statusConfig[applicationStatus]?.cls}`}>
               {statusConfig[applicationStatus]?.label}
             </div>
           )}
 
           {/* Actions card */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-            <h3 className="font-semibold text-gray-900 text-sm">Apply for this role</h3>
+          <div className={`rounded-2xl border p-5 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}>
+            <h3 className={`text-base font-semibold mb-3 ${isDark ? "text-slate-100" : "text-gray-900"}`}>Apply for this role</h3>
             {!applicationStatus ? (
               <button
                 onClick={() => setShowApplyModal(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 text-white py-2.5 text-sm font-medium hover:bg-red-700 transition-colors"
               >
                 <Send className="h-4 w-4" />
                 Apply Now
               </button>
             ) : (
-              <p className="text-xs text-gray-500 text-center py-2">You have already applied.</p>
+              <p className={`text-sm ${isDark ? "text-slate-300" : "text-gray-600"}`}>You have already applied.</p>
             )}
             <button
               onClick={handleSaveToggle}
               disabled={saving}
-              className={`w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-xl transition-colors border ${isSaved
-                  ? "border-red-200 text-red-600 bg-red-50 hover:bg-red-100"
-                  : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                }`}
+              className={`mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-medium transition-colors ${isSaved ? "bg-red-50 border-red-200 text-red-600" : isDark ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-gray-200 text-gray-700 hover:bg-gray-50"}`}
             >
               {saving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -266,11 +265,11 @@ const JobDetails = () => {
           </div>
 
           {/* Company info */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h3 className="font-semibold text-gray-900 text-sm mb-3">About the Company</h3>
-            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">{companyName}</p>
+          <div className={`rounded-2xl border p-5 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}>
+            <h3 className={`text-base font-semibold mb-3 ${isDark ? "text-slate-100" : "text-gray-900"}`}>About the Company</h3>
+            <p className={`font-medium ${isDark ? "text-slate-200" : "text-gray-900"}`}>{companyName}</p>
             {company?.companyDescription && (
-              <p className="text-xs text-gray-600 mt-2 leading-relaxed line-clamp-4">
+              <p className={`mt-2 text-sm leading-6 ${isDark ? "text-slate-300" : "text-gray-700"}`}>
                 {company.companyDescription}
               </p>
             )}
@@ -278,54 +277,51 @@ const JobDetails = () => {
         </div>
       </div>
 
+      </div>
+
       {/* Apply Modal */}
       {showApplyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full space-y-4">
-            <h3 className="text-base font-semibold text-gray-900">Apply for {job.title}</h3>
-            <p className="text-sm text-gray-500">
+        <div className="fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center">
+          <div className={`w-full max-w-lg rounded-2xl border p-5 sm:p-6 ${isDark ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-gray-200 text-gray-900"}`}>
+            <h3 className="text-lg font-semibold">Apply for {job.title}</h3>
+            <p className={`mt-2 text-sm ${isDark ? "text-slate-300" : "text-gray-600"}`}>
               {profileResumeUrl
                 ? "Your saved resume will be used. You can upload a new one to replace it."
                 : "Upload your resume from your device to submit this application."}
             </p>
             {profileResumeUrl ? (
-              <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 flex items-center justify-between gap-2">
+              <div className={`mt-3 rounded-lg p-3 text-sm flex items-center justify-between gap-3 ${isDark ? "bg-slate-800 text-slate-200" : "bg-blue-50 text-blue-700"}`}>
                 <span>Saved resume found in your profile.</span>
-                <a
-                  href={profileResumeUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-semibold text-blue-700 hover:text-blue-800 hover:underline"
-                >
+                <a href={profileResumeUrl} target="_blank" rel="noreferrer" className="underline font-medium">
                   View current resume
                 </a>
               </div>
             ) : null}
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1.5">
+            <div className="mt-4">
+              <label className={`block mb-1.5 text-sm font-medium ${isDark ? "text-slate-200" : "text-gray-700"}`}>
                 {profileResumeUrl ? "Replace Resume (Optional)" : "Resume (PDF, DOC, DOCX)"}
               </label>
               <input
                 type="file"
                 accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                className={`w-full rounded-xl border px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-red-600 file:px-3 file:py-1.5 file:text-white file:text-xs file:font-medium hover:file:bg-red-700 ${isDark ? "bg-slate-800 border-slate-700 text-slate-100" : "bg-white border-gray-200 text-gray-900"}`}
               />
               {resumeFile ? (
-                <p className="text-xs text-gray-500 mt-1.5">Selected: {resumeFile.name}</p>
+                <p className={`mt-2 text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Selected: {resumeFile.name}</p>
               ) : null}
             </div>
-            <div className="flex gap-3 pt-2">
+            <div className="mt-5 flex justify-end gap-2">
               <button
                 onClick={() => setShowApplyModal(false)}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                className={`px-4 py-2 rounded-lg text-sm border ${isDark ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-gray-200 text-gray-700 hover:bg-gray-100"}`}
               >
                 Cancel
               </button>
               <button
                 onClick={handleApply}
                 disabled={applying}
-                className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-70"
               >
                 {applying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 {applying ? "Submitting..." : "Submit Application"}

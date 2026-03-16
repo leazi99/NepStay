@@ -98,6 +98,8 @@ const EmployerProfile = () => {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [receivedReviews, setReceivedReviews] = useState([]);
+  const [averageRating, setAverageRating] = useState(0);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -111,6 +113,24 @@ const EmployerProfile = () => {
       });
     }
   }, [user]);
+
+  useEffect(() => {
+    const loadReviews = async () => {
+      try {
+        const response = await axiosInstance.get(API_PATHS.REVIEWS.GET_RECEIVED);
+        if (!response.data?.success) return;
+        setReceivedReviews(response.data.reviews || []);
+        setAverageRating(response.data.averageRating || 0);
+      } catch {
+        setReceivedReviews([]);
+        setAverageRating(0);
+      }
+    };
+
+    if (user?._id) {
+      loadReviews();
+    }
+  }, [user?._id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -253,6 +273,31 @@ const EmployerProfile = () => {
             </button>
           </div>
         </form>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-base font-semibold text-gray-800 mb-1">Company Reviews</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Average rating: <span className="font-semibold text-gray-800">{averageRating || 0}</span> / 5
+          </p>
+
+          {receivedReviews.length === 0 ? (
+            <p className="text-sm text-gray-500">No reviews yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {receivedReviews.slice(0, 5).map((review) => (
+                <div key={review._id} className="rounded-xl border border-gray-200 p-3">
+                  <p className="text-sm font-medium text-gray-900">
+                    {review.reviewer?.name || "Freelancer"} • {review.rating}/5
+                  </p>
+                  <p className="text-xs text-gray-500">{review.job?.title || "Project"}</p>
+                  {review.comment ? (
+                    <p className="text-sm text-gray-600 mt-1">{review.comment}</p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </DashboardLayout>
   );

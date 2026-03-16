@@ -1,9 +1,7 @@
-import React, { Children } from 'react'
+import React from 'react'
 import { useState, useEffect } from "react";
 
 import {
-  Briefcase,
-  Building2,
   LogOut,
   Menu,
   X,
@@ -14,6 +12,8 @@ import { NAVIGATION_MENU } from "../../utils/data";
 import ProfileDropdown from "./ProfileDropdown";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
+import kaamSathiLogo from "../../assets/kaamsathi-logo.svg";
+import kaamSathiLogoMini from "../../assets/kaamsathi-logo-mini.svg";
 
 const NavigationItem = ({
   item, isActive, onClick, isCollapsed, badgeCount
@@ -22,13 +22,13 @@ const NavigationItem = ({
 
   return <button
     onClick={() => onClick(item.id)}
-    className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 group${isActive
-      ? "bg-blue-50 text-blue-700 shadow-blue-50 "
-      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${isActive
+      ? "bg-blue-50 text-blue-700"
+      : "text-gray-600 hover:bg-gray-100"
       }`}
   >
     <Icon
-      className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-blue-600" : "text-gray-500"
+      className={`h-4 w-4 ${isActive ? "text-blue-600" : "text-gray-500"
         }`}
     />
     {!isCollapsed && <span className=''>{item.name}</span>}
@@ -122,20 +122,21 @@ const DashboardLayout = ({ activeMenu, children }) => {
 
   return (
     <>
-      <div className='flex h-screen bg-gray-50'>
-        <div className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 transform ${isMobile ? (sidebarOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0"
-          } ${sidebarCollapsed ? "w-16" : "w-64"} bg-white border-r border-gray-200`}>
+      <div className='min-h-screen bg-gray-50 text-gray-900'>
+        <div className={`fixed md:static inset-y-0 left-0 z-40 bg-white border-r border-gray-200 h-screen transition-transform duration-300 ${isMobile ? (sidebarOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0"
+          } ${sidebarCollapsed ? "w-16" : "w-64"}`}>
 
-          <div className='flex items-center h-16 border-b border-gray-200 px-5'>
-            <Link className="inline-flex items-center gap-2.5" to='/'>
-              <div className='h-9 w-9 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-sm'>
-                <Briefcase className='h-5 w-5 text-white' />
+          <div className='h-16 px-4 border-b border-gray-200 flex items-center'>
+            <Link className="inline-flex items-center gap-3" to='/'>
+              <div className='h-9 w-9 rounded-xl overflow-hidden shadow-sm border border-blue-500/30 bg-blue-600 flex items-center justify-center'>
+                <img src={kaamSathiLogoMini} alt='KaamSathi' className='h-full w-full object-cover sm:hidden' />
+                <img src={kaamSathiLogo} alt='KaamSathi' className='h-full w-full object-cover hidden sm:block' />
               </div>
-              <span className='text-gray-900 font-bold text-lg tracking-tight'>KaamSathi</span>
+              <span className='text-lg font-bold tracking-tight text-gray-900'>KaamSathi</span>
             </Link>
           </div>
 
-          <nav className=''>
+          <nav className='p-3 space-y-1'>
             {NAVIGATION_MENU.map((item) => (
               <NavigationItem
                 key={item.id}
@@ -155,8 +156,8 @@ const DashboardLayout = ({ activeMenu, children }) => {
           </nav>
 
 
-          <div className='absolute bottom-4 left-4 right-4'>
-            <button className='w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all duration-100' onClick={logout}>
+          <div className='absolute bottom-0 left-0 right-0 p-3 border-t border-gray-200 bg-white'>
+            <button className='w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors' onClick={logout}>
               <LogOut className='h-5 w-5 flex-shrink-0 text-gray-500' />
               {!sidebarCollapsed && <span className=''>Logout</span>}
             </button>
@@ -166,21 +167,22 @@ const DashboardLayout = ({ activeMenu, children }) => {
         {
           isMobile && sidebarOpen && (
             <div
-              className='fixed inset-0 bg-black bg-opacity-25 z-40 backdrop-blur-sm'
+              className='fixed inset-0 bg-black/40 z-30 md:hidden'
               onClick={() => setSidebarOpen(false)}
             />
           )
         }
 
         <div
-          className={`flex-1 flex flex-col transition-all duration-300 ${isMobile ? "ml-0" : sidebarCollapsed ? "ml-16" : "ml-64"}`}
+          className={`min-h-screen transition-all duration-300 ${isMobile ? "ml-0" : sidebarCollapsed ? "md:ml-16" : "md:ml-64"}`}
         >
-          <header className='bg-white/80 backdrop-blur-sm border-b border-gray-200 h-16 flex items-center justify-between px-6 sticky top-0  z-30'>
-            <div className='flex items-center space-x-4'>
+          <header className='sticky top-0 z-20 border-b border-gray-200 bg-white/90 backdrop-blur'>
+            <div className='h-16 px-4 md:px-6 flex items-center justify-between gap-3'>
+              <div className='flex items-center gap-3 min-w-0'>
               {isMobile && (
                 <button
                   onClick={toggleSidebar}
-                  className='p-2 rounded-xl hover:bg-gray-100 transition-colors duration-200'
+                  className='md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors'
                 >
                   {sidebarOpen ? (
                     <X className='h-5 w-5 text-gray-600' />
@@ -191,8 +193,8 @@ const DashboardLayout = ({ activeMenu, children }) => {
                 </button>
               )}
               <div >
-                <h1 className='text-base font-semibold text-gray-900'>Welcome Back</h1>
-                <p className='text-sm text-gray-500 hidden sm:block'>
+                <h1 className='text-base md:text-lg font-semibold text-gray-900'>Welcome Back</h1>
+                <p className='text-xs md:text-sm text-gray-500'>
                   Here's what's happening with your jobs today.
                 </p>
               </div>
@@ -212,8 +214,9 @@ const DashboardLayout = ({ activeMenu, children }) => {
               />
 
             </div>
+            </div>
           </header>
-          <main className='flex-1 overflow-auto p-6'>
+          <main className='p-4 md:p-6'>
             {children}
           </main>
         </div>

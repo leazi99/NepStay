@@ -5,15 +5,62 @@
 @tailwind utilities;
 
 @layer base {
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
   html {
-    @apply font-display text-gray-900;
+    @apply font-display text-gray-900 bg-white;
   }
 
   body {
-    @apply bg-white overflow-x-hidden;
+    @apply bg-white text-gray-900 overflow-x-hidden min-h-screen;
+  }
+
+  html.dark {
+    @apply bg-slate-950 text-white;
+  }
+
+  html.dark body {
+    @apply bg-slate-950 text-white;
+  }
+
+  html.dark #root {
+    @apply bg-slate-950 text-white min-h-screen;
+  }
+
+  html.dark,
+  html.dark body,
+  html.dark #root {
+    min-height: 100vh;
   }
 }
 
 * {
   font-family: "Outfit", sans-serif;
+}
+
+html.dark .bg-white {
+  background-color: #0f172a;
+}
+
+html.dark .text-gray-900,
+html.dark .text-gray-800,
+html.dark .text-gray-700 {
+  color: #ffffff;
+}
+
+html.dark .text-gray-600,
+html.dark .text-gray-500,
+html.dark .text-gray-400 {
+  color: #cbd5e1;
+}
+
+html.dark .border-gray-200,
+html.dark .border-gray-300,
+html.dark .border-gray-100 {
+  border-color: #334155;
 }
