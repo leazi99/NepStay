@@ -8,6 +8,8 @@ export const API_PATHS = {
     SEND_VERIFY_OTP: "/api/auth/send-otp",
     VERIFY_ACCOUNT: "/api/auth/verify-Account",
     IS_AUTHENTICATED: "/api/auth/isAuthenticated",
+    SESSION: "/api/auth/session",
+    REFRESH_SESSION: "/api/auth/refresh-session",
     SEND_RESET_OTP: "/api/auth/send-reset-otp",
     RESET_PASSWORD: "/api/auth/reset-password",
     UPLOAD_RESUME: "/api/auth/upload-resume",

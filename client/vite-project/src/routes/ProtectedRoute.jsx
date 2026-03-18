@@ -5,6 +5,16 @@ import { useAuth } from '../context/AuthContext';
 const ProtectedRoutes = ({ requiredRole }) => {
   const { isAuthenticated, user, loading } = useAuth();
 
+  const normalizeRole = (role) => {
+    const value = String(role || "").toLowerCase();
+    if (value === "client") return "employer";
+    if (value === "freelancer") return "jobseeker";
+    return value;
+  };
+
+  const userRole = normalizeRole(user?.role);
+  const neededRole = normalizeRole(requiredRole);
+
   
   if (loading) {
     return (
@@ -18,9 +28,9 @@ const ProtectedRoutes = ({ requiredRole }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
+  if (neededRole && userRole !== neededRole) {
     
-    return <Navigate to={user?.role === 'employer' ? '/employer-dashboard' : '/freelancer-dashboard'} replace />;
+    return <Navigate to={userRole === 'employer' ? '/employer-dashboard' : '/freelancer-dashboard'} replace />;
   }
 
   return <Outlet />;

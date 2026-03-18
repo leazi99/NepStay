@@ -29,16 +29,19 @@ import Messages from './pages/Common/Messages.jsx'
 import Notifications from './pages/Common/Notifications.jsx'
 import Reviews from './pages/Common/Reviews.jsx'
 import AdminDashboard from './pages/Admin/AdminDashboard.jsx'
+import NotFound from './pages/Common/NotFound.jsx'
 
 const App = () => {
   return (
     <div className='min-h-screen bg-white text-gray-900 dark:bg-slate-950 dark:text-white'>
       <Toaster
+        position="top-right"
         toastOptions={{
           className: '',
           style: {
             fontSize: '13px',
-          }
+          },
+          duration: 3500,
         }}></Toaster>
       <Routes>
         <Route path='/' element={<LandingPage />} />
@@ -49,14 +52,22 @@ const App = () => {
         <Route path='/verifyEmail' element={<VerifyEmail />} />
         <Route path='/verifyemail' element={<VerifyEmail />} />
         <Route path='/find-jobs' element={<Navigate to='/freelancer-dashboard' replace />} />
-        <Route path='/freelancer-dashboard' element={<JobDashboard />} />
-        <Route path='/job/:jobId' element={<JobDetails />} />
-        <Route path='/saved-jobs' element={<SavedJobs />} />
+
+        <Route element={<ProtectedRoutes requiredRole="jobseeker" />}>
+          <Route path='/freelancer-dashboard' element={<JobDashboard />} />
+          <Route path='/job/:jobId' element={<JobDetails />} />
+          <Route path='/saved-jobs' element={<SavedJobs />} />
+        </Route>
+
         <Route element={<ProtectedRoutes />}>
           <Route path='/profile' element={<UserProfile />} />
           <Route path='/messages' element={<Messages />} />
           <Route path='/notifications' element={<Notifications />} />
           <Route path='/reviews' element={<Reviews />} />
+        </Route>
+
+        <Route element={<ProtectedRoutes requiredRole="jobseeker" />}>
+          <Route path='/freelancer/messages' element={<Messages />} />
         </Route>
 
 
@@ -76,7 +87,7 @@ const App = () => {
           <Route path='/admin-dashboard' element={<AdminDashboard />} />
         </Route>
 
-        <Route path='*' element={<Navigate to='/' replace />} />
+        <Route path='*' element={<NotFound />} />
       </Routes>
     </div>
   )

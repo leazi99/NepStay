@@ -10,6 +10,8 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
+  Search,
+  SlidersHorizontal,
 } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
@@ -45,6 +47,9 @@ const ApplicationView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
 
   const fetchApplications = async () => {
     try {
@@ -99,6 +104,32 @@ const ApplicationView = () => {
       year: "numeric",
     });
 
+  const filteredApplications = applications
+    .filter((application) => {
+      const normalizedQuery = searchQuery.trim().toLowerCase();
+      const applicantName = String(application.applicant?.name || "").toLowerCase();
+      const applicantEmail = String(application.applicant?.email || "").toLowerCase();
+      const queryMatches =
+        !normalizedQuery ||
+        applicantName.includes(normalizedQuery) ||
+        applicantEmail.includes(normalizedQuery);
+
+      const statusMatches = statusFilter === "all" || application.status === statusFilter;
+
+      return queryMatches && statusMatches;
+    })
+    .sort((a, b) => {
+      if (sortBy === "oldest") {
+        return new Date(a.createdAt) - new Date(b.createdAt);
+      }
+      if (sortBy === "name") {
+        return String(a.applicant?.name || "").localeCompare(
+          String(b.applicant?.name || ""),
+        );
+      }
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
   return (
     <DashboardLayout activeMenu="manage-jobs">
       <div className="max-w-5xl mx-auto space-y-6">
@@ -135,10 +166,53 @@ const ApplicationView = () => {
           </div>
         ) : (
           <div className="space-y-4">
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+              <div className="relative w-full lg:max-w-sm">
+                <Search className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search by applicant name or email"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                  <SlidersHorizontal className="h-3.5 w-3.5" /> Filters
+                </span>
+                <select
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value)}
+                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                >
+                  <option value="all">All status</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Accepted">Accepted</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+                <select
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value)}
+                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                >
+                  <option value="newest">Newest</option>
+                  <option value="oldest">Oldest</option>
+                  <option value="name">Name A-Z</option>
+                </select>
+              </div>
+            </div>
+
             <p className="text-sm text-gray-500">
-              {applications.length} applicant{applications.length !== 1 ? "s" : ""}
+              Showing {filteredApplications.length} of {applications.length} applicant{applications.length !== 1 ? "s" : ""}
             </p>
-            {applications.map((app) => {
+
+            {filteredApplications.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-100 py-14 text-center text-gray-500 text-sm">
+                No applicants match your current filters.
+              </div>
+            ) : (
+              filteredApplications.map((app) => {
               const cfg = statusConfig[app.status] || statusConfig.Pending;
               const initials = app.applicant?.name?.[0]?.toUpperCase() || "?";
 
@@ -230,7 +304,7 @@ const ApplicationView = () => {
                   </div>
                 </div>
               );
-            })}
+            }))}
           </div>
         )}
       </div>

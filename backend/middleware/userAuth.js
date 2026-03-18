@@ -1,6 +1,13 @@
 import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
 
+const normalizeRole = (role) => {
+  const value = String(role || "").toLowerCase();
+  if (value === "client") return "employer";
+  if (value === "freelancer") return "jobseeker";
+  return value;
+};
+
 const userAuth = async (req, res, next) => {
   const bearer = req.headers.authorization?.startsWith("Bearer ")
     ? req.headers.authorization.split(" ")[1]
@@ -32,7 +39,7 @@ const userAuth = async (req, res, next) => {
         ...tokenDecode,
         id: user._id,
         _id: user._id,
-        role: user.role,
+        role: normalizeRole(user.role),
         email: user.email,
       };
     } else {

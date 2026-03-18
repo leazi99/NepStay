@@ -3,12 +3,50 @@ import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
 import transporter from "../config/nodemailer.js";
 
+const normalizeEmail = (email) =>
+  String(email || "")
+    .trim()
+    .toLowerCase();
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const normalizeAuthRole = (role) => {
+  const value = String(role || "")
+    .toLowerCase()
+    .trim();
+  if (value === "freelancer" || value === "jobseeker") return "jobseeker";
+  if (value === "client" || value === "employer") return "employer";
+  if (value === "admin") return "admin";
+  return value;
+};
+const roleLabel = (role) =>
+  normalizeAuthRole(role) === "employer" ? "Employer" : "Freelancer";
+
 const authCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   path: "/",
 };
+
+const getPublicUser = (user) => ({
+  _id: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  isVerified: user.isVerified,
+  avatar: user.avatar || "",
+  companyName: user.companyName || "",
+  companyDescription: user.companyDescription || "",
+  companyLogo: user.companyLogo || "",
+  resume: user.resume || "",
+  studentIdCard: user.studentIdCard || "",
+  nationalIdCard: user.nationalIdCard || "",
+  identityVerificationStatus:
+    user.identityVerificationStatus || "not_submitted",
+  linkedinUrl: user.linkedinUrl || "",
+  bio: user.bio || "",
+  interests: user.interests || [],
+  themePreference: user.themePreference || "light",
+});
 
 export const register = async (req, res) => {
   const { name, email, password, role } = req.body;
@@ -19,12 +57,9 @@ export const register = async (req, res) => {
     });
   }
   try {
-    const normalizedRole =
-      String(role).toLowerCase() === "freelancer"
-        ? "jobseeker"
-        : String(role).toLowerCase() === "client"
-          ? "employer"
-          : String(role).toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
+
+    const normalizedRole = normalizeAuthRole(role);
 
     if (!["jobseeker", "employer"].includes(normalizedRole)) {
       return res.json({
@@ -33,7 +68,9 @@ export const register = async (req, res) => {
       });
     }
 
-    const existingUser = await userModel.findOne({ email });
+    const existingUser = await userModel.findOne({
+      email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: "i" },
+    });
     if (existingUser) {
       return res.json({
         success: false,
@@ -44,7 +81,7 @@ export const register = async (req, res) => {
 
     const user = new userModel({
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       role: normalizedRole,
     });
@@ -63,7 +100,7 @@ export const register = async (req, res) => {
 
     const mailOption = {
       from: process.env.SENDER_EMAIL,
-      to: email,
+      to: normalizedEmail,
       subject: "Verify your KaamSathi account",
       text: `Hello ${name}, your OTP for email verification is ${otp}. It is valid for 1 hour.`,
     };
@@ -98,15 +135,27 @@ export const register = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
+  const { email, password, role } = req.body;
+  if (!email || !password || !role) {
     return res.json({
       success: false,
-      message: "Email and password are required",
+      message: "Email, password, and role are required",
     });
   }
   try {
-    const user = await userModel.findOne({ email });
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedRequestedRole = normalizeAuthRole(role);
+
+    if (!["jobseeker", "employer", "admin"].includes(normalizedRequestedRole)) {
+      return res.json({
+        success: false,
+        message: "Please select a valid role",
+      });
+    }
+
+    const user = await userModel.findOne({
+      email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: "i" },
+    });
     if (!user) {
       return res.json({
         success: false,
@@ -118,6 +167,14 @@ export const login = async (req, res) => {
       return res.json({
         success: false,
         message: "Invalid Password",
+      });
+    }
+
+    if (user.role !== normalizedRequestedRole) {
+      return res.json({
+        success: false,
+        message: `This email is registered as ${roleLabel(user.role)}. Please select the correct role to continue.`,
+        expectedRole: user.role,
       });
     }
 
@@ -193,9 +250,12 @@ export const logout = async (req, res) => {
 export const sendVerifyOtp = async (req, res) => {
   try {
     const { userId, email } = req.body;
+    const normalizedEmail = normalizeEmail(email);
     const user = userId
       ? await userModel.findById(userId)
-      : await userModel.findOne({ email });
+      : await userModel.findOne({
+          email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: "i" },
+        });
 
     if (!user) {
       return res.json({
@@ -244,9 +304,12 @@ export const verifyEmail = async (req, res) => {
     });
   }
   try {
+    const normalizedEmail = normalizeEmail(email);
     const user = userId
       ? await userModel.findById(userId)
-      : await userModel.findOne({ email });
+      : await userModel.findOne({
+          email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: "i" },
+        });
     if (!user) {
       return res.json({
         success: false,
@@ -309,6 +372,84 @@ export const isAuthenticated = async (req, res) => {
   }
 };
 
+export const getSession = async (req, res) => {
+  try {
+    const user = await userModel
+      .findById(req.user.id)
+      .select(
+        "_id name email role isVerified avatar companyName companyDescription companyLogo resume studentIdCard nationalIdCard identityVerificationStatus linkedinUrl bio interests themePreference",
+      );
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const expiresAt = req.user?.exp ? req.user.exp * 1000 : null;
+    const expiresInSeconds = req.user?.exp
+      ? Math.max(req.user.exp - Math.floor(Date.now() / 1000), 0)
+      : null;
+
+    return res.json({
+      success: true,
+      message: "Session is active",
+      session: {
+        expiresAt,
+        expiresInSeconds,
+      },
+      user: getPublicUser(user),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const refreshSession = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.user.id);
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    res.cookie("token", token, authCookieOptions);
+
+    const decoded = jwt.decode(token);
+    const expiresAt = decoded?.exp ? decoded.exp * 1000 : null;
+    const expiresInSeconds = decoded?.exp
+      ? Math.max(decoded.exp - Math.floor(Date.now() / 1000), 0)
+      : null;
+
+    return res.json({
+      success: true,
+      message: "Session refreshed successfully",
+      token,
+      session: {
+        expiresAt,
+        expiresInSeconds,
+      },
+      user: getPublicUser(user),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 //send password reset otp
 
 export const sendResetOtp = async (req, res) => {
@@ -320,7 +461,10 @@ export const sendResetOtp = async (req, res) => {
     });
   }
   try {
-    const user = await userModel.findOne({ email });
+    const normalizedEmail = normalizeEmail(email);
+    const user = await userModel.findOne({
+      email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: "i" },
+    });
     if (!user) {
       return res.json({
         success: false,
@@ -364,7 +508,10 @@ export const resetPassword = async (req, res) => {
     });
   }
   try {
-    const user = await userModel.findOne({ email });
+    const normalizedEmail = normalizeEmail(email);
+    const user = await userModel.findOne({
+      email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: "i" },
+    });
     if (!user) {
       return res.json({
         success: false,

@@ -6,7 +6,8 @@ import { API_PATHS } from "../../utils/apiPaths";
 import { useAuth } from "../../context/AuthContext";
 
 const AdminDashboard = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const isDark = (user?.themePreference || "light") === "dark";
 
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState(null);
@@ -19,6 +20,18 @@ const AdminDashboard = () => {
   const [userRoleFilter, setUserRoleFilter] = useState("all");
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
+  const [activityLogs, setActivityLogs] = useState([]);
+
+  const pushActivity = (message) => {
+    setActivityLogs((prev) => [
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        message,
+        timestamp: new Date().toISOString(),
+      },
+      ...prev,
+    ].slice(0, 20));
+  };
 
   const fetchAdminData = useCallback(async () => {
     setLoading(true);
@@ -84,6 +97,14 @@ const AdminDashboard = () => {
             : user,
         ),
       );
+      if (payload.role) {
+        pushActivity(`Updated role for ${userId} to ${payload.role}`);
+      }
+      if (payload.identityVerificationStatus) {
+        pushActivity(
+          `Updated verification for ${userId} to ${payload.identityVerificationStatus}`,
+        );
+      }
       toast.success("User updated");
     } catch {
       toast.error("Failed to update user");
@@ -110,6 +131,7 @@ const AdminDashboard = () => {
           payment._id === paymentId ? { ...payment, status } : payment,
         ),
       );
+      pushActivity(`Updated payment ${paymentId} status to ${status}`);
       toast.success("Payment updated");
     } catch {
       toast.error("Failed to update payment");
@@ -120,24 +142,24 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? "bg-slate-950" : "bg-gray-50"}`}>
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200">
+    <div className={`min-h-screen ${isDark ? "bg-slate-950 text-slate-100" : "bg-gray-50"}`}>
+      <div className={`${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"} border-b`}>
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
-            <p className="text-sm text-gray-500">Manage users and payments</p>
+            <h1 className={`text-2xl font-bold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Admin Panel</h1>
+            <p className={`text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}>Manage users and payments</p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={fetchAdminData}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 text-sm"
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ${isDark ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
             >
               <RefreshCw className="h-4 w-4" />
               Refresh
@@ -154,26 +176,54 @@ const AdminDashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-xs text-gray-500">Total Users</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{overview?.totalUsers || 0}</p>
+          <div className={`rounded-xl border p-4 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-100"}`}>
+            <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Total Users</p>
+            <p className={`text-2xl font-bold mt-1 ${isDark ? "text-slate-100" : "text-gray-900"}`}>{overview?.totalUsers || 0}</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-xs text-gray-500">Jobseekers</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{overview?.totalJobseekers || 0}</p>
+          <div className={`rounded-xl border p-4 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-100"}`}>
+            <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Jobseekers</p>
+            <p className={`text-2xl font-bold mt-1 ${isDark ? "text-slate-100" : "text-gray-900"}`}>{overview?.totalJobseekers || 0}</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-xs text-gray-500">Employers</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{overview?.totalEmployers || 0}</p>
+          <div className={`rounded-xl border p-4 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-100"}`}>
+            <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Employers</p>
+            <p className={`text-2xl font-bold mt-1 ${isDark ? "text-slate-100" : "text-gray-900"}`}>{overview?.totalEmployers || 0}</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-xs text-gray-500">Payments</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{overview?.totalPayments || 0}</p>
+          <div className={`rounded-xl border p-4 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-100"}`}>
+            <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Payments</p>
+            <p className={`text-2xl font-bold mt-1 ${isDark ? "text-slate-100" : "text-gray-900"}`}>{overview?.totalPayments || 0}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+        <div className={`rounded-2xl border overflow-hidden ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-100"}`}>
+          <div className={`px-4 py-3 border-b flex items-center justify-between ${isDark ? "border-slate-700" : "border-gray-100"}`}>
+            <h2 className={`text-sm font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Recent Admin Activity</h2>
+            <button
+              onClick={() => setActivityLogs([])}
+              className={`text-xs ${isDark ? "text-slate-400 hover:text-slate-200" : "text-gray-500 hover:text-gray-700"}`}
+            >
+              Clear
+            </button>
+          </div>
+          {activityLogs.length === 0 ? (
+            <div className={`px-4 py-8 text-sm text-center ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+              No admin actions yet in this session.
+            </div>
+          ) : (
+            <ul className={`${isDark ? "divide-slate-800" : "divide-gray-100"} divide-y`}>
+              {activityLogs.map((log) => (
+                <li key={log.id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                  <p className={`text-sm ${isDark ? "text-slate-200" : "text-gray-700"}`}>{log.message}</p>
+                  <span className={`text-xs ${isDark ? "text-slate-400" : "text-gray-400"}`}>
+                    {new Date(log.timestamp).toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className={`rounded-2xl border overflow-hidden ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-100"}`}>
+          <div className={`px-4 py-3 border-b flex items-center gap-2 ${isDark ? "border-slate-700" : "border-gray-100"}`}>
             <button
               onClick={() => setActiveTab("users")}
               className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
@@ -200,17 +250,17 @@ const AdminDashboard = () => {
 
           {activeTab === "users" ? (
             <div className="overflow-x-auto">
-              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60 flex flex-wrap items-center gap-2">
+              <div className={`px-4 py-3 border-b flex flex-wrap items-center gap-2 ${isDark ? "border-slate-700 bg-slate-800/60" : "border-gray-100 bg-gray-50/60"}`}>
                 <input
                   value={userSearch}
                   onChange={(event) => setUserSearch(event.target.value)}
                   placeholder="Search users by name or email"
-                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm w-full sm:w-72"
+                  className={`px-3 py-2 rounded-lg border text-sm w-full sm:w-72 ${isDark ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-200"}`}
                 />
                 <select
                   value={userRoleFilter}
                   onChange={(event) => setUserRoleFilter(event.target.value)}
-                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                  className={`px-3 py-2 rounded-lg border text-sm ${isDark ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-200"}`}
                 >
                   <option value="all">All roles</option>
                   <option value="jobseeker">Jobseeker</option>
@@ -219,7 +269,7 @@ const AdminDashboard = () => {
                 </select>
               </div>
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className={isDark ? "bg-slate-800" : "bg-gray-50"}>
                   <tr>
                     <th className="text-left px-4 py-3 text-gray-500 font-semibold">Name</th>
                     <th className="text-left px-4 py-3 text-gray-500 font-semibold">Email</th>
@@ -232,10 +282,10 @@ const AdminDashboard = () => {
                 </thead>
                 <tbody>
                   {users.map((user) => (
-                    <tr key={user._id} className="border-t border-gray-100">
-                      <td className="px-4 py-3 text-gray-900">{user.name}</td>
-                      <td className="px-4 py-3 text-gray-600">{user.email}</td>
-                      <td className="px-4 py-3 text-gray-600">
+                    <tr key={user._id} className={`border-t ${isDark ? "border-slate-800" : "border-gray-100"}`}>
+                      <td className={`px-4 py-3 ${isDark ? "text-slate-100" : "text-gray-900"}`}>{user.name}</td>
+                      <td className={`px-4 py-3 ${isDark ? "text-slate-300" : "text-gray-600"}`}>{user.email}</td>
+                      <td className={`px-4 py-3 ${isDark ? "text-slate-300" : "text-gray-600"}`}>
                         {user.studentIdCard ? (
                           <a
                             href={user.studentIdCard}
@@ -249,7 +299,7 @@ const AdminDashboard = () => {
                           <span className="text-gray-400">Not uploaded</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className={`px-4 py-3 ${isDark ? "text-slate-300" : "text-gray-600"}`}>
                         {user.nationalIdCard ? (
                           <a
                             href={user.nationalIdCard}
@@ -270,7 +320,7 @@ const AdminDashboard = () => {
                           onChange={(event) =>
                             updateUserField(user._id, { role: event.target.value })
                           }
-                          className="px-2 py-1 rounded border border-gray-200 text-sm"
+                          className={`px-2 py-1 rounded border text-sm ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200"}`}
                         >
                           <option value="jobseeker">Jobseeker</option>
                           <option value="employer">Employer</option>
@@ -286,7 +336,7 @@ const AdminDashboard = () => {
                               identityVerificationStatus: event.target.value,
                             })
                           }
-                          className="px-2 py-1 rounded border border-gray-200 text-sm"
+                          className={`px-2 py-1 rounded border text-sm ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200"}`}
                         >
                           <option value="not_submitted">Not submitted</option>
                           <option value="pending">Pending</option>
@@ -331,17 +381,17 @@ const AdminDashboard = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60 flex flex-wrap items-center gap-2">
+              <div className={`px-4 py-3 border-b flex flex-wrap items-center gap-2 ${isDark ? "border-slate-700 bg-slate-800/60" : "border-gray-100 bg-gray-50/60"}`}>
                 <input
                   value={paymentSearch}
                   onChange={(event) => setPaymentSearch(event.target.value)}
                   placeholder="Search payments by job, employer, freelancer"
-                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm w-full sm:w-80"
+                  className={`px-3 py-2 rounded-lg border text-sm w-full sm:w-80 ${isDark ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-200"}`}
                 />
                 <select
                   value={paymentStatusFilter}
                   onChange={(event) => setPaymentStatusFilter(event.target.value)}
-                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                  className={`px-3 py-2 rounded-lg border text-sm ${isDark ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-200"}`}
                 >
                   <option value="all">All status</option>
                   <option value="pending">Pending</option>
@@ -350,7 +400,7 @@ const AdminDashboard = () => {
                 </select>
               </div>
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className={isDark ? "bg-slate-800" : "bg-gray-50"}>
                   <tr>
                     <th className="text-left px-4 py-3 text-gray-500 font-semibold">Job</th>
                     <th className="text-left px-4 py-3 text-gray-500 font-semibold">Employer</th>
@@ -361,11 +411,11 @@ const AdminDashboard = () => {
                 </thead>
                 <tbody>
                   {payments.map((payment) => (
-                    <tr key={payment._id} className="border-t border-gray-100">
-                      <td className="px-4 py-3 text-gray-900">{payment.job?.title || "—"}</td>
-                      <td className="px-4 py-3 text-gray-600">{payment.employer?.name || "—"}</td>
-                      <td className="px-4 py-3 text-gray-600">{payment.freelancer?.name || "—"}</td>
-                      <td className="px-4 py-3 text-gray-900">${payment.amount}</td>
+                    <tr key={payment._id} className={`border-t ${isDark ? "border-slate-800" : "border-gray-100"}`}>
+                      <td className={`px-4 py-3 ${isDark ? "text-slate-100" : "text-gray-900"}`}>{payment.job?.title || "—"}</td>
+                      <td className={`px-4 py-3 ${isDark ? "text-slate-300" : "text-gray-600"}`}>{payment.employer?.name || "—"}</td>
+                      <td className={`px-4 py-3 ${isDark ? "text-slate-300" : "text-gray-600"}`}>{payment.freelancer?.name || "—"}</td>
+                      <td className={`px-4 py-3 ${isDark ? "text-slate-100" : "text-gray-900"}`}>${payment.amount}</td>
                       <td className="px-4 py-3">
                         <select
                           value={payment.status}
@@ -373,7 +423,7 @@ const AdminDashboard = () => {
                           onChange={(event) =>
                             updatePaymentStatus(payment._id, event.target.value)
                           }
-                          className="px-2 py-1 rounded border border-gray-200 text-sm"
+                          className={`px-2 py-1 rounded border text-sm ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200"}`}
                         >
                           <option value="pending">Pending</option>
                           <option value="completed">Completed</option>

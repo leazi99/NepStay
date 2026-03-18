@@ -1,9 +1,11 @@
 import express from "express";
 import multer from "multer";
 import {
+  getSession,
   isAuthenticated,
   login,
   logout,
+  refreshSession,
   register,
   resetPassword,
   sendResetOtp,
@@ -76,6 +78,8 @@ authRouter.post("/logout", logout);
 authRouter.post("/send-otp", sendVerifyOtp);
 authRouter.post("/verify-Account", verifyEmail);
 authRouter.post("/isAuthenticated", userAuth, isAuthenticated);
+authRouter.post("/session", userAuth, getSession);
+authRouter.post("/refresh-session", userAuth, refreshSession);
 authRouter.post("/send-reset-otp", sendResetOtp);
 authRouter.post("/reset-password", resetPassword);
 

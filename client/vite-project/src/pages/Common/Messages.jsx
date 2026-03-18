@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { Send, MessageCircle, Loader2, Plus } from "lucide-react";
 import toast from "react-hot-toast";
 import axiosInstance from "../../utils/axiosInstance";
@@ -292,9 +292,12 @@ const MessagesContent = ({ isDark, userRole, userId }) => {
 
 const Messages = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const isDark = (user?.themePreference || "light") === "dark";
+  const isFreelancerRole = user?.role === "jobseeker" || user?.role === "freelancer";
+  const isFreelancerMessagesRoute = location.pathname === "/freelancer/messages";
 
-  if (user?.role === "employer") {
+  if (!isFreelancerRole && !isFreelancerMessagesRoute && user?.role === "employer") {
     return (
       <DashboardLayout activeMenu="messages">
         <MessagesContent isDark={isDark} userRole={user?.role} userId={user?._id} />
@@ -302,7 +305,7 @@ const Messages = () => {
     );
   }
 
-  return <MessagesContent isDark={isDark} userRole={user?.role} userId={user?._id} />;
+  return <MessagesContent isDark={isDark} userRole={isFreelancerRole ? "jobseeker" : user?.role} userId={user?._id} />;
 };
 
 export default Messages;

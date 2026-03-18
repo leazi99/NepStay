@@ -1,89 +1,219 @@
-import React,{createContext,useContext,useState,useEffect} from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import axiosInstance from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPaths";
 
-const AuthContext=createContext();
+const AuthContext = createContext();
+const LEGACY_THEME_KEY = "themePreference";
+const ACTIVE_THEME_KEY = "themePreference:active";
 
-export const useAuth=()=>{
-  const  context=useContext(AuthContext);
-  if(!context){
-    throw new Error("useAuth must be used within an AuthProvider")
+const normalizeRole = (role) => {
+  const value = String(role || "").toLowerCase();
+  if (value === "client") return "employer";
+  if (value === "freelancer") return "jobseeker";
+  return value;
+};
+
+const normalizeUser = (sessionUser) => {
+  if (!sessionUser) return null;
+  return {
+    ...sessionUser,
+    role: normalizeRole(sessionUser.role),
+  };
+};
+
+const isValidTheme = (value) => value === "light" || value === "dark";
+
+const getThemeStorageKey = (sessionUser) => {
+  const normalized = normalizeUser(sessionUser);
+  const role = normalized?.role || "guest";
+  const email = String(normalized?.email || "").toLowerCase().trim() || "anonymous";
+  return `themePreference:${role}:${email}`;
+};
+
+const getStoredThemePreference = (sessionUser) => {
+  const scopedTheme = localStorage.getItem(getThemeStorageKey(sessionUser));
+  if (isValidTheme(scopedTheme)) {
+    return scopedTheme;
+  }
+
+  const legacyTheme = localStorage.getItem(LEGACY_THEME_KEY);
+  if (isValidTheme(legacyTheme)) {
+    return legacyTheme;
+  }
+
+  return null;
+};
+
+const persistThemePreference = (sessionUser, themePreference) => {
+  if (!isValidTheme(themePreference)) {
+    return;
+  }
+
+  localStorage.setItem(getThemeStorageKey(sessionUser), themePreference);
+  localStorage.setItem(ACTIVE_THEME_KEY, themePreference);
+  localStorage.removeItem(LEGACY_THEME_KEY);
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
 
-export const AuthProvider=({children})=>{
-  const [user,setUser]=useState(null);
-  const [loading,setLoading]=useState(true);
-  const [isAuthenticated,setIsAuthenticated]=useState(false);
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const refreshTimerRef = useRef(null);
+
+  const clearSessionRefreshTimer = () => {
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+  };
+
+  const scheduleSessionRefresh = (expiresInSeconds) => {
+    clearSessionRefreshTimer();
+
+    if (!Number.isFinite(expiresInSeconds) || expiresInSeconds <= 0) {
+      return;
+    }
+
+    const refreshLeadTimeSeconds = 120;
+    const delayMs = Math.max((expiresInSeconds - refreshLeadTimeSeconds) * 1000, 10000);
+
+    refreshTimerRef.current = setTimeout(async () => {
+      await refreshSession();
+    }, delayMs);
+  };
+
+  const applySessionState = (sessionUser, expiresInSeconds) => {
+    const normalizedUser = normalizeUser(sessionUser);
+    setUser(normalizedUser || null);
+    setIsAuthenticated(Boolean(normalizedUser));
+    if (normalizedUser?.themePreference) {
+      persistThemePreference(normalizedUser, normalizedUser.themePreference);
+    }
+    scheduleSessionRefresh(expiresInSeconds);
+  };
+
+  const clearAuthState = ({ redirect = false } = {}) => {
+    clearSessionRefreshTimer();
+    setUser(null);
+    setIsAuthenticated(false);
+    localStorage.removeItem(ACTIVE_THEME_KEY);
+    localStorage.removeItem(LEGACY_THEME_KEY);
+    document.documentElement.classList.remove("dark");
+
+    if (redirect) {
+      window.location.href = "/";
+    }
+  };
+
+  const fetchSession = async () => {
+    const { data } = await axiosInstance.post(API_PATHS.AUTH.SESSION);
+    if (data?.success && data?.user) {
+      applySessionState(data.user, data?.session?.expiresInSeconds);
+      return true;
+    }
+    return false;
+  };
 
   useEffect(() => {
-    const initialTheme = localStorage.getItem("themePreference") || "light";
+    const initialTheme = localStorage.getItem(ACTIVE_THEME_KEY) || localStorage.getItem(LEGACY_THEME_KEY) || "light";
     document.documentElement.classList.toggle("dark", initialTheme === "dark");
   }, []);
 
   useEffect(() => {
-    const selectedTheme = user?.themePreference || localStorage.getItem("themePreference") || "light";
+    const selectedTheme =
+      user?.themePreference ||
+      getStoredThemePreference(user) ||
+      localStorage.getItem(ACTIVE_THEME_KEY) ||
+      "light";
     document.documentElement.classList.toggle("dark", selectedTheme === "dark");
-    localStorage.setItem("themePreference", selectedTheme);
-  }, [user?.themePreference]);
+    if (user) {
+      persistThemePreference(user, selectedTheme);
+    } else if (isValidTheme(selectedTheme)) {
+      localStorage.setItem(ACTIVE_THEME_KEY, selectedTheme);
+    }
+  }, [user?.themePreference, user?.email, user?.role]);
 
-  useEffect(()=>{
+  useEffect(() => {
     checkAuthStatus();
+    return () => clearSessionRefreshTimer();
+  }, []);
 
-  },[]);
+  const checkAuthStatus = async () => {
+    try {
+      const sessionOk = await fetchSession();
+      if (sessionOk) {
+        return;
+      }
 
-  const checkAuthStatus=async()=>{
-    try{
       const { data } = await axiosInstance.post(API_PATHS.AUTH.IS_AUTHENTICATED);
       if (data?.success && data?.user) {
-        setUser(data.user);
-        setIsAuthenticated(true);
+        applySessionState(data.user, null);
       } else {
-        setUser(null);
-        setIsAuthenticated(false);
+        clearAuthState();
       }
-    }catch(error){
-      console.error('Auth check failed:',error);
-      setUser(null);
-      setIsAuthenticated(false);
-    }finally{
+    } catch (error) {
+      console.error("Auth check failed:", error);
+      clearAuthState();
+    } finally {
       setLoading(false);
     }
   };
 
-  const login=(userData)=>{
-      setUser(userData);
-      setIsAuthenticated(true);
-      if (userData?.themePreference) {
-        localStorage.setItem("themePreference", userData.themePreference);
+  const refreshSession = async () => {
+    try {
+      const { data } = await axiosInstance.post(API_PATHS.AUTH.REFRESH_SESSION);
+      if (!data?.success || !data?.user) {
+        clearAuthState({ redirect: true });
+        return false;
       }
 
+      applySessionState(data.user, data?.session?.expiresInSeconds);
+      return true;
+    } catch (error) {
+      console.error("Session refresh failed:", error);
+      clearAuthState({ redirect: true });
+      return false;
+    }
   };
 
-  const logout=async()=>{
-   try {
-    await axiosInstance.post(API_PATHS.AUTH.LOGOUT);
-   } catch (error) {
-    console.error('Logout failed:', error);
-   }
-   setUser(null);
-   setIsAuthenticated(false);
-   localStorage.removeItem("themePreference");
-   document.documentElement.classList.remove("dark");
-   window.location.href='/'
+  const login = (userData) => {
+    const normalizedUser = normalizeUser(userData);
+    setUser(normalizedUser);
+    setIsAuthenticated(true);
+    if (normalizedUser?.themePreference) {
+      persistThemePreference(normalizedUser, normalizedUser.themePreference);
+    }
+
+    fetchSession().catch(() => {});
   };
 
-  const updateUser=(updatedUserData)=>{
-    const newUserData={...(user || {}), ...updatedUserData};
+  const logout = async () => {
+    try {
+      await axiosInstance.post(API_PATHS.AUTH.LOGOUT);
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+    clearAuthState({ redirect: true });
+  };
+
+  const updateUser = (updatedUserData) => {
+    const newUserData = normalizeUser({ ...(user || {}), ...updatedUserData });
     setUser(newUserData);
     if (updatedUserData?.themePreference) {
-      localStorage.setItem("themePreference", updatedUserData.themePreference);
+      persistThemePreference(newUserData, updatedUserData.themePreference);
       document.documentElement.classList.toggle("dark", updatedUserData.themePreference === "dark");
     }
   };
 
-  const value={
+  const value = {
     user,
     loading,
     isAuthenticated,
@@ -91,7 +221,8 @@ export const AuthProvider=({children})=>{
     logout,
     updateUser,
     checkAuthStatus,
+    refreshSession,
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+};
 

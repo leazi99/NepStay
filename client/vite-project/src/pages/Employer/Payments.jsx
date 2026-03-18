@@ -6,8 +6,10 @@ import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useSearchParams } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 const Payments = () => {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,6 +26,7 @@ const Payments = () => {
     paymentMethod: "bank_transfer",
     notes: "",
   });
+  const isDark = (user?.themePreference || "light") === "dark";
 
   const loadData = async () => {
     try {
@@ -202,10 +205,10 @@ const Payments = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
-            <p className="text-sm text-gray-500 mt-1">Record payments for hired freelancers</p>
+            <h1 className={`text-2xl font-bold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Payments</h1>
+            <p className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}>Record payments for hired freelancers</p>
           </div>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-sm font-medium">
+          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium ${isDark ? "bg-emerald-900/30 text-emerald-300" : "bg-emerald-50 text-emerald-700"}`}>
             <Wallet className="h-4 w-4" />
             Total Paid: ${totalPaid.toLocaleString()}
           </div>
@@ -225,15 +228,15 @@ const Payments = () => {
           <>
             <form
               onSubmit={handleSubmit}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 grid grid-cols-1 md:grid-cols-2 gap-4"
+              className={`rounded-2xl border shadow-sm p-6 grid grid-cols-1 md:grid-cols-2 gap-4 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-100"}`}
             >
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Hired Candidate *</label>
+                <label className={`block text-sm font-medium mb-1.5 ${isDark ? "text-slate-200" : "text-gray-700"}`}>Hired Candidate *</label>
                 <select
                   name="applicationId"
                   value={form.applicationId}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200 bg-white"}`}
                 >
                   <option value="">Select hired application</option>
                   {eligibleApplications.map((application) => (
@@ -245,9 +248,9 @@ const Payments = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Amount (USD) *</label>
+                <label className={`block text-sm font-medium mb-1.5 ${isDark ? "text-slate-200" : "text-gray-700"}`}>Amount (USD) *</label>
                 <div className="relative">
-                  <DollarSign className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <DollarSign className={`h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-500" : "text-gray-400"}`} />
                   <input
                     type="number"
                     min="1"
@@ -255,18 +258,18 @@ const Payments = () => {
                     value={form.amount}
                     onChange={handleChange}
                     placeholder="e.g. 500"
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                    className={`w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200"}`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Method</label>
+                <label className={`block text-sm font-medium mb-1.5 ${isDark ? "text-slate-200" : "text-gray-700"}`}>Method</label>
                 <select
                   name="paymentMethod"
                   value={form.paymentMethod}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200 bg-white"}`}
                 >
                   <option value="bank_transfer">Bank Transfer</option>
                   <option value="esewa">eSewa</option>
@@ -277,14 +280,14 @@ const Payments = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Notes</label>
+                <label className={`block text-sm font-medium mb-1.5 ${isDark ? "text-slate-200" : "text-gray-700"}`}>Notes</label>
                 <textarea
                   name="notes"
                   value={form.notes}
                   onChange={handleChange}
                   rows={3}
                   placeholder="Optional note for this payment"
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none"
+                  className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200"}`}
                 />
               </div>
 
@@ -300,31 +303,31 @@ const Payments = () => {
               </div>
             </form>
 
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100">
-                <h2 className="text-base font-semibold text-gray-900">Payment History</h2>
+            <div className={`rounded-2xl border shadow-sm overflow-hidden ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-100"}`}>
+              <div className={`px-6 py-4 border-b ${isDark ? "border-slate-700" : "border-gray-100"}`}>
+                <h2 className={`text-base font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Payment History</h2>
               </div>
               {payments.length === 0 ? (
-                <div className="py-14 text-center text-sm text-gray-500">No payments recorded yet.</div>
+                <div className={`py-14 text-center text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}>No payments recorded yet.</div>
               ) : (
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Freelancer</th>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Job</th>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Method</th>
-                      <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Amount</th>
-                      <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Date</th>
+                    <tr className={`${isDark ? "bg-slate-800 border-slate-700" : "bg-gray-50 border-gray-100"} border-b`}>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${isDark ? "text-slate-400" : "text-gray-500"}`}>Freelancer</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase hidden md:table-cell ${isDark ? "text-slate-400" : "text-gray-500"}`}>Job</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${isDark ? "text-slate-400" : "text-gray-500"}`}>Method</th>
+                      <th className={`text-right px-6 py-3 text-xs font-semibold uppercase ${isDark ? "text-slate-400" : "text-gray-500"}`}>Amount</th>
+                      <th className={`text-right px-6 py-3 text-xs font-semibold uppercase hidden sm:table-cell ${isDark ? "text-slate-400" : "text-gray-500"}`}>Date</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className={`${isDark ? "divide-slate-800" : "divide-gray-50"} divide-y`}>
                     {payments.map((payment) => (
-                      <tr key={payment._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-gray-900 font-medium">{payment.freelancer?.name || "Freelancer"}</td>
-                        <td className="px-6 py-4 text-gray-600 hidden md:table-cell">{payment.job?.title || "Job"}</td>
-                        <td className="px-6 py-4 text-gray-600 capitalize">{String(payment.paymentMethod || "-").replace("_", " ")}</td>
-                        <td className="px-6 py-4 text-right text-gray-900 font-semibold">${Number(payment.amount || 0).toLocaleString()}</td>
-                        <td className="px-6 py-4 text-right text-gray-500 hidden sm:table-cell">{formatDate(payment.createdAt)}</td>
+                      <tr key={payment._id} className={isDark ? "hover:bg-slate-800/60" : "hover:bg-gray-50"}>
+                        <td className={`px-6 py-4 font-medium ${isDark ? "text-slate-100" : "text-gray-900"}`}>{payment.freelancer?.name || "Freelancer"}</td>
+                        <td className={`px-6 py-4 hidden md:table-cell ${isDark ? "text-slate-300" : "text-gray-600"}`}>{payment.job?.title || "Job"}</td>
+                        <td className={`px-6 py-4 capitalize ${isDark ? "text-slate-300" : "text-gray-600"}`}>{String(payment.paymentMethod || "-").replace("_", " ")}</td>
+                        <td className={`px-6 py-4 text-right font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>${Number(payment.amount || 0).toLocaleString()}</td>
+                        <td className={`px-6 py-4 text-right hidden sm:table-cell ${isDark ? "text-slate-400" : "text-gray-500"}`}>{formatDate(payment.createdAt)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -332,20 +335,20 @@ const Payments = () => {
               )}
             </div>
 
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100">
-                <h2 className="text-base font-semibold text-gray-900">Rate Freelancers</h2>
-                <p className="text-xs text-gray-500 mt-1">
+            <div className={`rounded-2xl border shadow-sm overflow-hidden ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-100"}`}>
+              <div className={`px-6 py-4 border-b ${isDark ? "border-slate-700" : "border-gray-100"}`}>
+                <h2 className={`text-base font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Rate Freelancers</h2>
+                <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}>
                   Submit rating and feedback after project payment is completed.
                 </p>
               </div>
 
               {eligibleReviews.length === 0 ? (
-                <div className="py-12 text-center text-sm text-gray-500">
+                <div className={`py-12 text-center text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}>
                   No pending freelancer reviews.
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100">
+                <div className={`${isDark ? "divide-slate-800" : "divide-gray-100"} divide-y`}>
                   {eligibleReviews.map((item) => {
                     const draft = reviewDrafts[item.paymentId] || {
                       rating: "",
@@ -394,7 +397,7 @@ const Payments = () => {
                               handleReviewDraftChange(item.paymentId, "comment", event.target.value)
                             }
                             placeholder="Write feedback"
-                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                            className={`px-3 py-2 border rounded-lg text-sm ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200"}`}
                           />
                           <button
                             onClick={() => handleSubmitReview(item.paymentId)}

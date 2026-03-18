@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Plus,
   Briefcase,
@@ -10,12 +10,14 @@ import {
   MapPin,
   ChevronRight,
   AlertCircle,
+  ListChecks,
+  Check,
+  Circle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import DashboardLayout from "../../components/layout/DashboardLayout.jsx";
-import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 
 const StatCard = ({ icon: Icon, label, value, trend, color }) => {
   const isPositive = trend >= 0;
@@ -59,23 +61,152 @@ const EmployerDashboard = () => {
   const [analytics, setAnalytics] = useState(null);
   const [error, setError] = useState("");
 
-  const fetchAnalytics = async () => {
+  const counts = analytics?.counts || {};
+  const trends = counts?.trends || {};
+  const recentJobs = Array.isArray(analytics?.data?.recentJobs)
+    ? analytics.data.recentJobs
+    : [];
+  const recentApplications = Array.isArray(analytics?.data?.recentApplications)
+    ? analytics.data.recentApplications
+    : [];
+
+  const onboardingItems = [
+    {
+      key: "firstJob",
+      label: "Post your first job",
+      done: Number(counts?.totalActiveJobs || 0) > 0,
+      actionLabel: "Post Job",
+      action: () => navigate("/post-job"),
+    },
+    {
+      key: "firstApplicant",
+      label: "Receive first applicant",
+      done: Number(counts?.totalApplications || 0) > 0,
+      actionLabel: "Manage Jobs",
+      action: () => navigate("/manage-jobs"),
+    },
+    {
+      key: "firstHire",
+      label: "Hire your first candidate",
+      done: Number(counts?.totalHired || 0) > 0,
+      actionLabel: "View Applicants",
+      action: () => navigate("/manage-jobs"),
+    },
+    {
+      key: "companyProfile",
+      label: "Complete company profile",
+      done: Boolean(
+        recentJobs.length > 0 ||
+          recentApplications.length > 0 ||
+          analytics?.companyProfileCompleted,
+      ),
+      actionLabel: "Company Profile",
+      action: () => navigate("/company-profile"),
+    },
+  ];
+
+  const completedOnboardingCount = onboardingItems.filter((item) => item.done).length;
+  const onboardingProgress = Math.round(
+    (completedOnboardingCount / onboardingItems.length) * 100,
+  );
+
+  const getFallbackAnalytics = useCallback(async () => {
+    const jobsResponse = await axiosInstance.get(API_PATHS.JOBS.GET_JOBS_EMPLOYER);
+
+    if (!jobsResponse?.data?.success) {
+      throw new Error(jobsResponse?.data?.message || "Failed to load jobs");
+    }
+
+    const jobs = Array.isArray(jobsResponse.data.jobs) ? jobsResponse.data.jobs : [];
+
+    const applicationsByJob = await Promise.all(
+      jobs.map(async (job) => {
+        try {
+          const response = await axiosInstance.get(
+            API_PATHS.APPLICATIONS.GET_APPLICATIONS_FOR_JOB(job._id),
+          );
+
+          if (!response?.data?.success || !Array.isArray(response.data.applications)) {
+            return [];
+          }
+
+          return response.data.applications.map((application) => ({
+            ...application,
+            job: application.job || { _id: job._id, title: job.title },
+          }));
+        } catch {
+          return [];
+        }
+      }),
+    );
+
+    const allApplications = applicationsByJob
+      .flat()
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const totalApplications = allApplications.length;
+    const totalActiveJobs = jobs.filter((job) => !job.isClosed).length;
+    const totalHired = allApplications.filter((application) =>
+      ["Accepted", "Hired"].includes(application.status),
+    ).length;
+
+    return {
+      counts: {
+        totalActiveJobs,
+        totalApplications,
+        totalHired,
+        trends: {
+          activeJobs: 0,
+          totalApplications: 0,
+          totalHired: 0,
+        },
+      },
+      data: {
+        recentJobs: jobs
+          .slice()
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .slice(0, 5),
+        recentApplications: allApplications.slice(0, 5),
+      },
+    };
+  }, []);
+
+  const fetchAnalytics = useCallback(async () => {
     try {
       setIsLoading(true);
       setError("");
       const response = await axiosInstance.get(API_PATHS.ANALYTICS.EMPLOYER_ANALYTICS);
-      setAnalytics(response.data);
+      const hasValidAnalyticsShape =
+        response?.data &&
+        typeof response.data === "object" &&
+        response.data.counts &&
+        response.data.data;
+
+      if (hasValidAnalyticsShape) {
+        setAnalytics(response.data);
+        return;
+      }
+
+      const fallbackAnalytics = await getFallbackAnalytics();
+      setAnalytics(fallbackAnalytics);
+      setError("Analytics service returned incomplete data. Showing fallback data.");
     } catch (err) {
-      setError("Failed to load analytics data");
+      try {
+        const fallbackAnalytics = await getFallbackAnalytics();
+        setAnalytics(fallbackAnalytics);
+        setError("Analytics service unavailable. Showing fallback data.");
+      } catch {
+        setError("Failed to load analytics data");
+      }
       console.error("Error fetching dashboard analytics:", err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [getFallbackAnalytics]);
 
   useEffect(() => {
     fetchAnalytics();
-  }, []);
+  }, [fetchAnalytics]);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "—";
@@ -88,21 +219,27 @@ const EmployerDashboard = () => {
 
   return (
     <DashboardLayout activeMenu="employer-dashboard">
-      {isLoading ? (
-        <LoadingSpinner />
-      ) : error ? (
-        <div className="flex flex-col items-center justify-center h-64 gap-4">
-          <AlertCircle className="h-12 w-12 text-red-400" />
-          <p className="text-gray-600">{error}</p>
-          <button
-            onClick={fetchAnalytics}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      ) : (
-        <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+
+          {isLoading && (
+            <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700 flex items-center gap-2">
+              <Clock className="h-4 w-4" /> Loading dashboard data...
+            </div>
+          )}
+
+          {error && (
+            <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" /> {error}
+              </span>
+              <button
+                onClick={fetchAnalytics}
+                className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs hover:bg-red-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <div>
@@ -133,24 +270,78 @@ const EmployerDashboard = () => {
             <StatCard
               icon={Briefcase}
               label="Active Job Listings"
-              value={analytics?.counts?.totalActiveJobs ?? 0}
-              trend={analytics?.counts?.trends?.activeJobs ?? 0}
+              value={counts?.totalActiveJobs ?? 0}
+              trend={trends?.activeJobs ?? 0}
               color="bg-gradient-to-br from-blue-500 to-blue-600"
             />
             <StatCard
               icon={Users}
               label="Total Applications"
-              value={analytics?.counts?.totalApplications ?? 0}
-              trend={analytics?.counts?.trends?.totalApplications ?? 0}
+              value={counts?.totalApplications ?? 0}
+              trend={trends?.totalApplications ?? 0}
               color="bg-gradient-to-br from-violet-500 to-violet-600"
             />
             <StatCard
               icon={CheckCircle2}
               label="Candidates Hired"
-              value={analytics?.counts?.totalHired ?? 0}
-              trend={analytics?.counts?.trends?.totalHired ?? 0}
+              value={counts?.totalHired ?? 0}
+              trend={trends?.totalHired ?? 0}
               color="bg-gradient-to-br from-emerald-500 to-emerald-600"
             />
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 inline-flex items-center gap-2">
+                  <ListChecks className="h-4 w-4 text-blue-600" />
+                  Getting Started Checklist
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                  Complete these steps to make your hiring setup market-ready.
+                </p>
+              </div>
+              <span className="text-sm font-medium text-gray-600">
+                {completedOnboardingCount}/{onboardingItems.length} completed ({onboardingProgress}%)
+              </span>
+            </div>
+
+            <div className="h-2 rounded-full bg-gray-100 overflow-hidden mb-5">
+              <div
+                className="h-full bg-blue-600 transition-all duration-500"
+                style={{ width: `${onboardingProgress}%` }}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {onboardingItems.map((item) => (
+                <div
+                  key={item.key}
+                  className={`rounded-xl border px-4 py-3 flex items-center justify-between gap-3 ${
+                    item.done ? "border-emerald-200 bg-emerald-50" : "border-gray-200 bg-white"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    {item.done ? (
+                      <Check className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                    ) : (
+                      <Circle className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    )}
+                    <p className={`text-sm truncate ${item.done ? "text-emerald-700" : "text-gray-700"}`}>
+                      {item.label}
+                    </p>
+                  </div>
+                  {!item.done && (
+                    <button
+                      onClick={item.action}
+                      className="text-xs font-medium text-blue-600 hover:text-blue-700 whitespace-nowrap"
+                    >
+                      {item.actionLabel}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
 
@@ -166,7 +357,7 @@ const EmployerDashboard = () => {
                 </button>
               </div>
               <div className="divide-y divide-gray-50">
-                {analytics?.data?.recentJobs?.length === 0 ? (
+                {recentJobs.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-gray-400 gap-3">
                     <Briefcase className="h-10 w-10 opacity-40" />
                     <p className="text-sm">No jobs posted yet</p>
@@ -178,7 +369,7 @@ const EmployerDashboard = () => {
                     </button>
                   </div>
                 ) : (
-                  analytics?.data?.recentJobs?.map((job) => (
+                  recentJobs.map((job) => (
                     <div
                       key={job._id}
                       className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
@@ -216,13 +407,13 @@ const EmployerDashboard = () => {
                 </button>
               </div>
               <div className="divide-y divide-gray-50">
-                {analytics?.data?.recentApplications?.length === 0 ? (
+                {recentApplications.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-gray-400 gap-3">
                     <Users className="h-10 w-10 opacity-40" />
                     <p className="text-sm">No applications yet</p>
                   </div>
                 ) : (
-                  analytics?.data?.recentApplications?.map((app) => (
+                  recentApplications.map((app) => (
                     <div
                       key={app._id}
                       className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
@@ -267,7 +458,6 @@ const EmployerDashboard = () => {
             </div>
           </div>
         </div>
-      )}
     </DashboardLayout>
   );
 };

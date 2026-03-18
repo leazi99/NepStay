@@ -26,11 +26,12 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   const isDark = (user?.themePreference || "light") === "dark";
+  const workspaceLabel = "Freelancer Workspace";
 
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: Briefcase, path: "/freelancer-dashboard" },
     { id: "saved", label: "Saved Jobs", icon: Heart, path: "/saved-jobs" },
-    { id: "messages", label: "Messages", icon: MessageSquare, path: "/messages" },
+    { id: "messages", label: "Messages", icon: MessageSquare, path: "/freelancer/messages" },
     { id: "notifications", label: "Alerts", icon: Bell, path: "/notifications" },
     { id: "reviews", label: "Reviews", icon: Star, path: "/reviews" },
     { id: "profile", label: "Profile", icon: User, path: "/profile" },
@@ -97,6 +98,15 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
             KaamSathi
           </span>
         </button>
+        <span
+          className={`order-1 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${
+            isDark
+              ? "bg-slate-800 text-slate-200 border-slate-600"
+              : "bg-gray-100 text-gray-700 border-gray-200"
+          }`}
+        >
+          {workspaceLabel}
+        </span>
 
         <div className="order-3 w-full lg:order-2 lg:w-auto lg:flex-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-max">

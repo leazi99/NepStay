@@ -9,6 +9,7 @@ const ProfileDropdown = ({
   companyName,
   email,
   role,
+  isDark = false,
   onLogout
 }) => {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ const ProfileDropdown = ({
   return <div className='relative'>
     <button
       onClick={onToggle}
-      className='flex items-center space-x-3 p-2 rounded-xl hover:bg-gray-50 transition-colors duration-200'>
+      className={`flex items-center space-x-3 p-2 rounded-xl transition-colors duration-200 ${isDark ? "hover:bg-slate-800" : "hover:bg-gray-50"}`}>
       {avatar ? (
         <img
           src={avatar}
@@ -34,25 +35,27 @@ const ProfileDropdown = ({
         </div>
       )}
       <div className='hidden sm:block text-left'>
-        <p className='text-sm font-medium text-gray-900'>{displayName}</p>
-        <p className='text-xs text-gray-500'>{role === 'employer' ? 'Employer' : 'Freelancer'}</p>
+        <p className={`text-sm font-medium ${isDark ? "text-slate-100" : "text-gray-900"}`}>{displayName}</p>
+        <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+          {role === 'employer' || role === 'client' ? 'Employer' : 'Freelancer'}
+        </p>
       </div>
-      <ChevronDown className='h-4 w-4 text-gray-400' />
+      <ChevronDown className={`h-4 w-4 ${isDark ? "text-slate-400" : "text-gray-400"}`} />
     </button>
     {isOpen && (
-      <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+      <div className={`absolute right-0 mt-2 w-56 rounded-xl shadow-lg border py-2 z-50 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-100"}`}>
 
-        <div className='px-4 py-3 border-b border-gray-100'>
-          <p className='text-sm font-medium text-gray-900'>{displayName}
+        <div className={`px-4 py-3 border-b ${isDark ? "border-slate-700" : "border-gray-100"}`}>
+          <p className={`text-sm font-medium ${isDark ? "text-slate-100" : "text-gray-900"}`}>{displayName}
           </p>
-          <p className='text-xs text-gray-500'>{displayEmail}</p>
+          <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>{displayEmail}</p>
         </div>
         <a
-          onClick={() => navigate(role === 'jobseeker' ? '/profile' : '/company-profile')}
-          className='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors'>
+          onClick={() => navigate(role === 'jobseeker' || role === 'freelancer' ? '/profile' : '/company-profile')}
+          className={`block px-4 py-2 text-sm transition-colors ${isDark ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-50"}`}>
           View Profile</a>
 
-        <div className='border-t border-gray-100 mt-2 pt-2'>
+        <div className={`border-t mt-2 pt-2 ${isDark ? "border-slate-700" : "border-gray-100"}`}>
           <a href="#"
             onClick={(e) => { e.preventDefault(); onLogout(); }}
             className='block px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors'>Sign Out</a>

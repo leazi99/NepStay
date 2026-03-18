@@ -16,19 +16,29 @@ import kaamSathiLogo from "../../assets/kaamsathi-logo.svg";
 import kaamSathiLogoMini from "../../assets/kaamsathi-logo-mini.svg";
 
 const NavigationItem = ({
-  item, isActive, onClick, isCollapsed, badgeCount
+  item, isActive, onClick, isCollapsed, badgeCount, isDark
 }) => {
   const Icon = item.icon
 
   return <button
     onClick={() => onClick(item.id)}
     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${isActive
-      ? "bg-blue-50 text-blue-700"
-      : "text-gray-600 hover:bg-gray-100"
+      ? isDark
+        ? "bg-blue-900/40 text-blue-200"
+        : "bg-blue-50 text-blue-700"
+      : isDark
+        ? "text-slate-300 hover:bg-slate-800"
+        : "text-gray-600 hover:bg-gray-100"
       }`}
   >
     <Icon
-      className={`h-4 w-4 ${isActive ? "text-blue-600" : "text-gray-500"
+      className={`h-4 w-4 ${isActive
+        ? isDark
+          ? "text-blue-300"
+          : "text-blue-600"
+        : isDark
+          ? "text-slate-400"
+          : "text-gray-500"
         }`}
     />
     {!isCollapsed && <span className=''>{item.name}</span>}
@@ -50,6 +60,14 @@ const DashboardLayout = ({ activeMenu, children }) => {
   const [isMobile, setMobile] = useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const isDark = (user?.themePreference || "light") === "dark";
+  const normalizedRole = String(user?.role || "").toLowerCase();
+  const workspaceLabel =
+    normalizedRole === "admin"
+      ? "Admin Workspace"
+      : normalizedRole === "employer" || normalizedRole === "client"
+        ? "Employer Workspace"
+        : "Freelancer Workspace";
 
   useEffect(() => {
     const handleResize = () => {
@@ -122,17 +140,17 @@ const DashboardLayout = ({ activeMenu, children }) => {
 
   return (
     <>
-      <div className='min-h-screen bg-gray-50 text-gray-900'>
-        <div className={`fixed md:static inset-y-0 left-0 z-40 bg-white border-r border-gray-200 h-screen transition-transform duration-300 ${isMobile ? (sidebarOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0"
+      <div className={`min-h-screen ${isDark ? "bg-slate-950 text-slate-100" : "bg-gray-50 text-gray-900"}`}>
+        <div className={`fixed inset-y-0 left-0 z-40 border-r h-screen transition-transform duration-300 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"} ${isMobile ? (sidebarOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0"
           } ${sidebarCollapsed ? "w-16" : "w-64"}`}>
 
-          <div className='h-16 px-4 border-b border-gray-200 flex items-center'>
+          <div className={`h-16 px-4 border-b flex items-center ${isDark ? "border-slate-700" : "border-gray-200"}`}>
             <Link className="inline-flex items-center gap-3" to='/'>
               <div className='h-9 w-9 rounded-xl overflow-hidden shadow-sm border border-blue-500/30 bg-blue-600 flex items-center justify-center'>
                 <img src={kaamSathiLogoMini} alt='KaamSathi' className='h-full w-full object-cover sm:hidden' />
                 <img src={kaamSathiLogo} alt='KaamSathi' className='h-full w-full object-cover hidden sm:block' />
               </div>
-              <span className='text-lg font-bold tracking-tight text-gray-900'>KaamSathi</span>
+              <span className={`text-lg font-bold tracking-tight ${isDark ? "text-slate-100" : "text-gray-900"}`}>KaamSathi</span>
             </Link>
           </div>
 
@@ -144,6 +162,7 @@ const DashboardLayout = ({ activeMenu, children }) => {
                 isActive={activeNavItem === item.id}
                 onClick={handleNavigation}
                 isCollapsed={sidebarCollapsed}
+                isDark={isDark}
                 badgeCount={
                   item.id === "notifications"
                     ? unreadNotificationCount
@@ -156,9 +175,9 @@ const DashboardLayout = ({ activeMenu, children }) => {
           </nav>
 
 
-          <div className='absolute bottom-0 left-0 right-0 p-3 border-t border-gray-200 bg-white'>
-            <button className='w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors' onClick={logout}>
-              <LogOut className='h-5 w-5 flex-shrink-0 text-gray-500' />
+          <div className={`absolute bottom-0 left-0 right-0 p-3 border-t ${isDark ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white"}`}>
+            <button className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${isDark ? "text-rose-300 hover:bg-rose-900/30" : "text-rose-600 hover:bg-rose-50"}`} onClick={logout}>
+              <LogOut className={`h-5 w-5 flex-shrink-0 ${isDark ? "text-slate-400" : "text-gray-500"}`} />
               {!sidebarCollapsed && <span className=''>Logout</span>}
             </button>
           </div>
@@ -176,27 +195,37 @@ const DashboardLayout = ({ activeMenu, children }) => {
         <div
           className={`min-h-screen transition-all duration-300 ${isMobile ? "ml-0" : sidebarCollapsed ? "md:ml-16" : "md:ml-64"}`}
         >
-          <header className='sticky top-0 z-20 border-b border-gray-200 bg-white/90 backdrop-blur'>
+          <header className={`sticky top-0 z-20 border-b backdrop-blur ${isDark ? "border-slate-700 bg-slate-900/90" : "border-gray-200 bg-white/90"}`}>
             <div className='h-16 px-4 md:px-6 flex items-center justify-between gap-3'>
               <div className='flex items-center gap-3 min-w-0'>
               {isMobile && (
                 <button
                   onClick={toggleSidebar}
-                  className='md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors'
+                  className={`md:hidden p-2 rounded-lg transition-colors ${isDark ? "hover:bg-slate-800" : "hover:bg-gray-100"}`}
                 >
                   {sidebarOpen ? (
-                    <X className='h-5 w-5 text-gray-600' />
+                    <X className={`h-5 w-5 ${isDark ? "text-slate-300" : "text-gray-600"}`} />
                   ) : (
-                    <Menu className='h-5 w-5 text-gray-600' />
+                    <Menu className={`h-5 w-5 ${isDark ? "text-slate-300" : "text-gray-600"}`} />
 
                   )}
                 </button>
               )}
               <div >
-                <h1 className='text-base md:text-lg font-semibold text-gray-900'>Welcome Back</h1>
-                <p className='text-xs md:text-sm text-gray-500'>
-                  Here's what's happening with your jobs today.
-                </p>
+                <h1 className={`text-base md:text-lg font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Welcome Back</h1>
+                <div className='flex items-center gap-2 mt-0.5'>
+                  <p className={`text-xs md:text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+                    Here's what's happening with your jobs today.
+                  </p>
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${isDark
+                        ? "bg-slate-800 text-slate-200 border-slate-600"
+                        : "bg-gray-100 text-gray-700 border-gray-200"
+                      }`}
+                  >
+                    {workspaceLabel}
+                  </span>
+                </div>
               </div>
             </div>
             <div className='flex items-center space-x-3'>
@@ -210,6 +239,7 @@ const DashboardLayout = ({ activeMenu, children }) => {
                 companyName={user?.fullName || user?.name || ""}
                 email={user?.email || ""}
                 role={user?.role}
+                isDark={isDark}
                 onLogout={logout}
               />
 

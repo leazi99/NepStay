@@ -8,7 +8,8 @@ const getTrend = (current, previous) => {
 
 const getEmployerAnalytics = async (req, res) => {
   try {
-    if (req.user.role !== "employer") {
+    const role = String(req.user.role || "").toLowerCase();
+    if (role !== "employer" && role !== "client") {
       return res.status(403).json({
         message: "Access denied",
       });
