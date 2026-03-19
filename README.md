@@ -42,9 +42,6 @@ Create `backend/.env` from `backend/.env.example` and configure values for your 
 - [ ] Enable HTTPS for frontend + backend domains
 - [ ] Add process manager (`pm2`) or container orchestration for backend uptime
 
-## Health Endpoints
-- `GET /health` → process health + uptime
-- `GET /ready` → readiness check
 
 ## Build Commands
 
@@ -65,4 +62,3 @@ node --check server.js
 - Deploy backend on Render/Railway/Fly.io
 - Use managed MongoDB (Atlas)
 
-Set frontend `BASE_URL` to your deployed backend URL and backend `ALLOWED_ORIGIN` to your deployed frontend URL.
