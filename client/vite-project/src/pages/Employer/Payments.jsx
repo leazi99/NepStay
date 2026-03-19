@@ -1,12 +1,201 @@
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { DollarSign, Receipt, Wallet, AlertCircle, Star } from "lucide-react";
+import {
+  DollarSign,
+  Receipt,
+  Wallet,
+  AlertCircle,
+  Star,
+  CreditCard,
+  Building2,
+  Ellipsis,
+  ShieldCheck,
+} from "lucide-react";
 import DashboardLayout from "../../components/layout/DashboardLayout.jsx";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "";
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
+
+const elementBaseStyle = (isDark) => ({
+  style: {
+    base: {
+      fontSize: "14px",
+      color: isDark ? "#e2e8f0" : "#111827",
+      fontFamily: "Inter, system-ui, sans-serif",
+      "::placeholder": {
+        color: isDark ? "#64748b" : "#9ca3af",
+      },
+    },
+    invalid: {
+      color: "#ef4444",
+    },
+  },
+});
+
+const StripeCardForm = ({
+  isDark,
+  clientSecret,
+  paymentId,
+  paymentIntentId,
+  billingName,
+  billingCountry,
+  onBillingNameChange,
+  onBillingCountryChange,
+  onBusyChange,
+  onSuccess,
+}) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [cardError, setCardError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handlePay = async () => {
+    if (!stripe || !elements) {
+      toast.error("Stripe is still loading. Please wait.");
+      return;
+    }
+
+    const cardNumber = elements.getElement(CardNumberElement);
+    if (!cardNumber) {
+      toast.error("Card field is not ready");
+      return;
+    }
+
+    setCardError("");
+    setIsSubmitting(true);
+    onBusyChange(true);
+
+    try {
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardNumber,
+          billing_details: {
+            name: billingName || undefined,
+            address: {
+              country: billingCountry || undefined,
+            },
+          },
+        },
+      });
+
+      if (error) {
+        setCardError(error.message || "Payment failed");
+        toast.error(error.message || "Payment failed");
+        return;
+      }
+
+      const confirmRes = await axiosInstance.post(API_PATHS.PAYMENTS.CONFIRM_STRIPE_INTENT, {
+        paymentId,
+        paymentIntentId: paymentIntent?.id || paymentIntentId,
+      });
+
+      if (!confirmRes.data?.success) {
+        toast.error(confirmRes.data?.message || "Unable to verify payment status");
+        return;
+      }
+
+      onSuccess(confirmRes.data.payment, confirmRes.data.stripeStatus);
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Payment confirmation failed");
+    } finally {
+      setIsSubmitting(false);
+      onBusyChange(false);
+    }
+  };
+
+  return (
+    <div className={`rounded-2xl border p-4 space-y-3 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}>
+      <div className="flex items-center gap-2 text-xs">
+        <button type="button" className={`px-3 py-1.5 rounded-lg border text-xs font-medium ${isDark ? "bg-blue-900/40 text-blue-200 border-blue-700" : "bg-blue-50 text-blue-700 border-blue-200"}`}>
+          <CreditCard className="h-3.5 w-3.5 inline mr-1" /> Card
+        </button>
+        <button type="button" className={`px-3 py-1.5 rounded-lg border text-xs ${isDark ? "text-slate-400 border-slate-700" : "text-gray-500 border-gray-200"}`} disabled>
+          GPay
+        </button>
+        <button type="button" className={`px-3 py-1.5 rounded-lg border text-xs ${isDark ? "text-slate-400 border-slate-700" : "text-gray-500 border-gray-200"}`} disabled>
+          <Building2 className="h-3.5 w-3.5 inline mr-1" /> US bank account
+        </button>
+        <button type="button" className={`px-2 py-1.5 rounded-lg border text-xs ${isDark ? "text-slate-400 border-slate-700" : "text-gray-500 border-gray-200"}`} disabled>
+          <Ellipsis className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div>
+        <label className={`block text-xs font-medium mb-1 ${isDark ? "text-slate-300" : "text-gray-600"}`}>Card number</label>
+        <div className={`h-11 px-3 rounded-lg border flex items-center justify-between ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
+          <CardNumberElement options={elementBaseStyle(isDark)} />
+          <div className="flex items-center gap-1 text-[10px] font-semibold text-gray-400">
+            <span className="px-1 py-0.5 rounded bg-red-50 text-red-500">MC</span>
+            <span className="px-1 py-0.5 rounded bg-blue-50 text-blue-500">VISA</span>
+            <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-500">AMEX</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={`block text-xs font-medium mb-1 ${isDark ? "text-slate-300" : "text-gray-600"}`}>Expiration</label>
+          <div className={`h-11 px-3 rounded-lg border flex items-center ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
+            <CardExpiryElement options={elementBaseStyle(isDark)} />
+          </div>
+        </div>
+        <div>
+          <label className={`block text-xs font-medium mb-1 ${isDark ? "text-slate-300" : "text-gray-600"}`}>CVC</label>
+          <div className={`h-11 px-3 rounded-lg border flex items-center ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
+            <CardCvcElement options={elementBaseStyle(isDark)} />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label className={`block text-xs font-medium mb-1 ${isDark ? "text-slate-300" : "text-gray-600"}`}>Cardholder</label>
+          <input
+            type="text"
+            value={billingName}
+            onChange={(event) => onBillingNameChange(event.target.value)}
+            placeholder="Name on card"
+            className={`w-full h-11 px-3 border rounded-lg text-sm ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200 bg-white text-gray-900"}`}
+          />
+        </div>
+        <div>
+          <label className={`block text-xs font-medium mb-1 ${isDark ? "text-slate-300" : "text-gray-600"}`}>Country</label>
+          <select
+            value={billingCountry}
+            onChange={(event) => onBillingCountryChange(event.target.value)}
+            className={`w-full h-11 px-3 border rounded-lg text-sm ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200 bg-white text-gray-900"}`}
+          >
+            <option value="US">United States</option>
+            <option value="NP">Nepal</option>
+            <option value="IN">India</option>
+            <option value="GB">United Kingdom</option>
+          </select>
+        </div>
+      </div>
+
+      {cardError ? (
+        <div className="text-xs text-red-500">{cardError}</div>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={handlePay}
+        disabled={isSubmitting || !stripe || !elements}
+        className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60"
+      >
+        <ShieldCheck className="h-4 w-4" />
+        {isSubmitting ? "Processing payment..." : "Pay securely"}
+      </button>
+    </div>
+  );
+};
 
 const Payments = () => {
   const { user } = useAuth();
@@ -19,6 +208,12 @@ const Payments = () => {
   const [reviewDrafts, setReviewDrafts] = useState({});
   const [reviewSubmittingId, setReviewSubmittingId] = useState("");
   const [error, setError] = useState("");
+  const [stripeClientSecret, setStripeClientSecret] = useState("");
+  const [stripePaymentId, setStripePaymentId] = useState("");
+  const [stripePaymentIntentId, setStripePaymentIntentId] = useState("");
+  const [stripeBusy, setStripeBusy] = useState(false);
+  const [billingName, setBillingName] = useState(user?.name || "");
+  const [billingCountry, setBillingCountry] = useState("US");
 
   const [form, setForm] = useState({
     applicationId: "",
@@ -27,6 +222,16 @@ const Payments = () => {
     notes: "",
   });
   const isDark = (user?.themePreference || "light") === "dark";
+
+  useEffect(() => {
+    setBillingName(user?.name || "");
+  }, [user?.name]);
+
+  useEffect(() => {
+    setStripeClientSecret("");
+    setStripePaymentId("");
+    setStripePaymentIntentId("");
+  }, [form.applicationId, form.amount, form.notes, form.paymentMethod]);
 
   const loadData = async () => {
     try {
@@ -101,19 +306,27 @@ const Payments = () => {
       let response;
 
       if (form.paymentMethod === "stripe") {
-        response = await axiosInstance.post(
-          API_PATHS.PAYMENTS.CREATE_STRIPE_CHECKOUT_SESSION,
-          {
-            applicationId: form.applicationId,
-            amount: Number(form.amount),
-            notes: form.notes,
-          },
-        );
-
-        if (response.data?.success && response.data?.checkoutUrl) {
-          window.location.href = response.data.checkoutUrl;
+        if (!stripePromise) {
+          toast.error("Stripe is not configured. Add VITE_STRIPE_PUBLISHABLE_KEY in frontend env.");
           return;
         }
+
+        response = await axiosInstance.post(API_PATHS.PAYMENTS.CREATE_STRIPE_INTENT, {
+          applicationId: form.applicationId,
+          amount: Number(form.amount),
+          notes: form.notes,
+        });
+
+        if (response.data?.success && response.data?.clientSecret) {
+          setStripeClientSecret(response.data.clientSecret);
+          setStripePaymentId(response.data.paymentId || "");
+          setStripePaymentIntentId(response.data.paymentIntentId || "");
+          toast.success("Secure card form is ready. Complete your payment below.");
+          return;
+        }
+
+        toast.error(response.data?.message || "Unable to initialize Stripe payment");
+        return;
       } else {
         response = await axiosInstance.post(API_PATHS.PAYMENTS.CREATE_PAYMENT, {
           applicationId: form.applicationId,
@@ -124,11 +337,7 @@ const Payments = () => {
       }
 
       if (response.data?.success) {
-        toast.success(
-          form.paymentMethod === "stripe"
-            ? "Redirecting to Stripe"
-            : "Payment recorded",
-        );
+        toast.success("Payment recorded");
         setPayments((prev) => [response.data.payment, ...prev]);
         setForm({
           applicationId: "",
@@ -146,12 +355,57 @@ const Payments = () => {
     }
   };
 
+  const handleStripePaymentSuccess = (payment, stripeStatus) => {
+    if (!payment) {
+      toast.error("Payment processed but response data is incomplete");
+      loadData();
+      return;
+    }
+
+    if (stripeStatus && stripeStatus !== "succeeded") {
+      toast("Payment is processing. It will appear once confirmed.");
+    } else {
+      toast.success("Payment completed successfully");
+    }
+
+    setPayments((prev) => [payment, ...prev.filter((item) => item._id !== payment._id)]);
+    setForm({
+      applicationId: "",
+      amount: "",
+      paymentMethod: "bank_transfer",
+      notes: "",
+    });
+    setStripeClientSecret("");
+    setStripePaymentId("");
+    setStripePaymentIntentId("");
+  };
+
   const formatDate = (dateValue) =>
     new Date(dateValue).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
     });
+
+  const getPaymentStatusBadgeClasses = (status) => {
+    const normalized = String(status || "").toLowerCase();
+
+    if (normalized === "completed") {
+      return isDark
+        ? "bg-emerald-900/30 text-emerald-300 border border-emerald-800"
+        : "bg-emerald-50 text-emerald-700 border border-emerald-200";
+    }
+
+    if (normalized === "failed") {
+      return isDark
+        ? "bg-rose-900/30 text-rose-300 border border-rose-800"
+        : "bg-rose-50 text-rose-700 border border-rose-200";
+    }
+
+    return isDark
+      ? "bg-amber-900/30 text-amber-300 border border-amber-800"
+      : "bg-amber-50 text-amber-700 border border-amber-200";
+  };
 
   const handleReviewDraftChange = (paymentId, field, value) => {
     setReviewDrafts((prev) => ({
@@ -291,14 +545,57 @@ const Payments = () => {
                 />
               </div>
 
+              {form.paymentMethod === "stripe" ? (
+                <div className="md:col-span-2 space-y-3">
+                  {!stripePromise ? (
+                    <div className={`rounded-xl border px-4 py-3 text-sm ${isDark ? "bg-amber-900/20 border-amber-800 text-amber-300" : "bg-amber-50 border-amber-200 text-amber-700"}`}>
+                      Stripe UI is enabled, but publishable key is missing. Set <strong>VITE_STRIPE_PUBLISHABLE_KEY</strong> in frontend env.
+                    </div>
+                  ) : stripeClientSecret ? (
+                    <Elements
+                      stripe={stripePromise}
+                      options={{
+                        clientSecret: stripeClientSecret,
+                        appearance: {
+                          theme: isDark ? "night" : "stripe",
+                        },
+                      }}
+                    >
+                      <StripeCardForm
+                        isDark={isDark}
+                        clientSecret={stripeClientSecret}
+                        paymentId={stripePaymentId}
+                        paymentIntentId={stripePaymentIntentId}
+                        billingName={billingName}
+                        billingCountry={billingCountry}
+                        onBillingNameChange={setBillingName}
+                        onBillingCountryChange={setBillingCountry}
+                        onBusyChange={setStripeBusy}
+                        onSuccess={handleStripePaymentSuccess}
+                      />
+                    </Elements>
+                  ) : (
+                    <div className={`rounded-xl border px-4 py-3 text-sm ${isDark ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-600"}`}>
+                      Click <strong>Initialize Card Payment</strong> to load secure card fields.
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
               <div className="md:col-span-2 flex justify-end">
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || stripeBusy}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60"
                 >
                   <Receipt className="h-4 w-4" />
-                  {isSubmitting ? "Saving..." : "Record Payment"}
+                  {isSubmitting
+                    ? "Saving..."
+                    : form.paymentMethod === "stripe"
+                      ? stripeClientSecret
+                        ? "Re-initialize Card Payment"
+                        : "Initialize Card Payment"
+                      : "Record Payment"}
                 </button>
               </div>
             </form>
@@ -316,6 +613,7 @@ const Payments = () => {
                       <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${isDark ? "text-slate-400" : "text-gray-500"}`}>Freelancer</th>
                       <th className={`text-left px-6 py-3 text-xs font-semibold uppercase hidden md:table-cell ${isDark ? "text-slate-400" : "text-gray-500"}`}>Job</th>
                       <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${isDark ? "text-slate-400" : "text-gray-500"}`}>Method</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${isDark ? "text-slate-400" : "text-gray-500"}`}>Status</th>
                       <th className={`text-right px-6 py-3 text-xs font-semibold uppercase ${isDark ? "text-slate-400" : "text-gray-500"}`}>Amount</th>
                       <th className={`text-right px-6 py-3 text-xs font-semibold uppercase hidden sm:table-cell ${isDark ? "text-slate-400" : "text-gray-500"}`}>Date</th>
                     </tr>
@@ -326,6 +624,11 @@ const Payments = () => {
                         <td className={`px-6 py-4 font-medium ${isDark ? "text-slate-100" : "text-gray-900"}`}>{payment.freelancer?.name || "Freelancer"}</td>
                         <td className={`px-6 py-4 hidden md:table-cell ${isDark ? "text-slate-300" : "text-gray-600"}`}>{payment.job?.title || "Job"}</td>
                         <td className={`px-6 py-4 capitalize ${isDark ? "text-slate-300" : "text-gray-600"}`}>{String(payment.paymentMethod || "-").replace("_", " ")}</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${getPaymentStatusBadgeClasses(payment.status)}`}>
+                            {String(payment.status || "pending")}
+                          </span>
+                        </td>
                         <td className={`px-6 py-4 text-right font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>${Number(payment.amount || 0).toLocaleString()}</td>
                         <td className={`px-6 py-4 text-right hidden sm:table-cell ${isDark ? "text-slate-400" : "text-gray-500"}`}>{formatDate(payment.createdAt)}</td>
                       </tr>

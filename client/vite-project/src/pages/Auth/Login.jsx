@@ -22,7 +22,6 @@ const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    role: '',
     rememberMe: false,
   });
   const [formState, setFormState] = useState({
@@ -41,7 +40,6 @@ const Login = () => {
     const errors = {
       email: validateEmail(formData.email),
       password: validatePassword(formData.password),
-      role: formData.role ? '' : 'Please select your role',
     };
     Object.keys(errors).forEach((key) => {
       if (!errors[key]) delete errors[key];
@@ -72,7 +70,6 @@ const Login = () => {
       const { data } = await axiosInstance.post(API_PATHS.AUTH.LOGIN, {
         email: formData.email,
         password: formData.password,
-        role: formData.role,
       });
       if (!data.success) {
         if (data.requiresVerification) {
@@ -162,46 +159,6 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleSubmit} style={styles.form} noValidate>
-            <div style={styles.field}>
-              <label style={styles.label}>I want to login as</label>
-              <div style={styles.roleSelector}>
-                <button
-                  type="button"
-                  onClick={() => handleChange({ target: { name: 'role', value: 'freelancer' } })}
-                  style={{
-                    ...styles.roleOption,
-                    ...(formData.role === 'freelancer' ? styles.roleOptionActive : styles.roleOptionInactive),
-                  }}
-                >
-                  Freelancer
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleChange({ target: { name: 'role', value: 'client' } })}
-                  style={{
-                    ...styles.roleOption,
-                    ...(formData.role === 'client' ? styles.roleOptionActive : styles.roleOptionInactive),
-                  }}
-                >
-                  Employer
-                </button>
-              </div>
-              <AnimatePresence>
-                {formState.errors.role && (
-                  <motion.p
-                    key="role-err"
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    style={styles.errorMsg}
-                  >
-                    <AlertCircle size={13} />
-                    {formState.errors.role}
-                  </motion.p>
-                )}
-              </AnimatePresence>
-            </div>
-
             <div style={styles.field}>
               <label style={styles.label}>Email address</label>
               <div style={styles.inputWrap}>

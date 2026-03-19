@@ -17,8 +17,6 @@ const normalizeAuthRole = (role) => {
   if (value === "admin") return "admin";
   return value;
 };
-const roleLabel = (role) =>
-  normalizeAuthRole(role) === "employer" ? "Employer" : "Freelancer";
 
 const authCookieOptions = {
   httpOnly: true,
@@ -135,23 +133,15 @@ export const register = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  const { email, password, role } = req.body;
-  if (!email || !password || !role) {
+  const { email, password } = req.body;
+  if (!email || !password) {
     return res.json({
       success: false,
-      message: "Email, password, and role are required",
+      message: "Email and password are required",
     });
   }
   try {
     const normalizedEmail = normalizeEmail(email);
-    const normalizedRequestedRole = normalizeAuthRole(role);
-
-    if (!["jobseeker", "employer", "admin"].includes(normalizedRequestedRole)) {
-      return res.json({
-        success: false,
-        message: "Please select a valid role",
-      });
-    }
 
     const user = await userModel.findOne({
       email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: "i" },
@@ -167,14 +157,6 @@ export const login = async (req, res) => {
       return res.json({
         success: false,
         message: "Invalid Password",
-      });
-    }
-
-    if (user.role !== normalizedRequestedRole) {
-      return res.json({
-        success: false,
-        message: `This email is registered as ${roleLabel(user.role)}. Please select the correct role to continue.`,
-        expectedRole: user.role,
       });
     }
 

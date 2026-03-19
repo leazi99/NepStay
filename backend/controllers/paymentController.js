@@ -13,8 +13,57 @@ const ensureEmployer = (req, res) => {
       message: "Only employers can access payments",
     });
     return false;
+    `. `;
   }
   return true;
+};
+
+const loadAndValidateApplication = async ({ applicationId, employerId }) => {
+  const application = await applicationModel
+    .findById(applicationId)
+    .populate("job", "title company")
+    .populate("applicant", "name email avatar");
+
+  if (!application || !application.job) {
+    return { error: { status: 404, message: "Application not found" } };
+  }
+
+  if (application.job.company.toString() !== employerId.toString()) {
+    return {
+      error: {
+        status: 403,
+        message: "You can only pay for your own hired candidates",
+      },
+    };
+  }
+
+  if (!["Accepted", "Hired"].includes(application.status)) {
+    return {
+      error: {
+        status: 400,
+        message: "Payment is allowed only for hired applications",
+      },
+    };
+  }
+
+  return { application };
+};
+
+const parseAmount = (amount) => {
+  const amountNumber = Number(amount);
+  if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
+    return null;
+  }
+  return amountNumber;
+};
+
+const hasActivePaymentForApplication = async (applicationId) => {
+  const existingPayment = await paymentModel.findOne({
+    application: applicationId,
+    status: { $in: ["pending", "completed"] },
+  });
+
+  return Boolean(existingPayment);
 };
 
 export const getEmployerPayments = async (req, res) => {
@@ -57,9 +106,27 @@ export const getEligibleHiredApplications = async (req, res) => {
         application.job.company.toString() === req.user.id.toString(),
     );
 
+    const applicationIds = eligibleApplications.map(
+      (application) => application._id,
+    );
+    const blockedPayments = await paymentModel
+      .find({
+        application: { $in: applicationIds },
+        status: { $in: ["pending", "completed"] },
+      })
+      .select("application");
+
+    const blockedApplicationIds = new Set(
+      blockedPayments.map((payment) => payment.application.toString()),
+    );
+
+    const filteredApplications = eligibleApplications.filter(
+      (application) => !blockedApplicationIds.has(application._id.toString()),
+    );
+
     return res.json({
       success: true,
-      applications: eligibleApplications,
+      applications: filteredApplications,
     });
   } catch (error) {
     return res.status(500).json({
@@ -79,6 +146,13 @@ export const createPayment = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Application and amount are required",
+      });
+    }
+
+    if (await hasActivePaymentForApplication(applicationId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment already exists for this hired application",
       });
     }
 
@@ -155,6 +229,13 @@ export const createStripeCheckoutSession = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Application and amount are required",
+      });
+    }
+
+    if (await hasActivePaymentForApplication(applicationId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment already exists for this hired application",
       });
     }
 
@@ -249,6 +330,170 @@ export const createStripeCheckoutSession = async (req, res) => {
   }
 };
 
+export const createStripePaymentIntent = async (req, res) => {
+  try {
+    if (!ensureEmployer(req, res)) return;
+
+    if (!stripe) {
+      return res.status(500).json({
+        success: false,
+        message: "Stripe is not configured on server",
+      });
+    }
+
+    const { applicationId, amount, notes } = req.body;
+
+    if (!applicationId || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Application and amount are required",
+      });
+    }
+
+    if (await hasActivePaymentForApplication(applicationId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment already exists for this hired application",
+      });
+    }
+
+    const amountNumber = parseAmount(amount);
+    if (!amountNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid amount",
+      });
+    }
+
+    const { application, error } = await loadAndValidateApplication({
+      applicationId,
+      employerId: req.user.id,
+    });
+
+    if (error) {
+      return res.status(error.status).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    const pendingPayment = await paymentModel.create({
+      employer: req.user.id,
+      freelancer: application.applicant._id,
+      job: application.job._id,
+      application: application._id,
+      amount: amountNumber,
+      paymentMethod: "stripe",
+      notes: notes || "",
+      status: "pending",
+      currency: "usd",
+    });
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amountNumber * 100),
+      currency: "usd",
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        paymentId: pendingPayment._id.toString(),
+        employerId: req.user.id.toString(),
+        applicationId: application._id.toString(),
+      },
+    });
+
+    pendingPayment.stripePaymentIntentId = paymentIntent.id;
+    await pendingPayment.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Stripe payment initialized",
+      paymentId: pendingPayment._id,
+      paymentIntentId: paymentIntent.id,
+      clientSecret: paymentIntent.client_secret,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const confirmStripePaymentIntent = async (req, res) => {
+  try {
+    if (!ensureEmployer(req, res)) return;
+
+    if (!stripe) {
+      return res.status(500).json({
+        success: false,
+        message: "Stripe is not configured on server",
+      });
+    }
+
+    const { paymentId, paymentIntentId } = req.body;
+    if (!paymentId && !paymentIntentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment reference is required",
+      });
+    }
+
+    const query = paymentId
+      ? { _id: paymentId, employer: req.user.id }
+      : { stripePaymentIntentId: paymentIntentId, employer: req.user.id };
+
+    const payment = await paymentModel.findOne(query);
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      });
+    }
+
+    if (payment.paymentMethod !== "stripe") {
+      return res.status(400).json({
+        success: false,
+        message: "Only Stripe payments are supported by this endpoint",
+      });
+    }
+
+    const intentId = payment.stripePaymentIntentId || paymentIntentId;
+    const intent = await stripe.paymentIntents.retrieve(intentId);
+
+    if (intent.status === "succeeded") {
+      payment.status = "completed";
+      payment.stripePaymentIntentId = intent.id;
+      payment.transactionId = intent.id;
+    } else if (
+      ["requires_payment_method", "canceled"].includes(intent.status)
+    ) {
+      payment.status = "failed";
+    } else {
+      payment.status = "pending";
+    }
+
+    await payment.save();
+
+    const populatedPayment = await paymentModel
+      .findById(payment._id)
+      .populate("job", "title")
+      .populate("freelancer", "name email avatar")
+      .populate("application", "status");
+
+    return res.json({
+      success: true,
+      message: "Stripe payment status updated",
+      payment: populatedPayment,
+      stripeStatus: intent.status,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export const stripeWebhookHandler = async (req, res) => {
   try {
     if (!stripe) {
@@ -295,6 +540,41 @@ export const stripeWebhookHandler = async (req, res) => {
       const paymentId = session?.metadata?.paymentId;
       if (paymentId) {
         await paymentModel.findByIdAndUpdate(paymentId, { status: "failed" });
+      }
+    }
+
+    if (event.type === "payment_intent.succeeded") {
+      const paymentIntent = event.data.object;
+      const paymentId = paymentIntent?.metadata?.paymentId;
+
+      if (paymentId) {
+        await paymentModel.findByIdAndUpdate(paymentId, {
+          status: "completed",
+          stripePaymentIntentId: paymentIntent.id,
+          transactionId: paymentIntent.id,
+        });
+      } else {
+        await paymentModel.findOneAndUpdate(
+          { stripePaymentIntentId: paymentIntent.id },
+          {
+            status: "completed",
+            transactionId: paymentIntent.id,
+          },
+        );
+      }
+    }
+
+    if (event.type === "payment_intent.payment_failed") {
+      const paymentIntent = event.data.object;
+      const paymentId = paymentIntent?.metadata?.paymentId;
+
+      if (paymentId) {
+        await paymentModel.findByIdAndUpdate(paymentId, { status: "failed" });
+      } else {
+        await paymentModel.findOneAndUpdate(
+          { stripePaymentIntentId: paymentIntent.id },
+          { status: "failed" },
+        );
       }
     }
 

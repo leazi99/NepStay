@@ -66,6 +66,8 @@ export const API_PATHS = {
     CREATE_PAYMENT: "/api/payments",
     GET_ELIGIBLE_APPLICATIONS: "/api/payments/eligible-applications",
     CREATE_STRIPE_CHECKOUT_SESSION: "/api/payments/checkout-session",
+    CREATE_STRIPE_INTENT: "/api/payments/create-intent",
+    CONFIRM_STRIPE_INTENT: "/api/payments/confirm-intent",
   },
 
   REVIEWS: {
