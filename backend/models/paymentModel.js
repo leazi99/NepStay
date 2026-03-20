@@ -43,7 +43,7 @@ const paymentSchema = new mongoose.Schema(
     },
     currency: {
       type: String,
-      default: "usd",
+      default: "npr",
     },
     stripeSessionId: {
       type: String,

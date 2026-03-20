@@ -10,7 +10,6 @@ import {
   Loader2,
   MessageSquare,
   Bell,
-  Star,
 } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
@@ -33,7 +32,6 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
     { id: "saved", label: "Saved Jobs", icon: Heart, path: "/saved-jobs" },
     { id: "messages", label: "Messages", icon: MessageSquare, path: "/freelancer/messages" },
     { id: "notifications", label: "Alerts", icon: Bell, path: "/notifications" },
-    { id: "reviews", label: "Reviews", icon: Star, path: "/reviews" },
     { id: "profile", label: "Profile", icon: User, path: "/profile" },
   ];
 

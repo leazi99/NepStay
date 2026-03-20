@@ -294,7 +294,7 @@ const EmployerDashboard = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div>
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900 inline-flex items-center gap-2">
-                  <ListChecks className="h-4 w-4 text-blue-600" />
+              
                   Getting Started Checklist
                 </h2>
                 <p className="text-xs sm:text-sm text-gray-500 mt-1">

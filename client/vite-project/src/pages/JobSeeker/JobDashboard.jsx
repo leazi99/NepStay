@@ -9,7 +9,6 @@ import {
   FilterX,
   ThumbsDown,
   ChevronDown,
-  Star,
   BadgeCheck,
 } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
@@ -32,18 +31,6 @@ const JobListItem = ({ job, onSave, onUnsave, onApply, onDislike, nowTs, isDark 
   const [saving, setSaving] = useState(false);
 
   const companyName = job.company?.companyName || job.company?.name || "Company";
-  const companyRating = Number(
-    job.company?.averageRating
-    ?? job.company?.rating
-    ?? job.company?.avgRating
-    ?? 0,
-  );
-  const companyReviews = Number(
-    job.company?.reviewCount
-    ?? job.company?.totalReviews
-    ?? job.company?.ratingsCount
-    ?? 0,
-  );
   const companySpent = job.company?.totalSpent || job.company?.spent || "";
   const experienceLevel = job.experienceLevel || job.level || "";
   const estimateBudget = Number(job.fixedBudget || job.salaryMax || job.salaryMin || 0);
@@ -56,7 +43,6 @@ const JobListItem = ({ job, onSave, onUnsave, onApply, onDislike, nowTs, isDark 
     .map((item) => item.trim())
     .filter(Boolean)
     .slice(0, 6);
-  const roundedRating = Math.max(0, Math.min(5, Math.round(companyRating)));
   const normalizedStatus =
     job.applicationStatus === "Accepted" || job.applicationStatus === "Hired"
       ? "Accepted"
@@ -103,7 +89,7 @@ const JobListItem = ({ job, onSave, onUnsave, onApply, onDislike, nowTs, isDark 
           <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>{postedText()}</p>
           <h3 className={`mt-1 text-lg sm:text-xl font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>{job.title}</h3>
           <p className={`mt-1 text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}>
-            {["Fixed-price", experienceLevel, `Est. Budget: $${estimateBudget.toLocaleString()}`]
+            {["Fixed-price", experienceLevel, `Est. Budget: NPR${estimateBudget.toLocaleString()}`]
               .filter(Boolean)
               .join(" - ")}
           </p>
@@ -147,15 +133,6 @@ const JobListItem = ({ job, onSave, onUnsave, onApply, onDislike, nowTs, isDark 
       <div className={`mt-4 pt-4 border-t text-xs flex flex-wrap items-center gap-x-3 gap-y-2 ${isDark ? "border-slate-700 text-slate-400" : "border-gray-200 text-gray-500"}`}>
         <span className="inline-flex items-center gap-1">{companyName === "Company" ? "Enterprise" : companyName}</span>
         <span className="inline-flex items-center gap-1 text-blue-400"><BadgeCheck className="h-4 w-4" /> Payment verified</span>
-        <span className="inline-flex items-center gap-1">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <Star
-              key={`rating-${job._id}-${index}`}
-              className={`h-3.5 w-3.5 ${index < roundedRating ? "text-amber-400 fill-current" : isDark ? "text-slate-600" : "text-gray-300"}`}
-            />
-          ))}
-        </span>
-        <span>{companyReviews > 0 ? `${companyReviews} feedback` : "0 feedback"}</span>
         {companySpent ? <span>{companySpent}</span> : null}
         <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {job.location}</span>
       </div>

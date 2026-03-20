@@ -76,6 +76,7 @@ const UserProfile = () => {
   const [submittingReviewPaymentId, setSubmittingReviewPaymentId] = useState("");
   const [reviewDrafts, setReviewDrafts] = useState({});
   const [errors, setErrors] = useState({});
+  const showFeedbackAndRatings = false;
 
   useEffect(() => {
     if (!user) return;
@@ -95,6 +96,13 @@ const UserProfile = () => {
   }, [user]);
 
   useEffect(() => {
+    if (!showFeedbackAndRatings) {
+      setEligibleReviews([]);
+      setReceivedReviews([]);
+      setAverageRating(0);
+      return;
+    }
+
     const loadReviewData = async () => {
       if (!user?._id) return;
 
@@ -119,7 +127,7 @@ const UserProfile = () => {
     };
 
     loadReviewData();
-  }, [user?._id]);
+  }, [showFeedbackAndRatings, user?._id]);
 
   const isDark = form.themePreference === "dark";
 
@@ -803,112 +811,116 @@ const UserProfile = () => {
           </p>
         </div>
 
-        <div className={`rounded-2xl border shadow-sm p-6 ${cardClass}`}>
-          <h2 className={`font-semibold text-base mb-3 ${textPrimary}`}>
-            Rate Employers (Completed Projects)
-          </h2>
-          {eligibleReviews.length === 0 ? (
-            <p className={`text-sm ${textSecondary}`}>No pending employer reviews.</p>
-          ) : (
-            <div className="space-y-3">
-              {eligibleReviews.map((item) => {
-                const draft = reviewDrafts[item.paymentId] || {
-                  rating: "",
-                  comment: "",
-                };
+        {showFeedbackAndRatings ? (
+          <>
+            <div className={`rounded-2xl border shadow-sm p-6 ${cardClass}`}>
+              <h2 className={`font-semibold text-base mb-3 ${textPrimary}`}>
+                Rate Employers (Completed Projects)
+              </h2>
+              {eligibleReviews.length === 0 ? (
+                <p className={`text-sm ${textSecondary}`}>No pending employer reviews.</p>
+              ) : (
+                <div className="space-y-3">
+                  {eligibleReviews.map((item) => {
+                    const draft = reviewDrafts[item.paymentId] || {
+                      rating: "",
+                      comment: "",
+                    };
 
-                return (
-                  <div
-                    key={item.paymentId}
-                    className={`rounded-xl border p-3 ${isDark ? "border-slate-700" : "border-gray-200"}`}
-                  >
-                    <p className={`text-sm font-medium ${textPrimary}`}>
-                      {item.reviewee?.name || "Employer"}
-                    </p>
-                    <p className={`text-xs mb-2 ${textSecondary}`}>{item.job?.title || "Project"}</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr_auto] gap-2">
+                    return (
                       <div
-                        className={`flex items-center gap-1 px-2 py-2 border rounded-lg ${
-                          isDark
-                            ? "border-slate-700 bg-slate-800"
-                            : "border-gray-200 bg-white"
-                        }`}
+                        key={item.paymentId}
+                        className={`rounded-xl border p-3 ${isDark ? "border-slate-700" : "border-gray-200"}`}
                       >
-                        {[1, 2, 3, 4, 5].map((star) => {
-                          const selected = Number(draft.rating || 0) >= star;
-                          return (
-                            <button
-                              key={star}
-                              type="button"
-                              onClick={() =>
-                                handleReviewDraftChange(item.paymentId, "rating", String(star))
-                              }
-                              className="p-0.5"
-                              title={`${star} star${star > 1 ? "s" : ""}`}
-                            >
-                              <Star
-                                className={`h-5 w-5 ${selected ? "text-amber-500 fill-amber-500" : "text-gray-300"}`}
-                              />
-                            </button>
-                          );
-                        })}
+                        <p className={`text-sm font-medium ${textPrimary}`}>
+                          {item.reviewee?.name || "Employer"}
+                        </p>
+                        <p className={`text-xs mb-2 ${textSecondary}`}>{item.job?.title || "Project"}</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr_auto] gap-2">
+                          <div
+                            className={`flex items-center gap-1 px-2 py-2 border rounded-lg ${
+                              isDark
+                                ? "border-slate-700 bg-slate-800"
+                                : "border-gray-200 bg-white"
+                            }`}
+                          >
+                            {[1, 2, 3, 4, 5].map((star) => {
+                              const selected = Number(draft.rating || 0) >= star;
+                              return (
+                                <button
+                                  key={star}
+                                  type="button"
+                                  onClick={() =>
+                                    handleReviewDraftChange(item.paymentId, "rating", String(star))
+                                  }
+                                  className="p-0.5"
+                                  title={`${star} star${star > 1 ? "s" : ""}`}
+                                >
+                                  <Star
+                                    className={`h-5 w-5 ${selected ? "text-amber-500 fill-amber-500" : "text-gray-300"}`}
+                                  />
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <input
+                            type="text"
+                            value={draft.comment}
+                            onChange={(event) =>
+                              handleReviewDraftChange(item.paymentId, "comment", event.target.value)
+                            }
+                            placeholder="Write feedback"
+                            className={`px-3 py-2 border rounded-lg text-sm ${
+                              isDark
+                                ? "border-slate-700 bg-slate-800 text-slate-100"
+                                : "border-gray-200 bg-white text-gray-900"
+                            }`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSubmitReview(item.paymentId)}
+                            disabled={submittingReviewPaymentId === item.paymentId}
+                            className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-60"
+                          >
+                            {submittingReviewPaymentId === item.paymentId ? "Submitting..." : "Submit"}
+                          </button>
+                        </div>
                       </div>
-                      <input
-                        type="text"
-                        value={draft.comment}
-                        onChange={(event) =>
-                          handleReviewDraftChange(item.paymentId, "comment", event.target.value)
-                        }
-                        placeholder="Write feedback"
-                        className={`px-3 py-2 border rounded-lg text-sm ${
-                          isDark
-                            ? "border-slate-700 bg-slate-800 text-slate-100"
-                            : "border-gray-200 bg-white text-gray-900"
-                        }`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleSubmitReview(item.paymentId)}
-                        disabled={submittingReviewPaymentId === item.paymentId}
-                        className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-60"
-                      >
-                        {submittingReviewPaymentId === item.paymentId ? "Submitting..." : "Submit"}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className={`rounded-2xl border shadow-sm p-6 ${cardClass}`}>
-          <h2 className={`font-semibold text-base mb-1 ${textPrimary}`}>Your Freelancer Reviews</h2>
-          <p className={`text-sm mb-3 ${textSecondary}`}>
-            Average rating: <span className="font-semibold">{averageRating || 0}</span> / 5
-          </p>
-
-          {receivedReviews.length === 0 ? (
-            <p className={`text-sm ${textSecondary}`}>No reviews yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {receivedReviews.slice(0, 5).map((review) => (
-                <div
-                  key={review._id}
-                  className={`rounded-xl border p-3 ${isDark ? "border-slate-700" : "border-gray-200"}`}
-                >
-                  <p className={`text-sm font-medium ${textPrimary}`}>
-                    {review.reviewer?.name || "User"} • {review.rating}/5
-                  </p>
-                  <p className={`text-xs ${textSecondary}`}>{review.job?.title || "Project"}</p>
-                  {review.comment ? (
-                    <p className={`text-sm mt-1 ${textSecondary}`}>{review.comment}</p>
-                  ) : null}
+                    );
+                  })}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
+
+            <div className={`rounded-2xl border shadow-sm p-6 ${cardClass}`}>
+              <h2 className={`font-semibold text-base mb-1 ${textPrimary}`}>Your Freelancer Reviews</h2>
+              <p className={`text-sm mb-3 ${textSecondary}`}>
+                Average rating: <span className="font-semibold">{averageRating || 0}</span> / 5
+              </p>
+
+              {receivedReviews.length === 0 ? (
+                <p className={`text-sm ${textSecondary}`}>No reviews yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {receivedReviews.slice(0, 5).map((review) => (
+                    <div
+                      key={review._id}
+                      className={`rounded-xl border p-3 ${isDark ? "border-slate-700" : "border-gray-200"}`}
+                    >
+                      <p className={`text-sm font-medium ${textPrimary}`}>
+                        {review.reviewer?.name || "User"} • {review.rating}/5
+                      </p>
+                      <p className={`text-xs ${textSecondary}`}>{review.job?.title || "Project"}</p>
+                      {review.comment ? (
+                        <p className={`text-sm mt-1 ${textSecondary}`}>{review.comment}</p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        ) : null}
       </div>
     </div>
   );

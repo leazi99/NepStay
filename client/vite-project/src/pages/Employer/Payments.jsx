@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import {
-  DollarSign,
   Receipt,
   Wallet,
   AlertCircle,
   Star,
   CreditCard,
-  Building2,
-  Ellipsis,
   ShieldCheck,
+  Lock,
+  X,
+  ChevronDown,
 } from "lucide-react";
 import DashboardLayout from "../../components/layout/DashboardLayout.jsx";
 import axiosInstance from "../../utils/axiosInstance";
@@ -20,8 +20,15 @@ import { useAuth } from "../../context/AuthContext";
 import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 
-const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "";
+const stripePublishableKey =
+  String(
+    import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||
+      import.meta.env.VITE_STRIPE_PUBLIC_KEY ||
+      import.meta.env.VITE_STRIPE_KEY ||
+      "",
+  ).trim();
 const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
+const PAYMENT_CURRENCY_CODE = "NPR";
 
 const elementBaseStyle = (isDark) => ({
   style: {
@@ -40,13 +47,14 @@ const elementBaseStyle = (isDark) => ({
 });
 
 const StripeCardForm = ({
-  isDark,
   clientSecret,
   paymentId,
   paymentIntentId,
+  amount,
+  billingEmail,
   billingName,
   billingCountry,
-  onBillingNameChange,
+  onBillingEmailChange,
   onBillingCountryChange,
   onBusyChange,
   onSuccess,
@@ -55,10 +63,62 @@ const StripeCardForm = ({
   const elements = useElements();
   const [cardError, setCardError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cardState, setCardState] = useState({
+    numberComplete: false,
+    expiryComplete: false,
+    cvcComplete: false,
+  });
+
+  const normalizedEmail = String(billingEmail || "").trim();
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
+  const canSubmitPayment =
+    Boolean(stripe) &&
+    Boolean(elements) &&
+    Boolean(clientSecret) &&
+    isEmailValid &&
+    Boolean(billingCountry) &&
+    cardState.numberComplete &&
+    cardState.expiryComplete &&
+    cardState.cvcComplete &&
+    !isSubmitting;
+
+  const handleCardElementChange = (field, event) => {
+    setCardState((prev) => ({
+      ...prev,
+      [field]: Boolean(event.complete),
+    }));
+
+    if (event.error?.message) {
+      setCardError(event.error.message);
+      return;
+    }
+
+    setCardError("");
+  };
 
   const handlePay = async () => {
     if (!stripe || !elements) {
       toast.error("Stripe is still loading. Please wait.");
+      return;
+    }
+
+    if (!isEmailValid) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    if (!billingCountry) {
+      toast.error("Please select your billing country");
+      return;
+    }
+
+    if (!cardState.numberComplete || !cardState.expiryComplete || !cardState.cvcComplete) {
+      toast.error("Please complete card number, expiry date, and security code");
+      return;
+    }
+
+    if (!clientSecret) {
+      toast.error("Please initialize card payment first");
       return;
     }
 
@@ -77,6 +137,7 @@ const StripeCardForm = ({
         payment_method: {
           card: cardNumber,
           billing_details: {
+            email: normalizedEmail || undefined,
             name: billingName || undefined,
             address: {
               country: billingCountry || undefined,
@@ -111,72 +172,103 @@ const StripeCardForm = ({
   };
 
   return (
-    <div className={`rounded-2xl border p-4 space-y-3 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}>
-      <div className="flex items-center gap-2 text-xs">
-        <button type="button" className={`px-3 py-1.5 rounded-lg border text-xs font-medium ${isDark ? "bg-blue-900/40 text-blue-200 border-blue-700" : "bg-blue-50 text-blue-700 border-blue-200"}`}>
-          <CreditCard className="h-3.5 w-3.5 inline mr-1" /> Card
-        </button>
-        <button type="button" className={`px-3 py-1.5 rounded-lg border text-xs ${isDark ? "text-slate-400 border-slate-700" : "text-gray-500 border-gray-200"}`} disabled>
-          GPay
-        </button>
-        <button type="button" className={`px-3 py-1.5 rounded-lg border text-xs ${isDark ? "text-slate-400 border-slate-700" : "text-gray-500 border-gray-200"}`} disabled>
-          <Building2 className="h-3.5 w-3.5 inline mr-1" /> US bank account
-        </button>
-        <button type="button" className={`px-2 py-1.5 rounded-lg border text-xs ${isDark ? "text-slate-400 border-slate-700" : "text-gray-500 border-gray-200"}`} disabled>
-          <Ellipsis className="h-3.5 w-3.5" />
-        </button>
+    <div className="rounded-xl border border-gray-300 bg-[#f7f7f9] p-4 space-y-3.5">
+      <div className="flex items-center gap-2 text-sm font-semibold text-[#1568d6]">
+        <CreditCard className="h-4 w-4" />
+        <span>Card</span>
+      </div>
+
+      <div className="rounded-lg border border-gray-300 bg-white overflow-hidden">
+        <div className="px-3.5 py-3 border-b border-gray-300">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4 text-green-500" />
+                <p className="text-[15px] font-semibold text-gray-800 leading-none">Secure, fast checkout with Link</p>
+              </div>
+              <p className="mt-1 text-sm leading-5 text-gray-600">
+                Securely pay with your saved info, or create a Link account for faster checkout next time.
+              </p>
+            </div>
+            <button type="button" className="text-gray-400" aria-label="Close">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-3.5 space-y-3">
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700">Email</label>
+            <input
+              type="email"
+              value={billingEmail}
+              onChange={(event) => onBillingEmailChange(event.target.value)}
+              placeholder="you@example.com"
+              className="w-full h-11 px-3 border border-gray-300 rounded-md text-sm bg-white text-gray-900"
+            />
+          </div>
+
+          <button
+            type="button"
+            disabled
+            className="w-full h-11 rounded-md border border-gray-300 text-left px-3 text-sm leading-none text-gray-400 bg-gray-50"
+          >
+            <span className="inline-block">◉ link</span>
+          </button>
+        </div>
       </div>
 
       <div>
-        <label className={`block text-xs font-medium mb-1 ${isDark ? "text-slate-300" : "text-gray-600"}`}>Card number</label>
-        <div className={`h-11 px-3 rounded-lg border flex items-center justify-between ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
-          <CardNumberElement options={elementBaseStyle(isDark)} />
-          <div className="flex items-center gap-1 text-[10px] font-semibold text-gray-400">
-            <span className="px-1 py-0.5 rounded bg-red-50 text-red-500">MC</span>
-            <span className="px-1 py-0.5 rounded bg-blue-50 text-blue-500">VISA</span>
-            <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-500">AMEX</span>
+        <label className="block text-sm font-medium mb-1 text-gray-700">Card number</label>
+        <div className="h-11 px-3 rounded-md border border-gray-300 bg-white flex items-center justify-between">
+          <CardNumberElement
+            options={elementBaseStyle(false)}
+            onChange={(event) => handleCardElementChange("numberComplete", event)}
+          />
+          <div className="flex items-center gap-1 text-[9px] font-semibold text-white ml-3 shrink-0">
+            <span className="px-1.5 py-0.5 rounded bg-[#1a66d1]">VISA</span>
+            <span className="px-1.5 py-0.5 rounded bg-[#ef7a31]">MC</span>
+            <span className="px-1.5 py-0.5 rounded bg-[#1db7d8]">AMEX</span>
+            <span className="px-1.5 py-0.5 rounded bg-[#f08b34]">DISC</span>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={`block text-xs font-medium mb-1 ${isDark ? "text-slate-300" : "text-gray-600"}`}>Expiration</label>
-          <div className={`h-11 px-3 rounded-lg border flex items-center ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
-            <CardExpiryElement options={elementBaseStyle(isDark)} />
+          <label className="block text-sm font-medium mb-1 text-gray-700">Expiration date</label>
+          <div className="h-11 px-3 rounded-md border border-gray-300 bg-white flex items-center">
+            <CardExpiryElement
+              options={elementBaseStyle(false)}
+              onChange={(event) => handleCardElementChange("expiryComplete", event)}
+            />
           </div>
         </div>
         <div>
-          <label className={`block text-xs font-medium mb-1 ${isDark ? "text-slate-300" : "text-gray-600"}`}>CVC</label>
-          <div className={`h-11 px-3 rounded-lg border flex items-center ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
-            <CardCvcElement options={elementBaseStyle(isDark)} />
+          <label className="block text-sm font-medium mb-1 text-gray-700">Security code</label>
+          <div className="h-11 px-3 rounded-md border border-gray-300 bg-white flex items-center">
+            <CardCvcElement
+              options={elementBaseStyle(false)}
+              onChange={(event) => handleCardElementChange("cvcComplete", event)}
+            />
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label className={`block text-xs font-medium mb-1 ${isDark ? "text-slate-300" : "text-gray-600"}`}>Cardholder</label>
-          <input
-            type="text"
-            value={billingName}
-            onChange={(event) => onBillingNameChange(event.target.value)}
-            placeholder="Name on card"
-            className={`w-full h-11 px-3 border rounded-lg text-sm ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200 bg-white text-gray-900"}`}
-          />
-        </div>
-        <div>
-          <label className={`block text-xs font-medium mb-1 ${isDark ? "text-slate-300" : "text-gray-600"}`}>Country</label>
+      <div>
+        <label className="block text-sm font-medium mb-1 text-gray-700">Country</label>
+        <div className="relative">
           <select
             value={billingCountry}
             onChange={(event) => onBillingCountryChange(event.target.value)}
-            className={`w-full h-11 px-3 border rounded-lg text-sm ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200 bg-white text-gray-900"}`}
+            className="w-full h-11 px-3 border border-gray-300 rounded-md text-sm appearance-none bg-white text-gray-900"
           >
-            <option value="US">United States</option>
             <option value="NP">Nepal</option>
             <option value="IN">India</option>
+            <option value="US">United States</option>
             <option value="GB">United Kingdom</option>
           </select>
+          <ChevronDown className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" />
         </div>
       </div>
 
@@ -184,15 +276,139 @@ const StripeCardForm = ({
         <div className="text-xs text-red-500">{cardError}</div>
       ) : null}
 
+      {!isEmailValid ? (
+        <div className="text-xs text-amber-500">Please provide a valid email to continue.</div>
+      ) : null}
+
+      {!clientSecret ? (
+        <div className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
+          Fill card details now, then click Initialize Card Payment to continue securely.
+        </div>
+      ) : null}
+
       <button
         type="button"
         onClick={handlePay}
-        disabled={isSubmitting || !stripe || !elements}
-        className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60"
+        disabled={!canSubmitPayment}
+        className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-[#1568d6] text-white text-sm font-medium hover:bg-[#0f5bc0] disabled:opacity-60"
       >
         <ShieldCheck className="h-4 w-4" />
-        {isSubmitting ? "Processing payment..." : "Pay securely"}
+        {isSubmitting ? "Processing payment..." : `Pay ${PAYMENT_CURRENCY_CODE} ${Number(amount || 0).toLocaleString("en-NP")} securely`}
       </button>
+    </div>
+  );
+};
+
+const StripeCardFormFallback = ({
+  billingEmail,
+  billingCountry,
+  onBillingEmailChange,
+  onBillingCountryChange,
+  showKeyWarning = false,
+}) => {
+  return (
+    <div className="rounded-xl border border-gray-300 bg-[#f7f7f9] p-4 space-y-3.5">
+      <div className="flex items-center gap-2 text-sm font-semibold text-[#1568d6]">
+        <CreditCard className="h-4 w-4" />
+        <span>Card</span>
+      </div>
+
+      <div className="rounded-lg border border-gray-300 bg-white overflow-hidden">
+        <div className="px-3.5 py-3 border-b border-gray-300">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4 text-green-500" />
+                <p className="text-[15px] font-semibold text-gray-800 leading-none">Secure, fast checkout with Link</p>
+              </div>
+              <p className="mt-1 text-sm leading-5 text-gray-600">
+                Securely pay with your saved info, or create a Link account for faster checkout next time.
+              </p>
+            </div>
+            <button type="button" className="text-gray-400" aria-label="Close">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-3.5 space-y-3">
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700">Email</label>
+            <input
+              type="email"
+              value={billingEmail}
+              onChange={(event) => onBillingEmailChange(event.target.value)}
+              placeholder="you@example.com"
+              className="w-full h-11 px-3 border border-gray-300 rounded-md text-sm bg-white text-gray-900"
+            />
+          </div>
+
+          <button
+            type="button"
+            disabled
+            className="w-full h-11 rounded-md border border-gray-300 text-left px-3 text-sm leading-none text-gray-400 bg-gray-50"
+          >
+            <span className="inline-block">◉ link</span>
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1 text-gray-700">Card number</label>
+        <div className="h-11 px-3 rounded-md border border-gray-300 bg-white flex items-center justify-between text-gray-400 text-sm">
+          <span>1234 1234 1234 1234</span>
+          <div className="flex items-center gap-1 text-[9px] font-semibold text-white ml-3 shrink-0">
+            <span className="px-1.5 py-0.5 rounded bg-[#1a66d1]">VISA</span>
+            <span className="px-1.5 py-0.5 rounded bg-[#ef7a31]">MC</span>
+            <span className="px-1.5 py-0.5 rounded bg-[#1db7d8]">AMEX</span>
+            <span className="px-1.5 py-0.5 rounded bg-[#f08b34]">DISC</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium mb-1 text-gray-700">Expiration date</label>
+          <input
+            type="text"
+            value="MM / YY"
+            readOnly
+            className="w-full h-11 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-400"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1 text-gray-700">Security code</label>
+          <input
+            type="text"
+            value="CVC"
+            readOnly
+            className="w-full h-11 px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-400"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1 text-gray-700">Country</label>
+        <div className="relative">
+          <select
+            value={billingCountry}
+            onChange={(event) => onBillingCountryChange(event.target.value)}
+            className="w-full h-11 px-3 border border-gray-300 rounded-md text-sm appearance-none bg-white text-gray-900"
+          >
+            <option value="NP">Nepal</option>
+            <option value="IN">India</option>
+            <option value="US">United States</option>
+            <option value="GB">United Kingdom</option>
+          </select>
+          <ChevronDown className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" />
+        </div>
+      </div>
+
+      <div className={`rounded-md border px-3 py-2 text-xs ${showKeyWarning ? "border-amber-200 bg-amber-50 text-amber-700" : "border-blue-200 bg-blue-50 text-blue-700"}`}>
+        {showKeyWarning
+          ? "Add VITE_STRIPE_PUBLISHABLE_KEY in frontend env to activate secure card processing."
+          : "Click Initialize Card Payment to activate secure card fields."}
+      </div>
     </div>
   );
 };
@@ -212,8 +428,9 @@ const Payments = () => {
   const [stripePaymentId, setStripePaymentId] = useState("");
   const [stripePaymentIntentId, setStripePaymentIntentId] = useState("");
   const [stripeBusy, setStripeBusy] = useState(false);
+  const [billingEmail, setBillingEmail] = useState(user?.email || "");
   const [billingName, setBillingName] = useState(user?.name || "");
-  const [billingCountry, setBillingCountry] = useState("US");
+  const [billingCountry, setBillingCountry] = useState("NP");
 
   const [form, setForm] = useState({
     applicationId: "",
@@ -226,6 +443,10 @@ const Payments = () => {
   useEffect(() => {
     setBillingName(user?.name || "");
   }, [user?.name]);
+
+  useEffect(() => {
+    setBillingEmail(user?.email || "");
+  }, [user?.email]);
 
   useEffect(() => {
     setStripeClientSecret("");
@@ -387,6 +608,9 @@ const Payments = () => {
       year: "numeric",
     });
 
+  const formatCurrencyAmount = (value) =>
+    `${PAYMENT_CURRENCY_CODE} ${Number(value || 0).toLocaleString("en-NP")}`;
+
   const getPaymentStatusBadgeClasses = (status) => {
     const normalized = String(status || "").toLowerCase();
 
@@ -464,7 +688,7 @@ const Payments = () => {
           </div>
           <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium ${isDark ? "bg-emerald-900/30 text-emerald-300" : "bg-emerald-50 text-emerald-700"}`}>
             <Wallet className="h-4 w-4" />
-            Total Paid: ${totalPaid.toLocaleString()}
+            Total Paid: {formatCurrencyAmount(totalPaid)}
           </div>
         </div>
 
@@ -502,16 +726,16 @@ const Payments = () => {
               </div>
 
               <div>
-                <label className={`block text-sm font-medium mb-1.5 ${isDark ? "text-slate-200" : "text-gray-700"}`}>Amount (USD) *</label>
+                <label className={`block text-sm font-medium mb-1.5 ${isDark ? "text-slate-200" : "text-gray-700"}`}>Amount (NPR) *</label>
                 <div className="relative">
-                  <DollarSign className={`h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-500" : "text-gray-400"}`} />
+                  <Wallet className={`h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-500" : "text-gray-400"}`} />
                   <input
                     type="number"
                     min="1"
                     name="amount"
                     value={form.amount}
                     onChange={handleChange}
-                    placeholder="e.g. 500"
+                    placeholder="e.g. 5000"
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200"}`}
                   />
                 </div>
@@ -529,7 +753,6 @@ const Payments = () => {
                   <option value="esewa">eSewa</option>
                   <option value="khalti">Khalti</option>
                   <option value="stripe">Stripe</option>
-                  <option value="cash">Cash</option>
                 </select>
               </div>
 
@@ -547,37 +770,37 @@ const Payments = () => {
 
               {form.paymentMethod === "stripe" ? (
                 <div className="md:col-span-2 space-y-3">
-                  {!stripePromise ? (
-                    <div className={`rounded-xl border px-4 py-3 text-sm ${isDark ? "bg-amber-900/20 border-amber-800 text-amber-300" : "bg-amber-50 border-amber-200 text-amber-700"}`}>
-                      Stripe UI is enabled, but publishable key is missing. Set <strong>VITE_STRIPE_PUBLISHABLE_KEY</strong> in frontend env.
-                    </div>
-                  ) : stripeClientSecret ? (
+                  {stripePromise ? (
                     <Elements
                       stripe={stripePromise}
                       options={{
-                        clientSecret: stripeClientSecret,
                         appearance: {
                           theme: isDark ? "night" : "stripe",
                         },
                       }}
                     >
                       <StripeCardForm
-                        isDark={isDark}
                         clientSecret={stripeClientSecret}
                         paymentId={stripePaymentId}
                         paymentIntentId={stripePaymentIntentId}
+                        amount={form.amount}
+                        billingEmail={billingEmail}
                         billingName={billingName}
                         billingCountry={billingCountry}
-                        onBillingNameChange={setBillingName}
+                        onBillingEmailChange={setBillingEmail}
                         onBillingCountryChange={setBillingCountry}
                         onBusyChange={setStripeBusy}
                         onSuccess={handleStripePaymentSuccess}
                       />
                     </Elements>
                   ) : (
-                    <div className={`rounded-xl border px-4 py-3 text-sm ${isDark ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-600"}`}>
-                      Click <strong>Initialize Card Payment</strong> to load secure card fields.
-                    </div>
+                    <StripeCardFormFallback
+                      billingEmail={billingEmail}
+                      billingCountry={billingCountry}
+                      onBillingEmailChange={setBillingEmail}
+                      onBillingCountryChange={setBillingCountry}
+                      showKeyWarning={!stripePromise}
+                    />
                   )}
                 </div>
               ) : null}
@@ -585,16 +808,18 @@ const Payments = () => {
               <div className="md:col-span-2 flex justify-end">
                 <button
                   type="submit"
-                  disabled={isSubmitting || stripeBusy}
+                  disabled={isSubmitting || stripeBusy || (form.paymentMethod === "stripe" && !stripePromise)}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60"
                 >
                   <Receipt className="h-4 w-4" />
                   {isSubmitting
                     ? "Saving..."
                     : form.paymentMethod === "stripe"
-                      ? stripeClientSecret
-                        ? "Re-initialize Card Payment"
-                        : "Initialize Card Payment"
+                      ? !stripePromise
+                        ? "Stripe Key Missing"
+                        : stripeClientSecret
+                          ? "Re-initialize Card Payment"
+                          : "Initialize Card Payment"
                       : "Record Payment"}
                 </button>
               </div>
@@ -629,7 +854,7 @@ const Payments = () => {
                             {String(payment.status || "pending")}
                           </span>
                         </td>
-                        <td className={`px-6 py-4 text-right font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>${Number(payment.amount || 0).toLocaleString()}</td>
+                        <td className={`px-6 py-4 text-right font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>{formatCurrencyAmount(payment.amount)}</td>
                         <td className={`px-6 py-4 text-right hidden sm:table-cell ${isDark ? "text-slate-400" : "text-gray-500"}`}>{formatDate(payment.createdAt)}</td>
                       </tr>
                     ))}
@@ -666,7 +891,7 @@ const Payments = () => {
                               {item.reviewee?.name || "Freelancer"}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {item.job?.title || "Project"} • ${Number(item.amount || 0).toLocaleString()}
+                              {item.job?.title || "Project"} • {formatCurrencyAmount(item.amount)}
                             </p>
                           </div>
                           <span className="text-xs text-gray-400">{formatDate(item.completedAt)}</span>

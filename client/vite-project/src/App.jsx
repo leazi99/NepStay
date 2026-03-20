@@ -63,7 +63,6 @@ const App = () => {
           <Route path='/profile' element={<UserProfile />} />
           <Route path='/messages' element={<Messages />} />
           <Route path='/notifications' element={<Notifications />} />
-          <Route path='/reviews' element={<Reviews />} />
         </Route>
 
         <Route element={<ProtectedRoutes requiredRole="jobseeker" />}>
@@ -78,6 +77,7 @@ const App = () => {
           <Route path='/manage-jobs' element={<ManageJobs />} />
           <Route path='/employer-job/:jobId' element={<EmployerJobView />} />
           <Route path='/payments' element={<Payments />} />
+          <Route path='/reviews' element={<Reviews />} />
           <Route path='/applicants/:jobId' element={<ApplicationView />} />
           <Route path='/freelancer/:freelancerId' element={<FreelancerProfileView />} />
           <Route path='/company-profile' element={<EmployerProfile />} />

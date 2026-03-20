@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Briefcase, DollarSign, Clock, MapPin, FileText, CheckSquare, ArrowLeft } from "lucide-react";
+import { Briefcase, Wallet, Clock, MapPin, FileText, CheckSquare, ArrowLeft } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import DashboardLayout from "../../components/layout/DashboardLayout.jsx";
@@ -105,7 +105,7 @@ const JobPostingForm = () => {
           salaryMax: job.salaryMax ?? "",
           duration: job.duration || "",
         });
-      } catch (error) {
+      } catch {
         toast.error("Failed to load job details");
         navigate("/manage-jobs");
       } finally {
@@ -165,7 +165,7 @@ const JobPostingForm = () => {
   return (
     <DashboardLayout activeMenu="post-job">
       <div className="max-w-3xl mx-auto space-y-6">
-        {/* Header */}
+     
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
@@ -198,7 +198,7 @@ const JobPostingForm = () => {
             </h2>
             <div className="grid grid-cols-1 gap-4">
               <InputField
-                label="Job Title *"
+                label="Job Title "
                 name="title"
                 placeholder="e.g. Senior React Developer"
                 value={form.title}
@@ -207,7 +207,7 @@ const JobPostingForm = () => {
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <SelectField
-                  label="Job Type / Location *"
+                  label="Job Type / Location "
                   name="location"
                   options={JOB_TYPES}
                   placeholder="Select job type"
@@ -238,7 +238,7 @@ const JobPostingForm = () => {
             </h2>
             <div className="space-y-4">
               <TextAreaField
-                label="Job Description *"
+                label="Job Description "
                 name="description"
                 placeholder="Describe the role, responsibilities, and what a typical day looks like..."
                 rows={5}
@@ -247,7 +247,7 @@ const JobPostingForm = () => {
                 error={errors.description}
               />
               <TextAreaField
-                label="Requirements *"
+                label="Requirements "
                 name="requirements"
                 placeholder="List required skills, experience, qualifications..."
                 rows={4}
@@ -263,34 +263,34 @@ const JobPostingForm = () => {
           {/* Compensation */}
           <div>
             <h2 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-blue-500" />
+              <Wallet className="h-4 w-4 text-blue-500" />
               Compensation &amp; Duration
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <InputField
-                label="Min Salary ($/mo) *"
+                label="Min Salary (NPR)"
                 name="salaryMin"
                 type="number"
                 min="0"
-                placeholder="e.g. 3000"
-                icon={DollarSign}
+                placeholder="e.g. 30000"
+                icon={Wallet}
                 value={form.salaryMin}
                 onChange={handleChange}
                 error={errors.salaryMin}
               />
               <InputField
-                label="Max Salary ($/mo) *"
+                label="Max Salary (NPR)"
                 name="salaryMax"
                 type="number"
                 min="0"
-                placeholder="e.g. 6000"
-                icon={DollarSign}
+                placeholder="e.g. 60000"
+                icon={Wallet}
                 value={form.salaryMax}
                 onChange={handleChange}
                 error={errors.salaryMax}
               />
               <InputField
-                label="Duration *"
+                label="Duration "
                 name="duration"
                 placeholder="e.g. Full-time, 6 months"
                 icon={Clock}

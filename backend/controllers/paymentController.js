@@ -5,6 +5,7 @@ import Stripe from "stripe";
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
   : null;
+const EMPLOYER_PAYMENT_CURRENCY = "npr";
 
 const ensureEmployer = (req, res) => {
   if (req.user?.role !== "employer") {
@@ -13,7 +14,6 @@ const ensureEmployer = (req, res) => {
       message: "Only employers can access payments",
     });
     return false;
-    `. `;
   }
   return true;
 };
@@ -191,6 +191,7 @@ export const createPayment = async (req, res) => {
       paymentMethod: paymentMethod || "bank_transfer",
       notes: notes || "",
       status: "completed",
+      currency: EMPLOYER_PAYMENT_CURRENCY,
     });
 
     const populatedPayment = await paymentModel
@@ -285,7 +286,7 @@ export const createStripeCheckoutSession = async (req, res) => {
       paymentMethod: "stripe",
       notes: notes || "",
       status: "pending",
-      currency: "usd",
+      currency: EMPLOYER_PAYMENT_CURRENCY,
     });
 
     const session = await stripe.checkout.sessions.create({
@@ -294,7 +295,7 @@ export const createStripeCheckoutSession = async (req, res) => {
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: EMPLOYER_PAYMENT_CURRENCY,
             product_data: {
               name: `Freelancer Payment • ${application.job.title}`,
               description: `Payment to ${application.applicant?.name || "freelancer"}`,
@@ -386,12 +387,12 @@ export const createStripePaymentIntent = async (req, res) => {
       paymentMethod: "stripe",
       notes: notes || "",
       status: "pending",
-      currency: "usd",
+      currency: EMPLOYER_PAYMENT_CURRENCY,
     });
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amountNumber * 100),
-      currency: "usd",
+      currency: EMPLOYER_PAYMENT_CURRENCY,
       automatic_payment_methods: { enabled: true },
       metadata: {
         paymentId: pendingPayment._id.toString(),
