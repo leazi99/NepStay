@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import axiosInstance from "../utils/axiosInstance";
+import { clearStoredAuthToken, storeAuthToken } from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPaths";
 
 const AuthContext = createContext();
@@ -7,9 +8,17 @@ const LEGACY_THEME_KEY = "themePreference";
 const ACTIVE_THEME_KEY = "themePreference:active";
 
 const normalizeRole = (role) => {
-  const value = String(role || "").toLowerCase();
-  if (value === "client") return "employer";
-  if (value === "freelancer") return "jobseeker";
+  const value = String(role || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+
+  if (["client", "employer"].includes(value)) return "employer";
+  if (["freelancer", "jobseeker", "job seeker"].includes(value)) {
+    return "jobseeker";
+  }
+  if (value === "admin") return "admin";
   return value;
 };
 
@@ -104,6 +113,7 @@ export const AuthProvider = ({ children }) => {
     clearSessionRefreshTimer();
     setUser(null);
     setIsAuthenticated(false);
+    clearStoredAuthToken();
     localStorage.removeItem(ACTIVE_THEME_KEY);
     localStorage.removeItem(LEGACY_THEME_KEY);
     document.documentElement.classList.remove("dark");
@@ -184,8 +194,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = (userData) => {
+  const login = (userData, token) => {
     const normalizedUser = normalizeUser(userData);
+    if (token) {
+      storeAuthToken(token);
+    }
     setUser(normalizedUser);
     setIsAuthenticated(true);
     if (normalizedUser?.themePreference) {

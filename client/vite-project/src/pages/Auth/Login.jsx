@@ -31,6 +31,19 @@ const Login = () => {
     success: false,
   });
 
+  const normalizeRole = (role) => {
+    const value = String(role || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ');
+
+    if (['client', 'employer'].includes(value)) return 'employer';
+    if (['freelancer', 'jobseeker', 'job seeker'].includes(value)) return 'jobseeker';
+    if (value === 'admin') return 'admin';
+    return value;
+  };
+
   const validatePassword = (password) => {
     if (!password) return 'Password is required';
     return '';
@@ -83,9 +96,9 @@ const Login = () => {
         }));
         return;
       }
-      login(data.user);
+      login(data.user, data.token);
       setFormState((prev) => ({ ...prev, loading: false, success: true }));
-      const role = data.user?.role;
+      const role = normalizeRole(data.user?.role);
       setTimeout(() => {
         navigate(
           role === 'admin'

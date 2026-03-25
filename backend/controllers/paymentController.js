@@ -2,10 +2,23 @@ import applicationModel from "../models/applicationModel.js";
 import paymentModel from "../models/paymentModel.js";
 import Stripe from "stripe";
 
+
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
   : null;
 const EMPLOYER_PAYMENT_CURRENCY = "npr";
+const KHALTI_INITIATE_URL =
+  process.env.KHALTI_INITIATE_URL ||
+  "https://dev.khalti.com/api/v2/epayment/initiate/";
+const KHALTI_LOOKUP_URL =
+  process.env.KHALTI_LOOKUP_URL ||
+  "https://dev.khalti.com/api/v2/epayment/lookup/";
+
+const getFrontendBaseUrl = (req) =>
+  process.env.FRONTEND_URL || req.headers.origin || "http://localhost:5173";
+
+const getKhaltiSecretKey = () =>
+  String(process.env.KHALTI_SECRET_KEY || "").trim();
 
 const ensureEmployer = (req, res) => {
   if (req.user?.role !== "employer") {
@@ -64,6 +77,32 @@ const hasActivePaymentForApplication = async (applicationId) => {
   });
 
   return Boolean(existingPayment);
+};
+
+const callKhaltiApi = async ({ url, payload }) => {
+  const secretKey = getKhaltiSecretKey();
+
+  if (!secretKey) {
+    throw new Error("Khalti is not configured on server");
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Key ${secretKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    const errorMessage =
+      data?.detail || data?.message || "Khalti request failed";
+    throw new Error(errorMessage);
+  }
+
+  return data;
 };
 
 export const getEmployerPayments = async (req, res) => {
@@ -486,6 +525,185 @@ export const confirmStripePaymentIntent = async (req, res) => {
       message: "Stripe payment status updated",
       payment: populatedPayment,
       stripeStatus: intent.status,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const createKhaltiPaymentSession = async (req, res) => {
+  try {
+    if (!ensureEmployer(req, res)) return;
+
+    const { applicationId, amount, notes } = req.body;
+
+    if (!applicationId || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Application and amount are required",
+      });
+    }
+
+    if (await hasActivePaymentForApplication(applicationId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment already exists for this hired application",
+      });
+    }
+
+    const amountNumber = parseAmount(amount);
+    if (!amountNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid amount",
+      });
+    }
+
+    const { application, error } = await loadAndValidateApplication({
+      applicationId,
+      employerId: req.user.id,
+    });
+
+    if (error) {
+      return res.status(error.status).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    const pendingPayment = await paymentModel.create({
+      employer: req.user.id,
+      freelancer: application.applicant._id,
+      job: application.job._id,
+      application: application._id,
+      amount: amountNumber,
+      paymentMethod: "khalti",
+      notes: notes || "",
+      status: "pending",
+      currency: EMPLOYER_PAYMENT_CURRENCY,
+    });
+
+    try {
+      const frontendBaseUrl = getFrontendBaseUrl(req);
+      const returnUrl = `${frontendBaseUrl}/payments?payment=khalti_success&paymentId=${pendingPayment._id.toString()}`;
+
+      const khaltiResponse = await callKhaltiApi({
+        url: KHALTI_INITIATE_URL,
+        payload: {
+          return_url: returnUrl,
+          website_url: frontendBaseUrl,
+          amount: Math.round(amountNumber * 100),
+          purchase_order_id: pendingPayment._id.toString(),
+          purchase_order_name: `Freelancer Payment • ${application.job.title}`,
+        },
+      });
+
+      pendingPayment.khaltiPidx = String(khaltiResponse?.pidx || "");
+      if (pendingPayment.khaltiPidx) {
+        pendingPayment.transactionId = pendingPayment.khaltiPidx;
+      }
+      await pendingPayment.save();
+
+      return res.status(201).json({
+        success: true,
+        message: "Khalti payment initialized",
+        paymentId: pendingPayment._id,
+        pidx: khaltiResponse?.pidx || "",
+        paymentUrl: khaltiResponse?.payment_url || "",
+      });
+    } catch (gatewayError) {
+      await paymentModel.findByIdAndDelete(pendingPayment._id);
+      return res.status(502).json({
+        success: false,
+        message: gatewayError.message || "Unable to initialize Khalti payment",
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const confirmKhaltiPayment = async (req, res) => {
+  try {
+    if (!ensureEmployer(req, res)) return;
+
+    const { paymentId, pidx } = req.body;
+
+    if (!paymentId && !pidx) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment reference is required",
+      });
+    }
+
+    const query = paymentId
+      ? { _id: paymentId, employer: req.user.id }
+      : { khaltiPidx: pidx, employer: req.user.id };
+
+    const payment = await paymentModel.findOne(query);
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      });
+    }
+
+    if (payment.paymentMethod !== "khalti") {
+      return res.status(400).json({
+        success: false,
+        message: "Only Khalti payments are supported by this endpoint",
+      });
+    }
+
+    const lookupPidx = String(payment.khaltiPidx || pidx || "").trim();
+    if (!lookupPidx) {
+      return res.status(400).json({
+        success: false,
+        message: "Khalti payment reference is missing",
+      });
+    }
+
+    const khaltiResponse = await callKhaltiApi({
+      url: KHALTI_LOOKUP_URL,
+      payload: { pidx: lookupPidx },
+    });
+
+    const khaltiStatus = String(khaltiResponse?.status || "").toLowerCase();
+
+    payment.khaltiPidx = lookupPidx;
+    if (khaltiStatus === "completed") {
+      payment.status = "completed";
+      payment.khaltiTransactionId = String(
+        khaltiResponse?.transaction_id || "",
+      );
+      payment.transactionId =
+        payment.khaltiTransactionId || lookupPidx || payment.transactionId;
+    } else if (["pending", "initiated"].includes(khaltiStatus)) {
+      payment.status = "pending";
+    } else {
+      payment.status = "failed";
+    }
+
+    await payment.save();
+
+    const populatedPayment = await paymentModel
+      .findById(payment._id)
+      .populate("job", "title")
+      .populate("freelancer", "name email avatar")
+      .populate("application", "status");
+
+    return res.json({
+      success: true,
+      message: "Khalti payment status updated",
+      payment: populatedPayment,
+      khaltiStatus: khaltiResponse?.status || "",
     });
   } catch (error) {
     return res.status(500).json({

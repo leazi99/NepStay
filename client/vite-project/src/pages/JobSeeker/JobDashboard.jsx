@@ -19,11 +19,11 @@ import FreelancerNavbar from "../../components/layout/FreelancerNavbar";
 
 const EXPERIENCE_LEVELS = ["Entry Level", "Intermediate", "Expert"];
 const BUDGET_RANGES = [
-  { label: "Less than $100", min: 0, max: 100 },
-  { label: "$100 to $500", min: 100, max: 500 },
-  { label: "$500 - $1K", min: 500, max: 1000 },
-  { label: "$1K - $5K", min: 1000, max: 5000 },
-  { label: "$5K+", min: 5000, max: Infinity },
+  { label: "Less than NPR 100", min: 0, max: 100 },
+  { label: "NPR 100 to NPR 500", min: 100, max: 500 },
+  { label: "NPR 500 - NPR 1K", min: 500, max: 1000 },
+  { label: "NPR 1K - NPR 5K", min: 1000, max: 5000 },
+  { label: "NPR 5K+", min: 5000, max: Infinity },
 ];
 
 const JobListItem = ({ job, onSave, onUnsave, onApply, onDislike, nowTs, isDark }) => {
@@ -157,7 +157,7 @@ const JobListItem = ({ job, onSave, onUnsave, onApply, onDislike, nowTs, isDark 
         ) : (
           <button
             onClick={() => onApply(job._id)}
-            className="inline-flex items-center justify-center px-5 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+            className="inline-flex items-center justify-center px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
           >
             Apply
           </button>
@@ -460,7 +460,7 @@ const JobDashboard = () => {
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={applyFilterChanges}
-                  className="flex-1 rounded-xl bg-red-600 text-white py-2.5 text-sm font-medium hover:bg-red-700 transition-colors"
+                  className="flex-1 rounded-xl bg-blue-600 text-white py-2.5 text-sm font-medium hover:bg-blue-700 transition-colors"
                 >
                   Apply
                 </button>

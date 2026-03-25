@@ -8,6 +8,7 @@ const normalizeEmail = (email) =>
     .trim()
     .toLowerCase();
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const normalizeAuthRole = (role) => {
   const value = String(role || "")
     .toLowerCase()
@@ -18,11 +19,32 @@ const normalizeAuthRole = (role) => {
   return value;
 };
 
-const authCookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-  path: "/",
+const buildAuthCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === "production";
+  const sameSiteFromEnv = String(process.env.COOKIE_SAME_SITE || "").trim();
+  const cookieDomain = String(process.env.COOKIE_DOMAIN || "").trim();
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: sameSiteFromEnv || (isProduction ? "none" : "lax"),
+    path: "/",
+    maxAge: SESSION_MAX_AGE_MS,
+  };
+
+  if (cookieDomain) {
+    cookieOptions.domain = cookieDomain;
+  }
+
+  return cookieOptions;
+};
+
+const setAuthCookie = (res, token) => {
+  res.cookie("token", token, buildAuthCookieOptions());
+};
+
+const clearAuthCookie = (res) => {
+  res.clearCookie("token", buildAuthCookieOptions());
 };
 
 const getPublicUser = (user) => ({
@@ -89,7 +111,7 @@ export const register = async (req, res) => {
       expiresIn: "7d",
     });
 
-    res.cookie("token", token, authCookieOptions);
+    setAuthCookie(res, token);
 
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     user.verifyOtp = otp;
@@ -173,7 +195,7 @@ export const login = async (req, res) => {
       expiresIn: "7d",
     });
 
-    res.cookie("token", token, authCookieOptions);
+    setAuthCookie(res, token);
     return res.json({
       success: true,
       message: "Logged in successfully",
@@ -211,12 +233,7 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      path: "/",
-    });
+    clearAuthCookie(res);
     return res.json({
       success: true,
       message: "Logged out successfully",
@@ -406,7 +423,7 @@ export const refreshSession = async (req, res) => {
       expiresIn: "7d",
     });
 
-    res.cookie("token", token, authCookieOptions);
+    setAuthCookie(res, token);
 
     const decoded = jwt.decode(token);
     const expiresAt = decoded?.exp ? decoded.exp * 1000 : null;

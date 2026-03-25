@@ -199,7 +199,7 @@ const JobDetails = () => {
                     <MapPin className="h-3 w-3" /> {job.location}
                   </span>
                   <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${isDark ? "bg-slate-800 text-slate-200" : "bg-emerald-50 text-emerald-700"}`}>
-                    <DollarSign className="h-3 w-3" /> ${job.salaryMin?.toLocaleString()} – ${job.salaryMax?.toLocaleString()}/mo
+                   NPR {job.salaryMin?.toLocaleString()} – NPR {job.salaryMax?.toLocaleString()}/mo
                   </span>
                   <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${isDark ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
                     <Clock className="h-3 w-3" /> {job.duration}
@@ -242,7 +242,7 @@ const JobDetails = () => {
             {!applicationStatus ? (
               <button
                 onClick={() => setShowApplyModal(true)}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 text-white py-2.5 text-sm font-medium hover:bg-red-700 transition-colors"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 text-white py-2.5 text-sm font-medium hover:bg-blue-700 transition-colors"
               >
                 <Send className="h-4 w-4" />
                 Apply Now

@@ -68,6 +68,8 @@ export const API_PATHS = {
     CREATE_STRIPE_CHECKOUT_SESSION: "/api/payments/checkout-session",
     CREATE_STRIPE_INTENT: "/api/payments/create-intent",
     CONFIRM_STRIPE_INTENT: "/api/payments/confirm-intent",
+    CREATE_KHALTI_SESSION: "/api/payments/khalti/initiate",
+    CONFIRM_KHALTI_PAYMENT: "/api/payments/khalti/confirm",
   },
 
   REVIEWS: {

@@ -139,7 +139,7 @@ const SavedJobs = () => {
                           <MapPin className="h-3 w-3" /> {job.location}
                         </span>
                         <span className="flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-full font-medium">
-                          <DollarSign className="h-3 w-3" /> ${job.salaryMin?.toLocaleString()} – ${job.salaryMax?.toLocaleString()}/mo
+                          <DollarSign className="h-3 w-3" /> NPR {job.salaryMin?.toLocaleString()} – NPR {job.salaryMax?.toLocaleString()}/mo
                         </span>
                         <span className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full ${isDark ? "bg-slate-700 text-slate-300" : "bg-gray-100 text-gray-600"}`}>
                           <Clock className="h-3 w-3" /> {job.duration}

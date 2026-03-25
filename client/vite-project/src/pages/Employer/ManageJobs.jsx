@@ -210,7 +210,7 @@ const ManageJobs = () => {
                   <tr key={job._id} className={`transition-colors ${isDark ? "hover:bg-slate-800/60" : "hover:bg-gray-50"}`}>
                     <td className="px-6 py-4">
                       <p className={`font-medium ${isDark ? "text-slate-100" : "text-gray-900"}`}>{job.title}</p>
-                      <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-gray-400"}`}>${job.salaryMin?.toLocaleString()} – ${job.salaryMax?.toLocaleString()}/mo</p>
+                      <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-gray-400"}`}>NPR {job.salaryMin?.toLocaleString()} – NPR {job.salaryMax?.toLocaleString()}/mo</p>
                     </td>
                     <td className="px-6 py-4 hidden sm:table-cell">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${isDark ? "bg-blue-900/40 text-blue-300" : "bg-blue-50 text-blue-700"}`}>{job.location}</span>

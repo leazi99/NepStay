@@ -104,7 +104,7 @@ export const JOB_TYPES = [
 ];
 
 export const SALARY_RANGES = [
-  "Less than $1000",
-  "$1000-$15,000",
-  "More than $15,000",
+  "Less than NPR 1000",
+  "NPR 1000-NPR 15,000",
+  "More than NPR 15,000",
 ];

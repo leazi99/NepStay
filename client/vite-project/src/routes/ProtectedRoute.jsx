@@ -1,14 +1,23 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoutes = ({ requiredRole }) => {
   const { isAuthenticated, user, loading } = useAuth();
+  const location = useLocation();
 
   const normalizeRole = (role) => {
-    const value = String(role || "").toLowerCase();
-    if (value === "client") return "employer";
-    if (value === "freelancer") return "jobseeker";
+    const value = String(role || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ");
+
+    if (["client", "employer"].includes(value)) return "employer";
+    if (["freelancer", "jobseeker", "job seeker"].includes(value)) {
+      return "jobseeker";
+    }
+    if (value === "admin") return "admin";
     return value;
   };
 
@@ -29,8 +38,20 @@ const ProtectedRoutes = ({ requiredRole }) => {
   }
 
   if (neededRole && userRole !== neededRole) {
-    
-    return <Navigate to={userRole === 'employer' ? '/employer-dashboard' : '/freelancer-dashboard'} replace />;
+    const fallbackPath =
+      userRole === "admin"
+        ? "/admin-dashboard"
+        : userRole === "employer"
+          ? "/employer-dashboard"
+          : userRole === "jobseeker"
+            ? "/freelancer-dashboard"
+            : "/login";
+
+    if (fallbackPath === location.pathname) {
+      return <Navigate to="/login" replace />;
+    }
+
+    return <Navigate to={fallbackPath} replace />;
   }
 
   return <Outlet />;

@@ -54,6 +54,15 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    khaltiPidx: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    khaltiTransactionId: {
+      type: String,
+      default: "",
+    },
     transactionId: {
       type: String,
       default: "",

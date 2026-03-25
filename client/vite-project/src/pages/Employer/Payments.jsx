@@ -492,16 +492,61 @@ const Payments = () => {
     const paymentStatus = searchParams.get("payment");
     if (!paymentStatus) return;
 
-    if (paymentStatus === "success") {
-      toast.success("Stripe payment completed");
-      loadData();
-    }
+    const handlePaymentRedirect = async () => {
+      if (paymentStatus === "success") {
+        toast.success("Stripe payment completed");
+        await loadData();
+        setSearchParams({}, { replace: true });
+        return;
+      }
 
-    if (paymentStatus === "cancel") {
-      toast.error("Stripe payment cancelled");
-    }
+      if (paymentStatus === "cancel") {
+        toast.error("Stripe payment cancelled");
+        setSearchParams({}, { replace: true });
+        return;
+      }
 
-    setSearchParams({}, { replace: true });
+      if (paymentStatus === "khalti_success") {
+        const pidx = searchParams.get("pidx");
+        const paymentId = searchParams.get("paymentId");
+
+        if (!pidx && !paymentId) {
+          toast.error("Khalti verification reference missing");
+          setSearchParams({}, { replace: true });
+          return;
+        }
+
+        try {
+          const verifyRes = await axiosInstance.post(
+            API_PATHS.PAYMENTS.CONFIRM_KHALTI_PAYMENT,
+            {
+              pidx: pidx || undefined,
+              paymentId: paymentId || undefined,
+            },
+          );
+
+          if (!verifyRes.data?.success) {
+            toast.error(verifyRes.data?.message || "Khalti verification failed");
+          } else if (
+            String(verifyRes.data?.khaltiStatus || "").toLowerCase() ===
+            "completed"
+          ) {
+            toast.success("Khalti payment completed");
+          } else {
+            toast("Khalti payment is still processing");
+          }
+        } catch (verifyError) {
+          toast.error(
+            verifyError?.response?.data?.message || "Khalti verification failed",
+          );
+        } finally {
+          await loadData();
+          setSearchParams({}, { replace: true });
+        }
+      }
+    };
+
+    handlePaymentRedirect();
   }, [searchParams, setSearchParams]);
 
   const totalPaid = useMemo(
@@ -547,6 +592,20 @@ const Payments = () => {
         }
 
         toast.error(response.data?.message || "Unable to initialize Stripe payment");
+        return;
+      } else if (form.paymentMethod === "khalti") {
+        response = await axiosInstance.post(API_PATHS.PAYMENTS.CREATE_KHALTI_SESSION, {
+          applicationId: form.applicationId,
+          amount: Number(form.amount),
+          notes: form.notes,
+        });
+
+        if (response.data?.success && response.data?.paymentUrl) {
+          window.location.href = response.data.paymentUrl;
+          return;
+        }
+
+        toast.error(response.data?.message || "Unable to initialize Khalti payment");
         return;
       } else {
         response = await axiosInstance.post(API_PATHS.PAYMENTS.CREATE_PAYMENT, {
@@ -820,6 +879,8 @@ const Payments = () => {
                         : stripeClientSecret
                           ? "Re-initialize Card Payment"
                           : "Initialize Card Payment"
+                      : form.paymentMethod === "khalti"
+                        ? "Proceed to Khalti"
                       : "Record Payment"}
                 </button>
               </div>
