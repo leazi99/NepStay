@@ -527,13 +527,24 @@ const Payments = () => {
 
           if (!verifyRes.data?.success) {
             toast.error(verifyRes.data?.message || "Khalti verification failed");
-          } else if (
-            String(verifyRes.data?.khaltiStatus || "").toLowerCase() ===
-            "completed"
-          ) {
-            toast.success("Khalti payment completed");
           } else {
-            toast("Khalti payment is still processing");
+            const normalizedStatus = String(
+              verifyRes.data?.payment?.status || verifyRes.data?.khaltiStatus || "",
+            )
+              .toLowerCase()
+              .trim();
+
+            if (normalizedStatus === "completed") {
+              toast.success("Khalti payment completed");
+            } else if (normalizedStatus === "pending" || normalizedStatus === "initiated") {
+              toast("Khalti payment is still processing");
+            } else {
+              toast.error(
+                verifyRes.data?.khaltiStatus
+                  ? `Khalti payment ${verifyRes.data.khaltiStatus}`
+                  : "Khalti payment was not completed",
+              );
+            }
           }
         } catch (verifyError) {
           toast.error(

@@ -11,6 +11,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
 import { useAuth } from '../../context/AuthContext';
@@ -97,6 +98,7 @@ const Login = () => {
         return;
       }
       login(data.user, data.token);
+      toast.success(`Welcome back, ${data.user?.name || 'User'}!`);
       setFormState((prev) => ({ ...prev, loading: false, success: true }));
       const role = normalizeRole(data.user?.role);
       setTimeout(() => {

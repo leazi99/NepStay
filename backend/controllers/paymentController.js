@@ -2,7 +2,6 @@ import applicationModel from "../models/applicationModel.js";
 import paymentModel from "../models/paymentModel.js";
 import Stripe from "stripe";
 
-
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
   : null;
@@ -99,6 +98,41 @@ const callKhaltiApi = async ({ url, payload }) => {
   if (!response.ok) {
     const errorMessage =
       data?.detail || data?.message || "Khalti request failed";
+    throw new Error(errorMessage);
+  }
+
+  return data;
+};
+
+const lookupKhaltiPaymentStatus = async (pidx) => {
+  const secretKey = getKhaltiSecretKey();
+
+  if (!secretKey) {
+    throw new Error("Khalti is not configured on server");
+  }
+
+  const response = await fetch(KHALTI_LOOKUP_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Key ${secretKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ pidx }),
+  });
+
+  const data = await response.json();
+
+  const normalizedStatus = String(data?.status || "")
+    .toLowerCase()
+    .trim();
+
+  if (normalizedStatus) {
+    return data;
+  }
+
+  if (!response.ok) {
+    const errorMessage =
+      data?.detail || data?.message || "Khalti lookup failed";
     throw new Error(errorMessage);
   }
 
@@ -670,10 +704,7 @@ export const confirmKhaltiPayment = async (req, res) => {
       });
     }
 
-    const khaltiResponse = await callKhaltiApi({
-      url: KHALTI_LOOKUP_URL,
-      payload: { pidx: lookupPidx },
-    });
+    const khaltiResponse = await lookupKhaltiPaymentStatus(lookupPidx);
 
     const khaltiStatus = String(khaltiResponse?.status || "").toLowerCase();
 

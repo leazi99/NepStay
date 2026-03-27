@@ -36,6 +36,24 @@ const StatusBadge = ({ isClosed, isDark }) => (
   </span>
 );
 
+const ActionIconButton = ({ label, onClick, className, disabled, isDark, children }) => (
+  <div className="relative group">
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={className}
+      aria-label={label}
+    >
+      {children}
+    </button>
+    <span
+      className={`pointer-events-none absolute -top-8 right-0 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-medium opacity-0 invisible transition-all duration-150 delay-75 group-hover:opacity-100 group-hover:visible group-hover:-translate-y-0.5 ${isDark ? "bg-slate-700 text-slate-100" : "bg-gray-900 text-white"}`}
+    >
+      {label}
+    </span>
+  </div>
+);
+
 const ConfirmDialog = ({ open, title, message, onConfirm, onCancel, loading, isDark }) => {
   if (!open) return null;
   return (
@@ -235,25 +253,28 @@ const ManageJobs = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
-                        <button
-                          title="View Job"
+                        <ActionIconButton
+                          label="View Job"
                           onClick={() => navigate(`/employer-job/${job._id}`)}
                           className="p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
+                          isDark={isDark}
                         >
                           <Eye className="h-4 w-4" />
-                        </button>
-                        <button
-                          title="Edit Job"
+                        </ActionIconButton>
+                        <ActionIconButton
+                          label="Edit Job"
                           onClick={() => navigate(`/post-job/${job._id}/edit`)}
                           className="p-2 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-colors"
+                          isDark={isDark}
                         >
                           <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          title={job.isClosed ? "Reopen Job" : "Close Job"}
+                        </ActionIconButton>
+                        <ActionIconButton
+                          label={job.isClosed ? "Reopen Job" : "Close Job"}
                           onClick={() => handleToggleClose(job._id)}
                           disabled={toggling === job._id}
                           className="p-2 rounded-lg hover:bg-amber-50 text-gray-400 hover:text-amber-600 transition-colors disabled:opacity-40"
+                          isDark={isDark}
                         >
                           {toggling === job._id ? (
                             <span className="h-4 w-4 border-2 border-amber-400/30 border-t-amber-500 rounded-full animate-spin block" />
@@ -262,7 +283,7 @@ const ManageJobs = () => {
                           ) : (
                             <ToggleRight className="h-4 w-4" />
                           )}
-                        </button>
+                        </ActionIconButton>
                         <button
                           title="Delete Job"
                           onClick={() => setConfirmDelete({ open: true, jobId: job._id, loading: false })}

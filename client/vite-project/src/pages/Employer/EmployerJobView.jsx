@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Pencil, Users, Clock, Briefcase, MapPin, DollarSign } from "lucide-react";
+import { ArrowLeft, Pencil, Users, Clock, Briefcase, MapPin, Wallet } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import DashboardLayout from "../../components/layout/DashboardLayout.jsx";
@@ -115,10 +115,10 @@ const EmployerJobView = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="rounded-xl border border-gray-100 p-4">
                 <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                  <DollarSign className="h-3.5 w-3.5" /> Salary Range
+                  <Wallet className="h-3.5 w-3.5" /> Salary Range
                 </p>
                 <p className="text-sm font-medium text-gray-900 mt-1">
-                  ${job.salaryMin?.toLocaleString()} - ${job.salaryMax?.toLocaleString()} / month
+                  NPR {job.salaryMin?.toLocaleString()} - NPR {job.salaryMax?.toLocaleString()} / month
                 </p>
               </div>
               <div className="rounded-xl border border-gray-100 p-4">
