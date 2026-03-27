@@ -1,5 +1,5 @@
 import React from 'react'
-import {motion} from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { TrendingUp,Users,Briefcase,Target } from 'lucide-react';
 
 const Analytics = () => {
@@ -12,7 +12,7 @@ const Analytics = () => {
   return (
     <section className='py-20 bg-white relative overflow-hidden '>
       <div className='container mx-auto px-4  '>
-        <motion.div 
+        <Motion.div 
         initial={{opacity:0,y:20}}
         whileInView={{opacity:1,y:0}}
         animate={{opacity:1,y:0}}
@@ -24,10 +24,10 @@ const Analytics = () => {
             <span className='bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent'>Analytics</span>
           </h2>
 <p className='text-xl text-gray-600 max-w-3xl mx-auto '>Join Thousands of Satisfied Users Who Found Their Perfect Match with KaamSathi</p>
-</motion.div>
+</Motion.div>
 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-6'>
   {stats.map((stat,index)=>(
-    <motion.div
+    <Motion.div
     key={index}
     initial={{opacity:0,y:20}}
     whileInView={{opacity:1,y:0}}
@@ -44,7 +44,7 @@ const Analytics = () => {
       </span>
       <h3 className='text-3xl font-bold text-gray-900 mb-2'>{stat.value}</h3>
       <p className='text-gray-600'>{stat.label}</p>
-    </motion.div>
+    </Motion.div>
   ))}
 </div>
       </div>

@@ -62,6 +62,14 @@ const userSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
+  latestEducation: {
+    type: String,
+    default: "",
+  },
+  specialization: {
+    type: String,
+    default: "",
+  },
   themePreference: {
     type: String,
     enum: ["light", "dark"],

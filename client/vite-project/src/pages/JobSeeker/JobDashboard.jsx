@@ -26,6 +26,19 @@ const BUDGET_RANGES = [
   { label: "NPR 5K+", min: 5000, max: Infinity },
 ];
 
+const normalizeRole = (role) => {
+  const value = String(role || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+
+  if (["client", "employer"].includes(value)) return "employer";
+  if (["freelancer", "jobseeker", "job seeker"].includes(value)) return "jobseeker";
+  if (value === "admin") return "admin";
+  return value;
+};
+
 const JobListItem = ({ job, onSave, onUnsave, onApply, onDislike, nowTs, isDark }) => {
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
@@ -198,6 +211,19 @@ const JobDashboard = () => {
     budgetRange: "",
     sortBy: "best",
   });
+
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+
+    const role = normalizeRole(user.role);
+    const missingOnboarding =
+      role === "jobseeker"
+      && (!String(user.latestEducation || "").trim() || !String(user.specialization || "").trim());
+
+    if (missingOnboarding) {
+      navigate("/welcome", { replace: true });
+    }
+  }, [isAuthenticated, navigate, user]);
 
   const fetchJobs = useCallback(async () => {
     try {

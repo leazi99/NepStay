@@ -19,6 +19,38 @@ import { API_PATHS } from "../../utils/apiPaths";
 import { useAuth } from "../../context/AuthContext";
 import FreelancerNavbar from "../../components/layout/FreelancerNavbar";
 
+const EDUCATION_LEVELS = [
+  "SEE/SLC",
+  "+2 / Higher Secondary",
+  "Bachelor's Degree",
+  "Master's Degree",
+  "Diploma / Certificate",
+  "Other",
+];
+
+const SPECIALIZATIONS = {
+  "SEE/SLC": ["General"],
+  "+2 / Higher Secondary": ["Science", "Management", "Humanities", "Education", "Other"],
+  "Bachelor's Degree": [
+    "Computer Science / IT",
+    "Business / Management",
+    "Engineering",
+    "Design / Creative",
+    "Health / Medical",
+    "Other",
+  ],
+  "Master's Degree": [
+    "Computer Science / IT",
+    "Business / Management",
+    "Engineering",
+    "Data Science / AI",
+    "Public Policy / Social",
+    "Other",
+  ],
+  "Diploma / Certificate": ["Technical", "Language", "Design", "Business", "Other"],
+  Other: ["Other"],
+};
+
 const InputField = ({ label, error, disabled, isDark, ...props }) => (
   <div className="flex flex-col gap-1.5">
     <label className={`text-sm font-medium ${isDark ? "text-slate-200" : "text-gray-700"}`}>{label}</label>
@@ -51,6 +83,8 @@ const UserProfile = () => {
     studentIdCard: "",
     nationalIdCard: "",
     identityVerificationStatus: "not_submitted",
+    latestEducation: "",
+    specialization: "",
     linkedinUrl: "",
     bio: "",
     interests: "",
@@ -88,6 +122,8 @@ const UserProfile = () => {
       studentIdCard: user.studentIdCard || "",
       nationalIdCard: user.nationalIdCard || "",
       identityVerificationStatus: user.identityVerificationStatus || "not_submitted",
+      latestEducation: user.latestEducation || "",
+      specialization: user.specialization || "",
       linkedinUrl: user.linkedinUrl || "",
       bio: user.bio || "",
       interests: Array.isArray(user.interests) ? user.interests.join(", ") : "",
@@ -148,18 +184,53 @@ const UserProfile = () => {
 
   const textPrimary = isDark ? "text-slate-100" : "text-gray-900";
   const textSecondary = isDark ? "text-slate-300" : "text-gray-500";
-
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
-  };
+  const specializationOptions = SPECIALIZATIONS[form.latestEducation] || [];
 
   const parseInterests = (value) =>
     value
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean);
+
+  const profileStatus = useMemo(() => {
+    const hasName = Boolean(form.name.trim());
+    const hasBio = Boolean(form.bio.trim());
+    const hasInterests = parseInterests(form.interests).length > 0;
+    const hasEducation = Boolean(form.latestEducation.trim());
+    const hasSpecialization = Boolean(form.specialization.trim());
+    const hasResume = Boolean(form.resume.trim());
+    const hasLinkedin = Boolean(form.linkedinUrl.trim());
+    const docsReady = Boolean(form.studentIdCard && form.nationalIdCard);
+
+    const items = [
+      { key: "personal", label: "Personal Info", completed: hasName && hasBio },
+      { key: "preferences", label: "Job Preferences", completed: hasInterests && hasEducation && hasSpecialization },
+      { key: "resume", label: "Resume", completed: hasResume },
+      { key: "links", label: "Portfolio/LinkedIn", completed: hasLinkedin },
+      { key: "verification", label: "Identity Verification", completed: docsReady },
+    ];
+
+    const completedCount = items.filter((item) => item.completed).length;
+    const completion = Math.round((completedCount / items.length) * 100);
+
+    return { items, completion };
+  }, [
+    form.name,
+    form.bio,
+    form.interests,
+    form.latestEducation,
+    form.specialization,
+    form.resume,
+    form.linkedinUrl,
+    form.studentIdCard,
+    form.nationalIdCard,
+  ]);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
 
   const handleAvatarUpload = async (event) => {
     const file = event.target.files?.[0];
@@ -356,6 +427,8 @@ const UserProfile = () => {
         resume: form.resume,
         studentIdCard: form.studentIdCard,
         nationalIdCard: form.nationalIdCard,
+        latestEducation: form.latestEducation,
+        specialization: form.specialization,
         linkedinUrl: form.linkedinUrl,
         bio: form.bio,
         interests: parseInterests(form.interests),
@@ -485,6 +558,47 @@ const UserProfile = () => {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-10 space-y-6">
+        <div className={`rounded-2xl border shadow-sm p-6 ${cardClass}`}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 className={`font-semibold text-base ${textPrimary}`}>Profile Completion</h2>
+              <p className={`text-sm mt-1 ${textSecondary}`}>
+                Complete the missing sections to make your profile stronger.
+              </p>
+            </div>
+            <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
+              {profileStatus.completion}% Complete
+            </span>
+          </div>
+
+          <div className={`mt-4 h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-slate-700" : "bg-gray-200"}`}>
+            <div
+              className="h-full rounded-full bg-blue-600 transition-all duration-300"
+              style={{ width: `${profileStatus.completion}%` }}
+            />
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {profileStatus.items.map((item) => (
+              <div
+                key={item.key}
+                className={`rounded-xl border px-3 py-2.5 flex items-center justify-between ${
+                  isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-white"
+                }`}
+              >
+                <span className={`text-sm font-medium ${textPrimary}`}>{item.label}</span>
+                <span
+                  className={`text-xs font-semibold ${
+                    item.completed ? "text-emerald-600" : "text-amber-600"
+                  }`}
+                >
+                  {item.completed ? "Done" : "Add/Update"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <form onSubmit={handleSave} className="space-y-6">
           <div className={`rounded-2xl border shadow-sm p-6 ${cardClass}`}>
             <h2 className={`font-semibold text-base mb-5 flex items-center gap-2 ${textPrimary}`}>
@@ -554,6 +668,54 @@ const UserProfile = () => {
                   error={errors.linkedinUrl}
                   isDark={isDark}
                 />
+              </div>
+
+              <div>
+                <label className={`text-sm font-medium ${isDark ? "text-slate-200" : "text-gray-700"}`}>Latest Education</label>
+                <select
+                  name="latestEducation"
+                  value={form.latestEducation}
+                  onChange={(event) => {
+                    const nextEducation = event.target.value;
+                    setForm((prev) => {
+                      const next = { ...prev, latestEducation: nextEducation };
+                      if (!SPECIALIZATIONS[nextEducation]?.includes(prev.specialization)) {
+                        next.specialization = "";
+                      }
+                      return next;
+                    });
+                  }}
+                  className={`w-full mt-1 px-4 py-2.5 border rounded-xl text-sm focus:outline-none transition ${
+                    isDark
+                      ? "border-slate-700 bg-slate-800 text-slate-100 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+                      : "border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+                  }`}
+                >
+                  <option value="">Select education level</option>
+                  {EDUCATION_LEVELS.map((level) => (
+                    <option key={level} value={level}>{level}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className={`text-sm font-medium ${isDark ? "text-slate-200" : "text-gray-700"}`}>Specialization</label>
+                <select
+                  name="specialization"
+                  value={form.specialization}
+                  onChange={handleChange}
+                  disabled={!form.latestEducation}
+                  className={`w-full mt-1 px-4 py-2.5 border rounded-xl text-sm focus:outline-none transition ${
+                    isDark
+                      ? "border-slate-700 bg-slate-800 text-slate-100 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 disabled:opacity-50"
+                      : "border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 disabled:opacity-50"
+                  }`}
+                >
+                  <option value="">Select specialization</option>
+                  {specializationOptions.map((item) => (
+                    <option key={item} value={item}>{item}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="sm:col-span-2 flex flex-col gap-1.5">
@@ -804,10 +966,16 @@ const UserProfile = () => {
             Quick Profile Preview
           </h2>
           <p className={`text-sm ${textSecondary}`}>
-            <span className="font-semibold">LinkedIn:</span> {form.linkedinUrl || "Not added"}
+            <span className="font-semibold">Latest Education:</span> {form.latestEducation || "Not added"}
+          </p>
+          <p className={`text-sm mt-2 ${textSecondary}`}>
+            <span className="font-semibold">Specialization:</span> {form.specialization || "Not added"}
           </p>
           <p className={`text-sm mt-2 ${textSecondary}`}>
             <span className="font-semibold">Interests:</span> {form.interests || "Not added"}
+          </p>
+          <p className={`text-sm mt-2 ${textSecondary}`}>
+            <span className="font-semibold">LinkedIn:</span> {form.linkedinUrl || "Not added"}
           </p>
         </div>
 

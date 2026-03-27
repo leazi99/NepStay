@@ -318,7 +318,7 @@ const EmployerProfile = () => {
             { id: "profile", label: "Profile Settings", icon: User },
             { id: "security", label: "Security", icon: Lock },
             { id: "preferences", label: "Preferences", icon: Bell },
-          ].map(({ id, label, icon: Icon }) => (
+          ].map(({ id, label, icon }) => (
             <button
               key={id}
               type="button"
@@ -332,7 +332,7 @@ const EmployerProfile = () => {
                   : "text-gray-600 hover:bg-gray-100"
                 }`}
             >
-              <Icon className="h-4 w-4" />
+              {React.createElement(icon, { className: "h-4 w-4" })}
               {label}
             </button>
           ))}

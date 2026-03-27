@@ -28,6 +28,7 @@ import JobDetails from './pages/JobSeeker/JobDetails.jsx'
 import Messages from './pages/Common/Messages.jsx'
 import Notifications from './pages/Common/Notifications.jsx'
 import Reviews from './pages/Common/Reviews.jsx'
+import WelcomeOnboarding from './pages/Common/WelcomeOnboarding.jsx'
 import AdminDashboard from './pages/Admin/AdminDashboard.jsx'
 import NotFound from './pages/Common/NotFound.jsx'
 
@@ -60,6 +61,7 @@ const App = () => {
         </Route>
 
         <Route element={<ProtectedRoutes />}>
+          <Route path='/welcome' element={<WelcomeOnboarding />} />
           <Route path='/profile' element={<UserProfile />} />
           <Route path='/messages' element={<Messages />} />
           <Route path='/notifications' element={<Notifications />} />

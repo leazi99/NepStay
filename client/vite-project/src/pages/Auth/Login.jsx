@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import {
   Mail,
   Lock,
@@ -44,6 +44,10 @@ const Login = () => {
     if (value === 'admin') return 'admin';
     return value;
   };
+
+  const isJobseekerOnboardingComplete = (userData) =>
+    Boolean(String(userData?.latestEducation || '').trim())
+    && Boolean(String(userData?.specialization || '').trim());
 
   const validatePassword = (password) => {
     if (!password) return 'Password is required';
@@ -101,14 +105,18 @@ const Login = () => {
       toast.success(`Welcome back, ${data.user?.name || 'User'}!`);
       setFormState((prev) => ({ ...prev, loading: false, success: true }));
       const role = normalizeRole(data.user?.role);
+
+      let nextPath = '/welcome';
+      if (role === 'admin') {
+        nextPath = '/admin-dashboard';
+      } else if (role === 'employer') {
+        nextPath = '/employer-dashboard';
+      } else if (role === 'jobseeker' && isJobseekerOnboardingComplete(data.user)) {
+        nextPath = '/freelancer-dashboard';
+      }
+
       setTimeout(() => {
-        navigate(
-          role === 'admin'
-            ? '/admin-dashboard'
-            : role === 'employer'
-              ? '/employer-dashboard'
-              : '/freelancer-dashboard'
-        );
+        navigate(nextPath);
       }, 1500);
     } catch (error) {
       setFormState((prev) => ({
@@ -127,26 +135,26 @@ const Login = () => {
   if (formState.success) {
     return (
       <div style={styles.page}>
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
           style={styles.successCard}
         >
-          <motion.div
+          <Motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
             style={styles.successIcon}
           >
             <CheckCircle size={40} color="#fff" />
-          </motion.div>
+          </Motion.div>
           <h2 style={styles.successTitle}>You&apos;re in!</h2>
           <p style={styles.successSub}>Redirecting to your dashboard…</p>
           <div style={styles.successSpinner}>
             <div style={styles.spinnerRing} />
           </div>
-        </motion.div>
+        </Motion.div>
       </div>
     );
   }
@@ -162,7 +170,7 @@ const Login = () => {
 
 
 
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.55, ease: 'easeOut' }}
@@ -192,7 +200,7 @@ const Login = () => {
               </div>
               <AnimatePresence>
                 {formState.errors.email && (
-                  <motion.p
+                  <Motion.p
                     key="email-err"
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -201,7 +209,7 @@ const Login = () => {
                   >
                     <AlertCircle size={13} />
                     {formState.errors.email}
-                  </motion.p>
+                  </Motion.p>
                 )}
               </AnimatePresence>
             </div>
@@ -235,7 +243,7 @@ const Login = () => {
               </div>
               <AnimatePresence>
                 {formState.errors.password && (
-                  <motion.p
+                  <Motion.p
                     key="pw-err"
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -244,7 +252,7 @@ const Login = () => {
                   >
                     <AlertCircle size={13} />
                     {formState.errors.password}
-                  </motion.p>
+                  </Motion.p>
                 )}
               </AnimatePresence>
             </div>
@@ -275,7 +283,7 @@ const Login = () => {
 
             <AnimatePresence>
               {formState.errors.submit && (
-                <motion.div
+                <Motion.div
                   key="submit-err"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
@@ -284,12 +292,12 @@ const Login = () => {
                 >
                   <AlertCircle size={15} style={{ flexShrink: 0 }} />
                   <span>{formState.errors.submit}</span>
-                </motion.div>
+                </Motion.div>
               )}
             </AnimatePresence>
 
 
-            <motion.button
+            <Motion.button
               type="submit"
               disabled={formState.loading}
               whileHover={!formState.loading ? { scale: 1.02 } : {}}
@@ -311,7 +319,7 @@ const Login = () => {
                   <ArrowRight size={18} />
                 </>
               )}
-            </motion.button>
+            </Motion.button>
           </form>
 
           <p style={styles.signupPrompt}>
@@ -320,7 +328,7 @@ const Login = () => {
               Create Here
             </Link>
           </p>
-        </motion.div>
+        </Motion.div>
       </div>
 
 

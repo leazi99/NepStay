@@ -1,5 +1,5 @@
 import React from 'react'
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { Search, ArrowRight, Users, Building2, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
@@ -17,7 +17,7 @@ const Hero = () => {
     <section className="relative pt-24 pb-10 bg-white min-h-screen flex items-center">
       <div className='container mx-auto px-4'>
         <div className='max-w-4xl mx-auto text-center'>
-          <motion.h1
+          <Motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -26,25 +26,25 @@ const Hero = () => {
             Find Your Dream Job or
             <span className='block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent ml-2'>
               Perfect Hire</span>
-          </motion.h1>
+          </Motion.h1>
 
-          <motion.p
+          <Motion.p
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             className='text-xl md:text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed'
           >
             Find the perfect job or hire the right talent with our platform.
-          </motion.p>
+          </Motion.p>
 
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
             className='flex flex-col sm:flex-row gap-4 justify-center items-center mb-16'
           >
 
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="group bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-2"
@@ -54,9 +54,9 @@ const Hero = () => {
               <Search className='w-5 h-5' />
               <span>Find Jobs</span>
               <ArrowRight className='w-5 h-5 group-hover:translate-x-1 transition-transform' />
-            </motion.button>
+            </Motion.button>
 
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className='bg-white border-2 border-gray-200 text-gray-600 px-8 py-4 rounded-xl font-semibold text-lg hover:border-gray-300 hover:bg-gray-50 transition-all  duration-300 shadow-sm hover:shadow-md'
@@ -71,19 +71,19 @@ const Hero = () => {
               }}
             >
               Post a Job
-            </motion.button>
+            </Motion.button>
 
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className='bg-white border-2 border-blue-200 text-blue-700 px-8 py-4 rounded-xl font-semibold text-lg hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 shadow-sm hover:shadow-md'
               onClick={() => navigate('/verify-email')}
             >
               Verify Email
-            </motion.button>
-          </motion.div>
+            </Motion.button>
+          </Motion.div>
 
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
@@ -104,7 +104,7 @@ const Hero = () => {
                 <div className='text-sm text-gray-600 font-medium'>{stat.label}</div>
               </motion.div>
             ))}
-          </motion.div>
+          </Motion.div>
         </div>
       </div>
 

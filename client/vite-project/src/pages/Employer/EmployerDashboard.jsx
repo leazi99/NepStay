@@ -19,13 +19,13 @@ import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import DashboardLayout from "../../components/layout/DashboardLayout.jsx";
 
-const StatCard = ({ icon: Icon, label, value, trend, color }) => {
+const StatCard = ({ icon, label, value, trend, color }) => {
   const isPositive = trend >= 0;
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
         <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${color}`}>
-          <Icon className="h-6 w-6 text-white" />
+          {React.createElement(icon, { className: "h-6 w-6 text-white" })}
         </div>
         <span
           className={`flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-full ${isPositive ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"

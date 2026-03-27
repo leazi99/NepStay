@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -51,7 +51,7 @@ const ApplicationView = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
 
-  const fetchApplications = async () => {
+  const fetchApplications = useCallback(async () => {
     try {
       setIsLoading(true);
       setError("");
@@ -72,9 +72,9 @@ const ApplicationView = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [jobId]);
 
-  useEffect(() => { fetchApplications(); }, [jobId]);
+  useEffect(() => { fetchApplications(); }, [fetchApplications]);
 
   const handleStatusChange = async (appId, newStatus) => {
     setUpdatingId(appId);

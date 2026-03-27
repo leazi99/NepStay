@@ -1,5 +1,5 @@
 import React from 'react'
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { Briefcase } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
@@ -8,7 +8,7 @@ const Header = () => {
 
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  return <motion.header
+  return <Motion.header
     initial={{ opacity: 0, y: -20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.6 }}
@@ -50,7 +50,7 @@ const Header = () => {
         </div>
       </div>
     </div>
-  </motion.header>
+  </Motion.header>
 }
 
 export default Header

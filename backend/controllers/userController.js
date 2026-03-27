@@ -39,6 +39,8 @@ export const getAllUser = async (req, res) => {
         linkedinUrl: user.linkedinUrl || "",
         bio: user.bio || "",
         interests: user.interests || [],
+        latestEducation: user.latestEducation || "",
+        specialization: user.specialization || "",
         themePreference: user.themePreference || "light",
         isVerified: user.isVerified,
       },
@@ -65,6 +67,8 @@ export const updateProfile = async (req, res) => {
       linkedinUrl,
       bio,
       interests,
+      latestEducation,
+      specialization,
       themePreference,
     } = req.body;
 
@@ -85,6 +89,12 @@ export const updateProfile = async (req, res) => {
     if (typeof linkedinUrl === "string") user.linkedinUrl = linkedinUrl.trim();
     if (typeof bio === "string") user.bio = bio.trim();
     if (interests !== undefined) user.interests = parseInterests(interests);
+    if (typeof latestEducation === "string") {
+      user.latestEducation = latestEducation.trim();
+    }
+    if (typeof specialization === "string") {
+      user.specialization = specialization.trim();
+    }
 
     if (user.identityVerificationStatus !== "verified") {
       if (user.studentIdCard && user.nationalIdCard) {
@@ -124,6 +134,8 @@ export const updateProfile = async (req, res) => {
         linkedinUrl: user.linkedinUrl || "",
         bio: user.bio || "",
         interests: user.interests || [],
+        latestEducation: user.latestEducation || "",
+        specialization: user.specialization || "",
         themePreference: user.themePreference || "light",
         companyName: user.companyName || "",
         companyDescription: user.companyDescription || "",

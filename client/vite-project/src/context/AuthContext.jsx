@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import axiosInstance from "../utils/axiosInstance";
 import { clearStoredAuthToken, storeAuthToken } from "../utils/axiosInstance";
@@ -149,12 +150,35 @@ export const AuthProvider = ({ children }) => {
     } else if (isValidTheme(selectedTheme)) {
       localStorage.setItem(ACTIVE_THEME_KEY, selectedTheme);
     }
-  }, [user?.themePreference, user?.email, user?.role]);
+  }, [user, user?.themePreference, user?.email, user?.role]);
 
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
-    checkAuthStatus();
+    const runInitialAuthCheck = async () => {
+      try {
+        const sessionOk = await fetchSession();
+        if (sessionOk) {
+          return;
+        }
+
+        const { data } = await axiosInstance.post(API_PATHS.AUTH.IS_AUTHENTICATED);
+        if (data?.success && data?.user) {
+          applySessionState(data.user, null);
+        } else {
+          clearAuthState();
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        clearAuthState();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    runInitialAuthCheck();
     return () => clearSessionRefreshTimer();
   }, []);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const checkAuthStatus = async () => {
     try {
