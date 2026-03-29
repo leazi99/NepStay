@@ -1,8 +1,11 @@
 import "dotenv/config";
 import express from "express";
+import http from "http";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import jwt from "jsonwebtoken";
+import { Server } from "socket.io";
 import connectDB from "./config/mongodb.js";
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/authRoutes.js";
@@ -17,6 +20,8 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
+import proposalRoutes from "./routes/proposalRoutes.js";
+import userModel from "./models/userModel.js";
 import { stripeWebhookHandler } from "./controllers/paymentController.js";
 import { fileURLToPath } from "url";
 
@@ -24,6 +29,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const httpServer = http.createServer(app);
 app.set("trust proxy", 1);
 
 const defaultAllowedOrigins = [
@@ -36,6 +42,133 @@ const envOrigins = (process.env.ALLOWED_ORIGIN || "")
   .filter(Boolean);
 const allowedOrigins = envOrigins.length ? envOrigins : defaultAllowedOrigins;
 const isProduction = process.env.NODE_ENV === "production";
+const ONLINE_WINDOW_MS = 90 * 1000;
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+app.set("io", io);
+
+const onlineSocketCounts = new Map();
+
+const addOnlineSocket = (userId) => {
+  const current = onlineSocketCounts.get(userId) || 0;
+  onlineSocketCounts.set(userId, current + 1);
+  return current + 1;
+};
+
+const removeOnlineSocket = (userId) => {
+  const current = onlineSocketCounts.get(userId) || 0;
+  if (current <= 1) {
+    onlineSocketCounts.delete(userId);
+    return 0;
+  }
+
+  onlineSocketCounts.set(userId, current - 1);
+  return current - 1;
+};
+
+const extractSocketToken = (socket) => {
+  const authToken = String(socket.handshake?.auth?.token || "").trim();
+  if (authToken) return authToken;
+
+  const authorizationHeader = String(
+    socket.handshake?.headers?.authorization || "",
+  ).trim();
+
+  if (authorizationHeader.toLowerCase().startsWith("bearer ")) {
+    return authorizationHeader.slice(7).trim();
+  }
+
+  return "";
+};
+
+io.use(async (socket, next) => {
+  try {
+    const token = extractSocketToken(socket);
+    if (!token) {
+      return next(new Error("Unauthorized"));
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await userModel.findById(decoded.id).select("_id");
+    if (!user) {
+      return next(new Error("Unauthorized"));
+    }
+
+    socket.userId = String(user._id);
+    return next();
+  } catch {
+    return next(new Error("Unauthorized"));
+  }
+});
+
+io.on("connection", async (socket) => {
+  const userId = socket.userId;
+  if (!userId) {
+    socket.disconnect(true);
+    return;
+  }
+
+  socket.join(`user:${userId}`);
+  const connectionCount = addOnlineSocket(userId);
+
+  try {
+    await userModel.findByIdAndUpdate(userId, {
+      $set: { lastSeenAt: new Date() },
+    });
+  } catch (error) {
+    console.error("Failed to update lastSeenAt on connect:", error);
+  }
+
+  if (connectionCount === 1) {
+    io.emit("presence:online", {
+      userId,
+      isOnline: true,
+      lastSeenAt: new Date().toISOString(),
+    });
+  }
+
+  socket.emit("presence:state", {
+    onlineUserIds: Array.from(onlineSocketCounts.keys()),
+  });
+
+  socket.on("presence:ping", async () => {
+    try {
+      await userModel.findByIdAndUpdate(userId, {
+        $set: { lastSeenAt: new Date() },
+      });
+    } catch (error) {
+      console.error("Failed to update lastSeenAt on socket ping:", error);
+    }
+  });
+
+  socket.on("disconnect", async () => {
+    const remaining = removeOnlineSocket(userId);
+
+    if (remaining === 0) {
+      const now = new Date();
+      try {
+        await userModel.findByIdAndUpdate(userId, {
+          $set: { lastSeenAt: now },
+        });
+      } catch (error) {
+        console.error("Failed to update lastSeenAt on disconnect:", error);
+      }
+
+      io.emit("presence:offline", {
+        userId,
+        isOnline: false,
+        lastSeenAt: now.toISOString(),
+      });
+    }
+  });
+});
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -113,6 +246,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/proposals", proposalRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -137,4 +271,4 @@ app.use((error, req, res, next) => {
 });
 
 const port = process.env.PORT || 4000;
-app.listen(port, () => console.log(`Server is running on port ${port}`));
+httpServer.listen(port, () => console.log(`Server is running on port ${port}`));

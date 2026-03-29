@@ -3,6 +3,21 @@ import messageModel from "../models/messageModel.js";
 import notificationModel from "../models/notificationModel.js";
 import userModel from "../models/userModel.js";
 
+const ONLINE_WINDOW_MS = 90 * 1000;
+
+const toPresencePayload = (user) => {
+  const lastSeenAt = user?.lastSeenAt ? new Date(user.lastSeenAt) : null;
+  const isOnline =
+    lastSeenAt instanceof Date &&
+    !Number.isNaN(lastSeenAt.getTime()) &&
+    Date.now() - lastSeenAt.getTime() <= ONLINE_WINDOW_MS;
+
+  return {
+    isOnline,
+    lastSeenAt: lastSeenAt ? lastSeenAt.toISOString() : null,
+  };
+};
+
 const serializeRoom = (room, currentUserId) => {
   const otherParticipant = room.participants.find(
     (participant) => String(participant._id) !== String(currentUserId),
@@ -17,6 +32,7 @@ const serializeRoom = (room, currentUserId) => {
           email: otherParticipant.email,
           role: otherParticipant.role,
           avatar: otherParticipant.avatar || "",
+          ...toPresencePayload(otherParticipant),
         }
       : null,
     lastMessage: room.lastMessage
@@ -74,7 +90,7 @@ export const createOrGetRoom = async (req, res) => {
 
     room = await chatRoomModel
       .findById(room._id)
-      .populate("participants", "name email role avatar")
+      .populate("participants", "name email role avatar lastSeenAt")
       .populate("lastMessage", "text sender createdAt");
 
     return res.json({
@@ -92,7 +108,7 @@ export const getRooms = async (req, res) => {
 
     const rooms = await chatRoomModel
       .find({ participants: currentUserId })
-      .populate("participants", "name email role avatar")
+      .populate("participants", "name email role avatar lastSeenAt")
       .populate("lastMessage", "text sender createdAt")
       .sort({ updatedAt: -1 });
 
@@ -206,6 +222,22 @@ export const sendMessage = async (req, res) => {
     const populatedMessage = await messageModel
       .findById(message._id)
       .populate("sender", "name email role avatar");
+
+    const io = req.app.get("io");
+    if (io) {
+      const eventPayload = {
+        roomId,
+        message: populatedMessage,
+      };
+
+      io.to(`user:${String(currentUserId)}`).emit("message:new", eventPayload);
+      if (recipient?._id) {
+        io.to(`user:${String(recipient._id)}`).emit(
+          "message:new",
+          eventPayload,
+        );
+      }
+    }
 
     return res.json({
       success: true,

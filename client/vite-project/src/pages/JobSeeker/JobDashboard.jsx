@@ -10,6 +10,8 @@ import {
   ThumbsDown,
   ChevronDown,
   BadgeCheck,
+  Send,
+  Star,
 } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
@@ -45,6 +47,8 @@ const JobListItem = ({ job, onSave, onUnsave, onApply, onDislike, nowTs, isDark 
 
   const companyName = job.company?.companyName || job.company?.name || "Company";
   const companySpent = job.company?.totalSpent || job.company?.spent || "";
+  const companyRatingAvg = Number(job.company?.ratingAvg || 0);
+  const companyRatingCount = Number(job.company?.ratingCount || 0);
   const experienceLevel = job.experienceLevel || job.level || "";
   const estimateBudget = Number(job.fixedBudget || job.salaryMax || job.salaryMin || 0);
   const proposalText =
@@ -146,6 +150,12 @@ const JobListItem = ({ job, onSave, onUnsave, onApply, onDislike, nowTs, isDark 
       <div className={`mt-4 pt-4 border-t text-xs flex flex-wrap items-center gap-x-3 gap-y-2 ${isDark ? "border-slate-700 text-slate-400" : "border-gray-200 text-gray-500"}`}>
         <span className="inline-flex items-center gap-1">{companyName === "Company" ? "Enterprise" : companyName}</span>
         <span className="inline-flex items-center gap-1 text-blue-400"><BadgeCheck className="h-4 w-4" /> Payment verified</span>
+        <span className="inline-flex items-center gap-1 text-amber-500">
+          <Star className="h-3.5 w-3.5 fill-current" />
+          {companyRatingCount > 0
+            ? `${companyRatingAvg.toFixed(1)} (${companyRatingCount})`
+            : "New client"}
+        </span>
         {companySpent ? <span>{companySpent}</span> : null}
         <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {job.location}</span>
       </div>
@@ -523,6 +533,20 @@ const JobDashboard = () => {
                 </div>
 
                 <div className="flex items-center gap-2 self-end md:self-auto">
+                  <button
+                    onClick={() => navigate("/reviews?tab=pending")}
+                    className={`text-xs sm:text-sm px-3 py-2 rounded-lg border inline-flex items-center gap-1.5 ${isDark ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-gray-200 text-gray-700 hover:bg-gray-100"}`}
+                  >
+                    <Star className="h-3.5 w-3.5" />
+                    Give Review
+                  </button>
+                  <button
+                    onClick={() => navigate("/my-proposals")}
+                    className={`text-xs sm:text-sm px-3 py-2 rounded-lg border inline-flex items-center gap-1.5 ${isDark ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-gray-200 text-gray-700 hover:bg-gray-100"}`}
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    My Proposals
+                  </button>
                   {dislikedJobIds.length > 0 && (
                     <button
                       onClick={handleResetHiddenJobs}

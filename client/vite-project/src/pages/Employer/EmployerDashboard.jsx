@@ -13,6 +13,7 @@ import {
   ListChecks,
   Check,
   Circle,
+  Star,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
@@ -249,6 +250,13 @@ const EmployerDashboard = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate("/reviews?tab=pending")}
+                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+              >
+                <Star className="h-4 w-4" />
+                Give Review
+              </button>
               <button
                 onClick={() => navigate("/payments")}
                 className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"

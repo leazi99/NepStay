@@ -98,6 +98,10 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  lastSeenAt: {
+    type: Date,
+    default: null,
+  },
 });
 
 userSchema.pre("validate", function () {

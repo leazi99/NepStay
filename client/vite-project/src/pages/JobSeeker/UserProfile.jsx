@@ -461,6 +461,11 @@ const UserProfile = () => {
       [paymentId]: {
         rating: prev[paymentId]?.rating || "",
         comment: prev[paymentId]?.comment || "",
+        privateComment: prev[paymentId]?.privateComment || "",
+        recommendAgain:
+          typeof prev[paymentId]?.recommendAgain === "boolean"
+            ? prev[paymentId]?.recommendAgain
+            : true,
         [field]: value,
       },
     }));
@@ -481,6 +486,13 @@ const UserProfile = () => {
         paymentId,
         rating,
         comment: draft.comment || "",
+        privateFeedback: {
+          recommendAgain:
+            typeof draft.recommendAgain === "boolean"
+              ? draft.recommendAgain
+              : true,
+          privateComment: draft.privateComment || "",
+        },
       });
 
       if (!response.data?.success) {
@@ -993,6 +1005,8 @@ const UserProfile = () => {
                     const draft = reviewDrafts[item.paymentId] || {
                       rating: "",
                       comment: "",
+                      privateComment: "",
+                      recommendAgain: true,
                     };
 
                     return (
@@ -1052,6 +1066,41 @@ const UserProfile = () => {
                           >
                             {submittingReviewPaymentId === item.paymentId ? "Submitting..." : "Submit"}
                           </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-2 mt-2">
+                          <label className={`inline-flex items-center gap-2 text-xs ${isDark ? "text-slate-300" : "text-gray-600"}`}>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(draft.recommendAgain)}
+                              onChange={(event) =>
+                                handleReviewDraftChange(
+                                  item.paymentId,
+                                  "recommendAgain",
+                                  event.target.checked,
+                                )
+                              }
+                              className="h-4 w-4"
+                            />
+                            Recommend again (private)
+                          </label>
+                          <input
+                            type="text"
+                            value={draft.privateComment}
+                            onChange={(event) =>
+                              handleReviewDraftChange(
+                                item.paymentId,
+                                "privateComment",
+                                event.target.value,
+                              )
+                            }
+                            placeholder="Private feedback for platform (optional)"
+                            className={`px-3 py-2 border rounded-lg text-sm ${
+                              isDark
+                                ? "border-slate-700 bg-slate-800 text-slate-100"
+                                : "border-gray-200 bg-white text-gray-900"
+                            }`}
+                          />
                         </div>
                       </div>
                     );

@@ -12,6 +12,31 @@ const parsePagination = (query) => {
   return { page, limit };
 };
 
+const normalizeScore = (value) => {
+  if (value === undefined || value === null || value === "") return null;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 1 || numeric > 5) {
+    return null;
+  }
+  return numeric;
+};
+
+const sanitizeReviewForViewer = ({
+  review,
+  currentUserId,
+  includePrivateForReviewer = false,
+}) => {
+  const payload = review.toObject ? review.toObject() : { ...review };
+  const isReviewer =
+    String(payload.reviewer?._id || payload.reviewer) === String(currentUserId);
+
+  if (!includePrivateForReviewer || !isReviewer) {
+    payload.privateFeedback = undefined;
+  }
+
+  return payload;
+};
+
 const applyReviewFilters = (reviews, query) => {
   const search = String(query.search || "")
     .trim()
@@ -39,6 +64,7 @@ const applyReviewFilters = (reviews, query) => {
 
     const searchable = [
       review.comment || "",
+      review.publicTitle || "",
       review.job?.title || "",
       review.reviewer?.name || "",
       review.reviewer?.email || "",
@@ -134,7 +160,14 @@ export const createReview = async (req, res) => {
   try {
     const currentUserId = String(req.user.id);
     const role = normalizeReviewerRole(req.user.role);
-    const { paymentId, rating, comment } = req.body;
+    const {
+      paymentId,
+      rating,
+      comment,
+      publicTitle,
+      criteria,
+      privateFeedback,
+    } = req.body;
 
     if (!["employer", "freelancer"].includes(role)) {
       return res.status(403).json({
@@ -217,7 +250,36 @@ export const createReview = async (req, res) => {
       reviewerRole: isEmployerReviewer ? "employer" : "freelancer",
       rating: ratingNumber,
       comment: String(comment || "").trim(),
+      publicTitle: String(publicTitle || "").trim(),
+      criteria: {
+        quality: normalizeScore(criteria?.quality),
+        communication: normalizeScore(criteria?.communication),
+        deadline: normalizeScore(criteria?.deadline),
+        collaboration: normalizeScore(criteria?.collaboration),
+      },
+      privateFeedback: {
+        recommendAgain:
+          typeof privateFeedback?.recommendAgain === "boolean"
+            ? privateFeedback.recommendAgain
+            : null,
+        privateComment: String(privateFeedback?.privateComment || "").trim(),
+        professionalism: normalizeScore(privateFeedback?.professionalism),
+        cooperation: normalizeScore(privateFeedback?.cooperation),
+      },
     });
+
+    const counterpartReview = await reviewModel.findOne({
+      payment: payment._id,
+      reviewer: reviewee,
+    });
+
+    if (counterpartReview) {
+      const visibleAt = new Date();
+      await reviewModel.updateMany(
+        { payment: payment._id },
+        { $set: { isPublicVisible: true, publicVisibleAt: visibleAt } },
+      );
+    }
 
     const populatedReview = await reviewModel
       .findById(review._id)
@@ -227,8 +289,14 @@ export const createReview = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Review submitted successfully",
-      review: populatedReview,
+      message: counterpartReview
+        ? "Review submitted and now publicly visible"
+        : "Review submitted. Public feedback becomes visible after both sides review.",
+      review: sanitizeReviewForViewer({
+        review: populatedReview,
+        currentUserId,
+        includePrivateForReviewer: true,
+      }),
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -238,10 +306,14 @@ export const createReview = async (req, res) => {
 export const getReceivedReviews = async (req, res) => {
   try {
     const requestedUserId = req.query.userId || req.user.id;
+    const isSelfView = String(requestedUserId) === String(req.user.id);
     const { page, limit } = parsePagination(req.query);
 
     const allReviews = await reviewModel
-      .find({ reviewee: requestedUserId })
+      .find({
+        reviewee: requestedUserId,
+        ...(isSelfView ? {} : { isPublicVisible: { $ne: false } }),
+      })
       .populate("reviewer", "name email avatar role")
       .populate("reviewee", "name email avatar role")
       .populate("job", "title")
@@ -273,7 +345,14 @@ export const getReceivedReviews = async (req, res) => {
       averageRating,
       total,
       pagination,
-      reviews,
+      isSelfView,
+      reviews: reviews.map((review) =>
+        sanitizeReviewForViewer({
+          review,
+          currentUserId: req.user.id,
+          includePrivateForReviewer: false,
+        }),
+      ),
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -303,7 +382,13 @@ export const getGivenReviews = async (req, res) => {
       success: true,
       total: filtered.length,
       pagination,
-      reviews,
+      reviews: reviews.map((review) =>
+        sanitizeReviewForViewer({
+          review,
+          currentUserId,
+          includePrivateForReviewer: true,
+        }),
+      ),
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

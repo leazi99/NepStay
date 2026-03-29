@@ -37,6 +37,13 @@ export const API_PATHS = {
     UPDATE_STATUS: (id) => `/api/applications/${id}`,
   },
 
+  PROPOSALS: {
+    CREATE: (jobId) => `/api/proposals/${jobId}`,
+    GET_MINE: "/api/proposals/mine",
+    GET_FOR_JOB: (jobId) => `/api/proposals/job/${jobId}`,
+    UPDATE_STATUS: (proposalId) => `/api/proposals/${proposalId}/status`,
+  },
+
   ANALYTICS: {
     EMPLOYER_ANALYTICS: "/api/analytics/overview",
   },
@@ -45,6 +52,8 @@ export const API_PATHS = {
     UPDATE_PROFILE: "/api/users/update-profile",
     CHANGE_PASSWORD: "/api/users/change-password",
     DELETE_RESUME: "/api/users/delete-resume",
+    PING_PRESENCE: "/api/users/presence/ping",
+    SEARCH: "/api/users/search",
     GET_PUBLIC_PROFILE: (id) => `/api/users/${id}`,
   },
 

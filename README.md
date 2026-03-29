@@ -62,3 +62,29 @@ node --check server.js
 - Deploy backend on Render/Railway/Fly.io
 - Use managed MongoDB (Atlas)
 
+## Marketplace Upgrade Roadmap (Upwork + Merojob Style)
+
+### Phase 1: Core Hiring Reliability
+- [x] Proposal workflow backend (submit proposal, employer review, accept/reject)
+- [ ] Proposal UI for freelancer and employer dashboards
+- [ ] Contract start flow after accepted proposal/application
+- [ ] Better job search filters (experience level, budget type, category)
+
+### Phase 2: Trust and Quality
+- [ ] Freelancer profile completeness score and portfolio section
+- [ ] Employer trust badges (verified identity, payment verified)
+- [ ] Stronger review system (private + public feedback dimensions)
+- [ ] Dispute and support ticket baseline
+
+### Phase 3: Work Management
+- [ ] Milestones with partial releases
+- [ ] Timesheet tracking for hourly contracts
+- [ ] Contract room with file sharing and offer terms
+- [ ] Offer negotiation (counter-offer, revised budget/timeline)
+
+### Phase 4: Growth and Matching
+- [ ] Personalized job recommendations for jobseekers
+- [ ] Invite-only proposals from employers to selected freelancers
+- [ ] Saved searches and job alerts
+- [ ] Skills-based ranking and improved search relevance
+

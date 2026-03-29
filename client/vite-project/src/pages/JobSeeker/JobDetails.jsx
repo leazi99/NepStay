@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Loader2,
   Send,
+  Star,
 } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
@@ -21,8 +22,14 @@ import FreelancerNavbar from "../../components/layout/FreelancerNavbar";
 
 const statusConfig = {
   Pending: { label: "Application Pending", cls: "bg-amber-100 text-amber-700 border border-amber-200" },
-  Accepted: { label: "Application Accepted 🎉", cls: "bg-emerald-100 text-emerald-700 border border-emerald-200" },
+  Accepted: { label: "Application Accepted ", cls: "bg-emerald-100 text-emerald-700 border border-emerald-200" },
   Rejected: { label: "Application Rejected", cls: "bg-red-100 text-red-700 border border-red-200" },
+};
+
+const proposalStatusConfig = {
+  pending: { label: "Proposal Pending", cls: "bg-amber-100 text-amber-700 border border-amber-200" },
+  accepted: { label: "Proposal Accepted ", cls: "bg-emerald-100 text-emerald-700 border border-emerald-200" },
+  rejected: { label: "Proposal Rejected", cls: "bg-red-100 text-red-700 border border-red-200" },
 };
 
 const JobDetails = () => {
@@ -39,8 +46,13 @@ const JobDetails = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [showProposalModal, setShowProposalModal] = useState(false);
   const [resumeFile, setResumeFile] = useState(null);
   const [profileResumeUrl, setProfileResumeUrl] = useState("");
+  const [proposalStatus, setProposalStatus] = useState("");
+  const [coverLetter, setCoverLetter] = useState("");
+  const [proposedAmount, setProposedAmount] = useState("");
+  const [submittingProposal, setSubmittingProposal] = useState(false);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -62,6 +74,27 @@ const JobDetails = () => {
     };
     fetchJob();
   }, [jobId, user?._id]);
+
+  useEffect(() => {
+    const fetchMyProposalStatus = async () => {
+      if (!isAuthenticated || !user?._id) return;
+
+      try {
+        const response = await axiosInstance.get(API_PATHS.PROPOSALS.GET_MINE);
+        if (!response.data?.success) return;
+
+        const match = (response.data.proposals || []).find(
+          (proposal) => String(proposal?.job?._id || proposal?.job) === String(jobId),
+        );
+
+        setProposalStatus(match?.status || "");
+      } catch {
+        setProposalStatus("");
+      }
+    };
+
+    fetchMyProposalStatus();
+  }, [isAuthenticated, jobId, user?._id]);
 
   useEffect(() => {
     setProfileResumeUrl(user?.resume || "");
@@ -140,6 +173,43 @@ const JobDetails = () => {
     }
   };
 
+  const handleSubmitProposal = async () => {
+    if (!isAuthenticated) {
+      toast.error("Please login to submit a proposal");
+      navigate("/login");
+      return;
+    }
+
+    const amount = Number(proposedAmount);
+    if (!coverLetter.trim() || !Number.isFinite(amount) || amount <= 0) {
+      toast.error("Please add a cover letter and valid proposal amount");
+      return;
+    }
+
+    setSubmittingProposal(true);
+    try {
+      const response = await axiosInstance.post(API_PATHS.PROPOSALS.CREATE(jobId), {
+        coverLetter: coverLetter.trim(),
+        proposedAmount: amount,
+      });
+
+      if (!response.data?.success) {
+        toast.error(response.data?.message || "Failed to submit proposal");
+        return;
+      }
+
+      setProposalStatus(response.data?.proposal?.status || "pending");
+      setShowProposalModal(false);
+      setCoverLetter("");
+      setProposedAmount("");
+      toast.success("Proposal submitted successfully");
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to submit proposal");
+    } finally {
+      setSubmittingProposal(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${isDark ? "bg-slate-950" : "bg-gray-50"}`}>
@@ -162,6 +232,8 @@ const JobDetails = () => {
 
   const company = job.company;
   const companyName = company?.companyName || company?.name || "Company";
+  const companyRatingAvg = Number(company?.ratingAvg || 0);
+  const companyRatingCount = Number(company?.ratingCount || 0);
 
   return (
     <div className={`${isDark ? "bg-slate-950 text-slate-100" : "bg-gray-50 text-gray-900"} min-h-screen`}>
@@ -194,6 +266,12 @@ const JobDetails = () => {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <h2 className={`text-lg sm:text-xl font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>{job.title}</h2>
                 <p className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}>{companyName}</p>
+                <p className={`mt-1 text-xs inline-flex items-center gap-1.5 ${companyRatingCount > 0 ? "text-amber-500" : isDark ? "text-slate-400" : "text-gray-500"}`}>
+                  <Star className={`h-3.5 w-3.5 ${companyRatingCount > 0 ? "fill-current" : ""}`} />
+                  {companyRatingCount > 0
+                    ? `${companyRatingAvg.toFixed(1)} client rating (${companyRatingCount} reviews)`
+                    : "New client (no public reviews yet)"}
+                </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${isDark ? "bg-slate-800 text-slate-200" : "bg-blue-50 text-blue-700"}`}>
                     <MapPin className="h-3 w-3" /> {job.location}
@@ -236,6 +314,12 @@ const JobDetails = () => {
             </div>
           )}
 
+          {proposalStatus ? (
+            <div className={`px-3 py-2 rounded-xl text-sm font-medium ${proposalStatusConfig[proposalStatus]?.cls}`}>
+              {proposalStatusConfig[proposalStatus]?.label || "Proposal Submitted"}
+            </div>
+          ) : null}
+
           {/* Actions card */}
           <div className={`rounded-2xl border p-5 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}>
             <h3 className={`text-base font-semibold mb-3 ${isDark ? "text-slate-100" : "text-gray-900"}`}>Apply for this role</h3>
@@ -249,6 +333,17 @@ const JobDetails = () => {
               </button>
             ) : (
               <p className={`text-sm ${isDark ? "text-slate-300" : "text-gray-600"}`}>You have already applied.</p>
+            )}
+            {!proposalStatus ? (
+              <button
+                onClick={() => setShowProposalModal(true)}
+                className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 text-white py-2.5 text-sm font-medium hover:bg-emerald-700 transition-colors"
+              >
+                <Send className="h-4 w-4" />
+                Submit Proposal
+              </button>
+            ) : (
+              <p className={`mt-3 text-sm ${isDark ? "text-slate-300" : "text-gray-600"}`}>You already submitted a proposal for this job.</p>
             )}
             <button
               onClick={handleSaveToggle}
@@ -268,6 +363,26 @@ const JobDetails = () => {
           <div className={`rounded-2xl border p-5 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}>
             <h3 className={`text-base font-semibold mb-3 ${isDark ? "text-slate-100" : "text-gray-900"}`}>About the Company</h3>
             <p className={`font-medium ${isDark ? "text-slate-200" : "text-gray-900"}`}>{companyName}</p>
+            <p className={`mt-1 text-xs inline-flex items-center gap-1.5 ${companyRatingCount > 0 ? "text-amber-500" : isDark ? "text-slate-400" : "text-gray-500"}`}>
+              <Star className={`h-3.5 w-3.5 ${companyRatingCount > 0 ? "fill-current" : ""}`} />
+              {companyRatingCount > 0
+                ? `${companyRatingAvg.toFixed(1)} rating from ${companyRatingCount} reviews`
+                : "No public rating yet"}
+            </p>
+            {company?._id ? (
+              <button
+                onClick={() =>
+                  navigate(
+                    `/client-reviews?userId=${company._id}&name=${encodeURIComponent(
+                      companyName,
+                    )}`,
+                  )
+                }
+                className="mt-2 text-xs text-blue-500 hover:text-blue-600 hover:underline"
+              >
+                View all client reviews
+              </button>
+            ) : null}
             {company?.companyDescription && (
               <p className={`mt-2 text-sm leading-6 ${isDark ? "text-slate-300" : "text-gray-700"}`}>
                 {company.companyDescription}
@@ -325,6 +440,61 @@ const JobDetails = () => {
               >
                 {applying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 {applying ? "Submitting..." : "Submit Application"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showProposalModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center">
+          <div className={`w-full max-w-xl rounded-2xl border p-5 sm:p-6 ${isDark ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-gray-200 text-gray-900"}`}>
+            <h3 className="text-lg font-semibold">Submit Proposal for {job.title}</h3>
+            <p className={`mt-2 text-sm ${isDark ? "text-slate-300" : "text-gray-600"}`}>
+              Add a short cover letter and your proposed amount.
+            </p>
+
+            <div className="mt-4">
+              <label className={`block mb-1.5 text-sm font-medium ${isDark ? "text-slate-200" : "text-gray-700"}`}>
+                Cover Letter
+              </label>
+              <textarea
+                value={coverLetter}
+                onChange={(event) => setCoverLetter(event.target.value)}
+                rows={5}
+                placeholder="Explain why you are a good fit for this job"
+                className={`w-full rounded-xl border px-3 py-2 text-sm resize-none ${isDark ? "bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500" : "bg-white border-gray-200 text-gray-900 placeholder:text-gray-400"}`}
+              />
+            </div>
+
+            <div className="mt-4">
+              <label className={`block mb-1.5 text-sm font-medium ${isDark ? "text-slate-200" : "text-gray-700"}`}>
+                Proposed Amount (NPR)
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={proposedAmount}
+                onChange={(event) => setProposedAmount(event.target.value)}
+                placeholder="Enter your amount"
+                className={`w-full rounded-xl border px-3 py-2 text-sm ${isDark ? "bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500" : "bg-white border-gray-200 text-gray-900 placeholder:text-gray-400"}`}
+              />
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setShowProposalModal(false)}
+                className={`px-4 py-2 rounded-lg text-sm border ${isDark ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-gray-200 text-gray-700 hover:bg-gray-100"}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitProposal}
+                disabled={submittingProposal}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-70"
+              >
+                {submittingProposal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {submittingProposal ? "Submitting..." : "Submit Proposal"}
               </button>
             </div>
           </div>

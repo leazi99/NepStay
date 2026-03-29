@@ -1,6 +1,21 @@
 import bcrypt from "bcryptjs";
 import userModel from "../models/userModel.js";
 
+const ONLINE_WINDOW_MS = 90 * 1000;
+
+const toPresencePayload = (user) => {
+  const lastSeenAt = user?.lastSeenAt ? new Date(user.lastSeenAt) : null;
+  const isOnline =
+    lastSeenAt instanceof Date &&
+    !Number.isNaN(lastSeenAt.getTime()) &&
+    Date.now() - lastSeenAt.getTime() <= ONLINE_WINDOW_MS;
+
+  return {
+    isOnline,
+    lastSeenAt: lastSeenAt ? lastSeenAt.toISOString() : null,
+  };
+};
+
 const parseInterests = (value) => {
   if (!value) return [];
   if (Array.isArray(value)) {
@@ -241,6 +256,76 @@ export const getPublicProfile = async (req, res) => {
     return res.json({
       success: true,
       user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const searchUsersForChat = async (req, res) => {
+  try {
+    const queryText = String(req.query.query || "").trim();
+    const roleFilter = String(req.query.role || "")
+      .trim()
+      .toLowerCase();
+    const limit = Math.min(Math.max(Number(req.query.limit) || 15, 1), 50);
+
+    const filter = {
+      _id: { $ne: req.user._id },
+    };
+
+    if (queryText) {
+      filter.$or = [
+        { name: { $regex: queryText, $options: "i" } },
+        { email: { $regex: queryText, $options: "i" } },
+        { companyName: { $regex: queryText, $options: "i" } },
+      ];
+    }
+
+    if (["jobseeker", "employer", "admin"].includes(roleFilter)) {
+      filter.role = roleFilter;
+    }
+
+    const users = await userModel
+      .find(filter)
+      .select("name email role avatar companyName lastSeenAt")
+      .sort({ name: 1 })
+      .limit(limit);
+
+    const usersWithPresence = users.map((user) => ({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar || "",
+      companyName: user.companyName || "",
+      ...toPresencePayload(user),
+    }));
+
+    return res.json({
+      success: true,
+      users: usersWithPresence,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const pingPresence = async (req, res) => {
+  try {
+    await userModel.findByIdAndUpdate(req.user._id, {
+      $set: { lastSeenAt: new Date() },
+    });
+
+    return res.json({
+      success: true,
+      message: "Presence updated",
     });
   } catch (error) {
     return res.status(500).json({

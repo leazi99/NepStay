@@ -10,7 +10,7 @@ import {
 } from 'react-router-dom';
 
 import { Toaster } from 'react-hot-toast';
-import LandingPage from './pages/LandingPage/LandingPage.jsx'
+import Home from './pages/LandingPage/Home.jsx'
 import SignUp from './pages/Auth/SignUp.jsx'
 import JobDashboard from './pages/JobSeeker/JobDashboard.jsx'
 import UserProfile from './pages/JobSeeker/UserProfile.jsx'
@@ -25,6 +25,7 @@ import EmployerJobView from './pages/Employer/EmployerJobView.jsx'
 import FreelancerProfileView from './pages/Employer/FreelancerProfileView.jsx'
 import SavedJobs from './pages/JobSeeker/SavedJobs.jsx'
 import JobDetails from './pages/JobSeeker/JobDetails.jsx'
+import MyProposals from './pages/JobSeeker/MyProposals.jsx'
 import Messages from './pages/Common/Messages.jsx'
 import Notifications from './pages/Common/Notifications.jsx'
 import Reviews from './pages/Common/Reviews.jsx'
@@ -45,7 +46,8 @@ const App = () => {
           duration: 3500,
         }}></Toaster>
       <Routes>
-        <Route path='/' element={<LandingPage />} />
+        <Route path='/' element={<Home />} />
+        <Route path='/home' element={<Home />} />
         <Route path='/login' element={<Login />} />
         <Route path='/signup' element={<SignUp />} />
         <Route path='/forgot-password' element={<ForgotPassword />} />
@@ -58,6 +60,8 @@ const App = () => {
           <Route path='/freelancer-dashboard' element={<JobDashboard />} />
           <Route path='/job/:jobId' element={<JobDetails />} />
           <Route path='/saved-jobs' element={<SavedJobs />} />
+          <Route path='/my-proposals' element={<MyProposals />} />
+          <Route path='/client-reviews' element={<Reviews />} />
         </Route>
 
         <Route element={<ProtectedRoutes />}>
@@ -65,6 +69,7 @@ const App = () => {
           <Route path='/profile' element={<UserProfile />} />
           <Route path='/messages' element={<Messages />} />
           <Route path='/notifications' element={<Notifications />} />
+          <Route path='/reviews' element={<Reviews />} />
         </Route>
 
         <Route element={<ProtectedRoutes requiredRole="jobseeker" />}>
@@ -79,7 +84,6 @@ const App = () => {
           <Route path='/manage-jobs' element={<ManageJobs />} />
           <Route path='/employer-job/:jobId' element={<EmployerJobView />} />
           <Route path='/payments' element={<Payments />} />
-          <Route path='/reviews' element={<Reviews />} />
           <Route path='/applicants/:jobId' element={<ApplicationView />} />
           <Route path='/freelancer/:freelancerId' element={<FreelancerProfileView />} />
           <Route path='/company-profile' element={<EmployerProfile />} />
