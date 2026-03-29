@@ -90,7 +90,7 @@ const Hero = () => {
             className='grid grid-cols-1 md:grid-cols-3 gap-8 max-w-2xl mx-auto'
           >
             {stats.map((stat, index) => (
-              <motion.div
+              <Motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -102,7 +102,7 @@ const Hero = () => {
                 </div>
                 <div className='text-2xl font-bold text-gray-900'>{stat.value}</div>
                 <div className='text-sm text-gray-600 font-medium'>{stat.label}</div>
-              </motion.div>
+              </Motion.div>
             ))}
           </Motion.div>
         </div>

@@ -150,7 +150,7 @@ const DashboardLayout = ({ activeMenu, children }) => {
                 <img src={kaamSathiLogoMini} alt='KaamSathi' className='h-full w-full object-cover sm:hidden' />
                 <img src={kaamSathiLogo} alt='KaamSathi' className='h-full w-full object-cover hidden sm:block' />
               </div>
-              <span className={`text-lg font-bold tracking-tight ${isDark ? "text-slate-100" : "text-gray-900"}`}>KaamSathi</span>
+              <span className={`text-lg font-bold tracking-tight ${isDark ? "text-slate-100" : "text-gray-900"} href="/"`}>KaamSathi</span>
             </Link>
           </div>
 
