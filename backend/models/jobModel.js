@@ -14,10 +14,22 @@ const jobSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    jobLocation: {
+      type: String,
+      trim: true,
+    },
+    jobLocationLower: {
+      type: String,
+      trim: true,
+    },
     location: {
       type: String,
       enum: ["Remote", "Full-Time", "Part-Time", "Internship", "Contract"],
       required: true,
+    },
+    category: {
+      type: String,
+      trim: true,
     },
 
     company: {
@@ -34,15 +46,15 @@ const jobSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    isClosed:{
-      type:Boolean,
-      default:false,
+    isClosed: {
+      type: Boolean,
+      default: false,
     },
     duration: {
       type: String,
       required: true,
     },
-   
+
     createdAt: {
       type: Date,
       default: Date.now,
@@ -51,6 +63,16 @@ const jobSchema = new mongoose.Schema(
   { timestamps: true },
   { toJSON: { virtuals: true }, toObject: { virtuals: true } },
 );
+
+jobSchema.index({ jobLocation: 1 });
+jobSchema.index({ jobLocationLower: 1 });
+
+jobSchema.pre("save", function () {
+  if (this.isModified("jobLocation")) {
+    const normalized = String(this.jobLocation || "").trim();
+    this.jobLocationLower = normalized ? normalized.toLowerCase() : undefined;
+  }
+});
 
 const jobModel = mongoose.models.job || mongoose.model("job", jobSchema);
 

@@ -6,6 +6,7 @@ import {
   MapPin,
   Wallet,
   Clock,
+  Briefcase,
   Heart,
   Building2,
   FileText,
@@ -274,7 +275,10 @@ const JobDetails = () => {
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${isDark ? "bg-slate-800 text-slate-200" : "bg-blue-50 text-blue-700"}`}>
-                    <MapPin className="h-3 w-3" /> {job.location}
+                    <MapPin className="h-3 w-3" /> {job.jobLocation || "Location not specified"}
+                  </span>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${isDark ? "bg-slate-800 text-slate-200" : "bg-indigo-50 text-indigo-700"}`}>
+                    <Briefcase className="h-3 w-3" /> {job.location}
                   </span>
                   <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${isDark ? "bg-slate-800 text-slate-200" : "bg-emerald-50 text-emerald-700"}`}>
                     <Wallet className="h-3 w-3" /> NPR {job.salaryMin?.toLocaleString()} – NPR {job.salaryMax?.toLocaleString()}/mo

@@ -6,6 +6,9 @@ import savedModel from "../models/savedModel.js";
 import notificationModel from "../models/notificationModel.js";
 import reviewModel from "../models/reviewModel.js";
 
+const escapeRegex = (value = "") =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const buildEmployerReviewSummaryMap = async (companyIds = []) => {
   const uniqueCompanyIds = [...new Set(companyIds.map(String))];
   if (uniqueCompanyIds.length === 0) {
@@ -125,13 +128,28 @@ export const createJob = async (req, res) => {
 };
 
 export const getJobs = async (req, res) => {
-  const { keyword, location, category, type, minSalary, maxSalary, userId } =
-    req.query;
+  const {
+    keyword,
+    location,
+    jobLocation,
+    category,
+    type,
+    minSalary,
+    maxSalary,
+    userId,
+  } = req.query;
+
+  const normalizedJobLocation = String(jobLocation || "")
+    .trim()
+    .toLowerCase();
 
   const query = {
     isClosed: false,
     ...(keyword && { title: { $regex: keyword, $options: "i" } }),
     ...(location && { location: { $regex: location, $options: "i" } }),
+    ...(normalizedJobLocation && {
+      jobLocationLower: { $regex: escapeRegex(normalizedJobLocation) },
+    }),
     ...(category && { category }),
     ...(type && { type }),
   };

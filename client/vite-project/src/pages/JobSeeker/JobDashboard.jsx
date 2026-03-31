@@ -16,7 +16,7 @@ import {
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { useAuth } from "../../context/AuthContext";
-import { JOB_TYPES } from "../../utils/data";
+import { CATEGORIES, JOB_TYPES } from "../../utils/data";
 import FreelancerNavbar from "../../components/layout/FreelancerNavbar";
 
 const EXPERIENCE_LEVELS = ["Entry Level", "Intermediate", "Expert"];
@@ -106,7 +106,7 @@ const JobListItem = ({ job, onSave, onUnsave, onApply, onDislike, nowTs, isDark 
           <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>{postedText()}</p>
           <h3 className={`mt-1 text-lg sm:text-xl font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>{job.title}</h3>
           <p className={`mt-1 text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}>
-            {["Fixed-price", experienceLevel, `Est. Budget: NPR${estimateBudget.toLocaleString()}`]
+            {["Fixed-price", experienceLevel, job.location, `Est. Budget: NPR${estimateBudget.toLocaleString()}`]
               .filter(Boolean)
               .join(" - ")}
           </p>
@@ -157,7 +157,7 @@ const JobListItem = ({ job, onSave, onUnsave, onApply, onDislike, nowTs, isDark 
             : "New client"}
         </span>
         {companySpent ? <span>{companySpent}</span> : null}
-        <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {job.location}</span>
+        <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {job.jobLocation || "Location not specified"}</span>
       </div>
 
       {proposalText ? (
@@ -204,6 +204,8 @@ const JobDashboard = () => {
 
   const [filters, setFilters] = useState({
     keyword: "",
+    jobLocation: "",
+    category: "",
     selectedTypes: [],
     minSalary: "",
     maxSalary: "",
@@ -214,6 +216,8 @@ const JobDashboard = () => {
 
   const [appliedFilters, setAppliedFilters] = useState({
     keyword: "",
+    jobLocation: "",
+    category: "",
     selectedTypes: [],
     minSalary: "",
     maxSalary: "",
@@ -242,6 +246,8 @@ const JobDashboard = () => {
 
       const params = new URLSearchParams();
       if (appliedFilters.keyword) params.append("keyword", appliedFilters.keyword);
+      if (appliedFilters.jobLocation) params.append("jobLocation", appliedFilters.jobLocation);
+      if (appliedFilters.category) params.append("category", appliedFilters.category);
       if (appliedFilters.minSalary) params.append("minSalary", appliedFilters.minSalary);
       if (appliedFilters.maxSalary) params.append("maxSalary", appliedFilters.maxSalary);
       if (user?._id) params.append("userId", user._id);
@@ -372,6 +378,8 @@ const JobDashboard = () => {
   const clearAllFilters = () => {
     const reset = {
       keyword: "",
+      jobLocation: "",
+      category: "",
       selectedTypes: [],
       minSalary: "",
       maxSalary: "",
@@ -411,12 +419,33 @@ const JobDashboard = () => {
             <div className="space-y-5">
               <div>
                 <p className={`text-xs uppercase tracking-wide mb-2 ${isDark ? "text-slate-400" : "text-gray-500"}`}>Category</p>
-                <select className={`w-full rounded-xl border px-3 py-2.5 text-sm ${isDark ? "bg-slate-800 border-slate-700 text-slate-100" : "bg-white border-gray-200 text-gray-800"}`}>
-                  <option>Select Categories</option>
-                  <option>Engineering</option>
-                  <option>Design</option>
-                  <option>Marketing</option>
+                <select
+                  value={filters.category}
+                  onChange={(event) =>
+                    setFilters((prev) => ({ ...prev, category: event.target.value }))
+                  }
+                  className={`w-full rounded-xl border px-3 py-2.5 text-sm ${isDark ? "bg-slate-800 border-slate-700 text-slate-100" : "bg-white border-gray-200 text-gray-800"}`}
+                >
+                  <option value="">Select category</option>
+                  {CATEGORIES.map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
                 </select>
+              </div>
+
+              <div>
+                <p className={`text-xs uppercase tracking-wide mb-2 ${isDark ? "text-slate-400" : "text-gray-500"}`}>Location</p>
+                <input
+                  type="text"
+                  value={filters.jobLocation}
+                  onChange={(event) =>
+                    setFilters((prev) => ({ ...prev, jobLocation: event.target.value }))
+                  }
+                  placeholder="e.g. Kathmandu"
+                  className={`w-full rounded-xl border px-3 py-2.5 text-sm ${isDark ? "bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-400" : "bg-white border-gray-200 text-gray-800 placeholder:text-gray-400"}`}
+                />
               </div>
 
               <div>

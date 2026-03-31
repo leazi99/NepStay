@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Pencil, Users, Clock, Briefcase, MapPin, Wallet } from "lucide-react";
+import { ArrowLeft, Pencil, Users, Clock, Briefcase, MapPin, DollarSign } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import DashboardLayout from "../../components/layout/DashboardLayout.jsx";
@@ -101,6 +101,9 @@ const EmployerJobView = () => {
               <h2 className="text-xl font-semibold text-gray-900">{job.title}</h2>
               <div className="mt-2 flex flex-wrap gap-2 text-xs">
                 <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700">{job.location}</span>
+                <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700">
+                  {job.jobLocation || "Location not specified"}
+                </span>
                 {job.category ? (
                   <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700">{job.category}</span>
                 ) : null}
@@ -112,13 +115,13 @@ const EmployerJobView = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="rounded-xl border border-gray-100 p-4">
                 <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                  <Wallet className="h-3.5 w-3.5" /> Salary Range
+                  <DollarSign className="h-3.5 w-3.5" /> Salary Range
                 </p>
                 <p className="text-sm font-medium text-gray-900 mt-1">
-                  NPR {job.salaryMin?.toLocaleString()} - NPR {job.salaryMax?.toLocaleString()} / month
+                  ${job.salaryMin?.toLocaleString()} - ${job.salaryMax?.toLocaleString()} / month
                 </p>
               </div>
               <div className="rounded-xl border border-gray-100 p-4">
@@ -129,7 +132,15 @@ const EmployerJobView = () => {
               </div>
               <div className="rounded-xl border border-gray-100 p-4">
                 <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5" /> Posted On
+                  <MapPin className="h-3.5 w-3.5" /> Location
+                </p>
+                <p className="text-sm font-medium text-gray-900 mt-1">
+                  {job.jobLocation || "Location not specified"}
+                </p>
+              </div>
+              <div className="rounded-xl border border-gray-100 p-4">
+                <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" /> Posted On
                 </p>
                 <p className="text-sm font-medium text-gray-900 mt-1">{formatDate(job.createdAt)}</p>
               </div>

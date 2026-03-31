@@ -13,12 +13,45 @@
   }
 
   html {
-    font-size: 17px;
+    font-size: clamp(16px, 0.35vw + 15px, 19px);
+    line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
     @apply font-display text-gray-900 bg-white;
   }
 
   body {
     @apply bg-white text-gray-900 overflow-x-hidden min-h-screen;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    line-height: 1.25;
+  }
+
+  p,
+  li,
+  label,
+  input,
+  textarea,
+  select,
+  button {
+    font-size: 1rem;
+  }
+
+  @media (max-width: 640px) {
+    html {
+      font-size: 16px;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    html {
+      font-size: 19px;
+    }
   }
 
   html.dark {

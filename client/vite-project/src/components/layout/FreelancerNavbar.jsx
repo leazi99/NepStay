@@ -10,8 +10,6 @@ import {
   Loader2,
   MessageSquare,
   Bell,
-  Send,
-  Star,
 } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
@@ -25,7 +23,6 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
   const [isSwitchingTheme, setIsSwitchingTheme] = useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
-  const [pendingProposalCount, setPendingProposalCount] = useState(0);
 
   const isDark = (user?.themePreference || "light") === "dark";
   const workspaceLabel = "Freelancer Workspace";
@@ -33,8 +30,6 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: Briefcase, path: "/freelancer-dashboard" },
     { id: "saved", label: "Saved Jobs", icon: Heart, path: "/saved-jobs" },
-    { id: "proposals", label: "My Proposals", icon: Send, path: "/my-proposals" },
-    { id: "reviews", label: "Reviews", icon: Star, path: "/reviews" },
     { id: "messages", label: "Messages", icon: MessageSquare, path: "/freelancer/messages" },
     { id: "notifications", label: "Alerts", icon: Bell, path: "/notifications" },
     { id: "profile", label: "Profile", icon: User, path: "/profile" },
@@ -42,9 +37,8 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
 
   const fetchBadgeCounts = async () => {
     try {
-      const [notificationResponse, proposalResponse] = await Promise.all([
+      const [notificationResponse] = await Promise.all([
         axiosInstance.get(API_PATHS.NOTIFICATIONS.GET_ALL),
-        axiosInstance.get(API_PATHS.PROPOSALS.GET_MINE),
       ]);
 
       const notifications = notificationResponse.data?.success
@@ -55,20 +49,11 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
         (item) => !item.isRead && item.type === "message"
       ).length;
 
-      const proposals = proposalResponse.data?.success
-        ? proposalResponse.data.proposals || []
-        : [];
-      const pendingProposals = proposals.filter(
-        (proposal) => String(proposal?.status || "").toLowerCase() === "pending",
-      ).length;
-
       setUnreadNotificationCount(unreadAll);
       setUnreadMessageCount(unreadMessages);
-      setPendingProposalCount(pendingProposals);
     } catch {
       setUnreadNotificationCount(0);
       setUnreadMessageCount(0);
-      setPendingProposalCount(0);
     }
   };
 
@@ -136,8 +121,6 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
                 ? unreadNotificationCount
                 : item.id === "messages"
                   ? unreadMessageCount
-                  : item.id === "proposals"
-                    ? pendingProposalCount
                   : 0;
             return (
               <button
@@ -157,12 +140,7 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
                 <span className="hidden md:inline">{item.label}</span>
                 {badgeCount > 0 && (
                   <span
-                    onClick={(event) => {
-                      if (item.id !== "proposals") return;
-                      event.stopPropagation();
-                      navigate("/my-proposals?status=pending");
-                    }}
-                    className={`inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full text-[11px] font-bold bg-rose-500 text-white ${item.id === "proposals" ? "cursor-pointer" : ""}`}
+                    className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full text-[11px] font-bold bg-rose-500 text-white"
                   >
                     {badgeCount > 99 ? "99+" : badgeCount}
                   </span>

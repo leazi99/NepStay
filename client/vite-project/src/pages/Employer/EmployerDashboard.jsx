@@ -387,8 +387,14 @@ const EmployerDashboard = () => {
                         <div className="flex items-center gap-2 mt-1">
                           <span className="flex items-center gap-1 text-xs text-gray-400">
                             <MapPin className="h-3 w-3" />
-                            {job.location}
+                            {job.jobLocation || "Location not specified"}
                           </span>
+                          {job.location ? (
+                            <>
+                              <span className="text-gray-300">·</span>
+                              <span className="text-xs text-gray-400">{job.location}</span>
+                            </>
+                          ) : null}
                           <span className="text-gray-300">·</span>
                           <span className="flex items-center gap-1 text-xs text-gray-400">
                             <Clock className="h-3 w-3" />

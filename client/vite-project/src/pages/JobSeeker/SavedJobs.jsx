@@ -7,6 +7,7 @@ import {
   Wallet,
   Clock,
   MapPin,
+  Briefcase,
   ArrowRight,
   AlertCircle,
   Loader2,
@@ -136,7 +137,10 @@ const SavedJobs = () => {
 
                       <div className="flex flex-wrap gap-2 mt-3">
                         <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium">
-                          <MapPin className="h-3 w-3" /> {job.location}
+                          <MapPin className="h-3 w-3" /> {job.jobLocation || "Location not specified"}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-medium">
+                          <Briefcase className="h-3 w-3" /> {job.location}
                         </span>
                         <span className="flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-full font-medium">
                           <Wallet className="h-3 w-3" /> NPR {job.salaryMin?.toLocaleString()} – NPR {job.salaryMax?.toLocaleString()}/mo

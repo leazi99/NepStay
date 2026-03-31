@@ -7,8 +7,6 @@ import { API_PATHS } from "../../utils/apiPaths";
 import DashboardLayout from "../../components/layout/DashboardLayout.jsx";
 import { CATEGORIES, JOB_TYPES } from "../../utils/data";
 
-const LOCATIONS = ["Remote", "On-Site", "Hybrid"];
-
 const InputField = ({ label, icon: Icon, error, ...props }) => (
   <div className="flex flex-col gap-1.5">
     <label className="text-sm font-medium text-gray-700">{label}</label>
@@ -69,6 +67,7 @@ const JobPostingForm = () => {
     title: "",
     description: "",
     requirements: "",
+    jobLocation: "",
     location: "",
     category: "",
     salaryMin: "",
@@ -99,6 +98,7 @@ const JobPostingForm = () => {
           title: job.title || "",
           description: job.description || "",
           requirements: job.requirements || "",
+          jobLocation: job.jobLocation || "",
           location: job.location || "",
           category: job.category || "",
           salaryMin: job.salaryMin ?? "",
@@ -121,6 +121,7 @@ const JobPostingForm = () => {
     if (!form.title.trim()) newErrors.title = "Job title is required";
     if (!form.description.trim()) newErrors.description = "Job description is required";
     if (!form.requirements.trim()) newErrors.requirements = "Requirements are required";
+    if (!form.jobLocation.trim()) newErrors.jobLocation = "Job location is required";
     if (!form.location) newErrors.location = "Please select a job type";
     if (!form.salaryMin) newErrors.salaryMin = "Minimum salary is required";
     if (!form.salaryMax) newErrors.salaryMax = "Maximum salary is required";
@@ -206,8 +207,17 @@ const JobPostingForm = () => {
                 error={errors.title}
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <InputField
+                  label="Job Location"
+                  name="jobLocation"
+                  placeholder="e.g. Kathmandu, Nepal"
+                  icon={MapPin}
+                  value={form.jobLocation}
+                  onChange={handleChange}
+                  error={errors.jobLocation}
+                />
                 <SelectField
-                  label="Job Type / Location "
+                  label="Job Type"
                   name="location"
                   options={JOB_TYPES}
                   placeholder="Select job type"
@@ -215,16 +225,16 @@ const JobPostingForm = () => {
                   onChange={handleChange}
                   error={errors.location}
                 />
-                <SelectField
-                  label="Category"
-                  name="category"
-                  options={CATEGORIES}
-                  placeholder="Select category"
-                  value={form.category}
-                  onChange={handleChange}
-                  error={errors.category}
-                />
               </div>
+              <SelectField
+                label="Category"
+                name="category"
+                options={CATEGORIES}
+                placeholder="Select category"
+                value={form.category}
+                onChange={handleChange}
+                error={errors.category}
+              />
             </div>
           </div>
 
