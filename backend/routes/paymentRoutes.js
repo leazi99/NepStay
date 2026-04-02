@@ -4,9 +4,6 @@ import {
   createPayment,
   getEligibleHiredApplications,
   getEmployerPayments,
-  createStripeCheckoutSession,
-  createStripePaymentIntent,
-  confirmStripePaymentIntent,
   createKhaltiPaymentSession,
   confirmKhaltiPayment,
 } from "../controllers/paymentController.js";
@@ -20,9 +17,6 @@ paymentRoutes.get(
   getEligibleHiredApplications,
 );
 paymentRoutes.post("/", userAuth, createPayment);
-paymentRoutes.post("/checkout-session", userAuth, createStripeCheckoutSession);
-paymentRoutes.post("/create-intent", userAuth, createStripePaymentIntent);
-paymentRoutes.post("/confirm-intent", userAuth, confirmStripePaymentIntent);
 paymentRoutes.post("/khalti/initiate", userAuth, createKhaltiPaymentSession);
 paymentRoutes.post("/khalti/confirm", userAuth, confirmKhaltiPayment);
 

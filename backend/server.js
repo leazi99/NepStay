@@ -22,7 +22,6 @@ import adminRoutes from "./routes/adminRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import proposalRoutes from "./routes/proposalRoutes.js";
 import userModel from "./models/userModel.js";
-import { stripeWebhookHandler } from "./controllers/paymentController.js";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -205,12 +204,6 @@ app.use(
 );
 
 connectDB();
-
-app.post(
-  "/api/payments/webhook",
-  express.raw({ type: "application/json" }),
-  stripeWebhookHandler,
-);
 
 app.use(express.json());
 app.use(cookieParser());

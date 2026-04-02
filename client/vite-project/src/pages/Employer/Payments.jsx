@@ -582,29 +582,7 @@ const Payments = () => {
       setIsSubmitting(true);
       let response;
 
-      if (form.paymentMethod === "stripe") {
-        if (!stripePromise) {
-          toast.error("Stripe is not configured. Add VITE_STRIPE_PUBLISHABLE_KEY in frontend env.");
-          return;
-        }
-
-        response = await axiosInstance.post(API_PATHS.PAYMENTS.CREATE_STRIPE_INTENT, {
-          applicationId: form.applicationId,
-          amount: Number(form.amount),
-          notes: form.notes,
-        });
-
-        if (response.data?.success && response.data?.clientSecret) {
-          setStripeClientSecret(response.data.clientSecret);
-          setStripePaymentId(response.data.paymentId || "");
-          setStripePaymentIntentId(response.data.paymentIntentId || "");
-          toast.success("Secure card form is ready. Complete your payment below.");
-          return;
-        }
-
-        toast.error(response.data?.message || "Unable to initialize Stripe payment");
-        return;
-      } else if (form.paymentMethod === "khalti") {
+      if (form.paymentMethod === "khalti") {
         response = await axiosInstance.post(API_PATHS.PAYMENTS.CREATE_KHALTI_SESSION, {
           applicationId: form.applicationId,
           amount: Number(form.amount),
@@ -834,7 +812,6 @@ const Payments = () => {
                   <option value="bank_transfer">Bank Transfer</option>
                   <option value="esewa">eSewa</option>
                   <option value="khalti">Khalti</option>
-                  <option value="stripe">Stripe</option>
                 </select>
               </div>
 
@@ -850,59 +827,16 @@ const Payments = () => {
                 />
               </div>
 
-              {form.paymentMethod === "stripe" ? (
-                <div className="md:col-span-2 space-y-3">
-                  {stripePromise ? (
-                    <Elements
-                      stripe={stripePromise}
-                      options={{
-                        appearance: {
-                          theme: isDark ? "night" : "stripe",
-                        },
-                      }}
-                    >
-                      <StripeCardForm
-                        clientSecret={stripeClientSecret}
-                        paymentId={stripePaymentId}
-                        paymentIntentId={stripePaymentIntentId}
-                        amount={form.amount}
-                        billingEmail={billingEmail}
-                        billingName={billingName}
-                        billingCountry={billingCountry}
-                        onBillingEmailChange={setBillingEmail}
-                        onBillingCountryChange={setBillingCountry}
-                        onBusyChange={setStripeBusy}
-                        onSuccess={handleStripePaymentSuccess}
-                      />
-                    </Elements>
-                  ) : (
-                    <StripeCardFormFallback
-                      billingEmail={billingEmail}
-                      billingCountry={billingCountry}
-                      onBillingEmailChange={setBillingEmail}
-                      onBillingCountryChange={setBillingCountry}
-                      showKeyWarning={!stripePromise}
-                    />
-                  )}
-                </div>
-              ) : null}
-
               <div className="md:col-span-2 flex justify-end">
                 <button
                   type="submit"
-                  disabled={isSubmitting || stripeBusy || (form.paymentMethod === "stripe" && !stripePromise)}
+                  disabled={isSubmitting}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60"
                 >
                   <Receipt className="h-4 w-4" />
                   {isSubmitting
                     ? "Saving..."
-                    : form.paymentMethod === "stripe"
-                      ? !stripePromise
-                        ? "Stripe Key Missing"
-                        : stripeClientSecret
-                          ? "Re-initialize Card Payment"
-                          : "Initialize Card Payment"
-                      : form.paymentMethod === "khalti"
+                    : form.paymentMethod === "khalti"
                         ? "Proceed to Khalti"
                       : "Record Payment"}
                 </button>

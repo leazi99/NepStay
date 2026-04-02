@@ -8,6 +8,10 @@ import {
   FileText,
   MessageCircle,
   Loader2,
+  Star,
+  Briefcase,
+  Wallet,
+  Calendar,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import DashboardLayout from "../../components/layout/DashboardLayout.jsx";
@@ -23,6 +27,9 @@ const FreelancerProfileView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [startingChat, setStartingChat] = useState(false);
+  const [averageRating, setAverageRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [completedProjects, setCompletedProjects] = useState([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -40,8 +47,27 @@ const FreelancerProfileView = () => {
         }
 
         setProfile(response.data.user);
+        setCompletedProjects(response.data.completedProjects || []);
+
+        try {
+          const reviewResponse = await axiosInstance.get(
+            `${API_PATHS.REVIEWS.GET_RECEIVED}?userId=${freelancerId}`,
+          );
+
+          if (reviewResponse.data?.success) {
+            setAverageRating(Number(reviewResponse.data.averageRating || 0));
+            setTotalReviews(Number(reviewResponse.data.total || 0));
+          } else {
+            setAverageRating(0);
+            setTotalReviews(0);
+          }
+        } catch {
+          setAverageRating(0);
+          setTotalReviews(0);
+        }
       } catch {
         setError("Failed to load freelancer profile");
+        setCompletedProjects([]);
       } finally {
         setIsLoading(false);
       }
@@ -118,6 +144,14 @@ const FreelancerProfileView = () => {
                 <h2 className="text-xl font-semibold text-gray-900">{profile?.name || "Unknown"}</h2>
                 <p className="text-sm text-gray-500 mt-1">{profile?.role || "freelancer"}</p>
 
+                <div className="mt-2 inline-flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-1.5">
+                  <Star className="h-4 w-4 text-amber-500 fill-current" />
+                  <span className="text-sm font-semibold text-amber-700">
+                    {averageRating.toFixed(1)} / 5
+                  </span>
+                  <span className="text-xs text-amber-700/80">({totalReviews} review{totalReviews === 1 ? "" : "s"})</span>
+                </div>
+
                 <div className="mt-3">
                   <button
                     onClick={handleMessageFreelancer}
@@ -193,6 +227,50 @@ const FreelancerProfileView = () => {
                   </div>
                 ) : (
                   <p className="text-sm text-gray-700">No interests added</p>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-gray-100 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Completed Projects
+                  </p>
+                  <span className="text-xs text-gray-500">
+                    {completedProjects.length} completed
+                  </span>
+                </div>
+
+                {completedProjects.length > 0 ? (
+                  <div className="space-y-3">
+                    {completedProjects.map((project) => (
+                      <div
+                        key={project._id}
+                        className="rounded-lg border border-gray-100 bg-gray-50 p-3"
+                      >
+                        <p className="text-sm font-semibold text-gray-900 inline-flex items-center gap-1.5">
+                          <Briefcase className="h-4 w-4 text-blue-600" />
+                          {project.job?.title || "Untitled Project"}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
+                          <span className="inline-flex items-center gap-1">
+                            <Wallet className="h-3.5 w-3.5" />
+                            NPR {Number(project.amount || 0).toLocaleString()}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <Calendar className="h-3.5 w-3.5" />
+                            {new Date(project.completedAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </span>
+                          <span>Client: {project.employer?.name || "Employer"}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-700">No completed projects yet</p>
                 )}
               </div>
             </div>

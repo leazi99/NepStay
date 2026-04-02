@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import userModel from "../models/userModel.js";
+import paymentModel from "../models/paymentModel.js";
 
 const ONLINE_WINDOW_MS = 90 * 1000;
 
@@ -253,9 +254,38 @@ export const getPublicProfile = async (req, res) => {
       });
     }
 
+    let completedProjects = [];
+    if (user.role === "jobseeker") {
+      const payments = await paymentModel
+        .find({ freelancer: user._id, status: "completed" })
+        .populate("job", "title")
+        .populate("employer", "name companyName")
+        .sort({ updatedAt: -1 });
+
+      completedProjects = payments.map((payment) => ({
+        _id: payment._id,
+        amount: payment.amount,
+        currency: payment.currency || "npr",
+        completedAt: payment.updatedAt || payment.createdAt,
+        job: {
+          _id: payment.job?._id,
+          title: payment.job?.title || "Untitled Project",
+        },
+        employer: {
+          _id: payment.employer?._id,
+          name:
+            payment.employer?.companyName ||
+            payment.employer?.name ||
+            "Employer",
+        },
+      }));
+    }
+
     return res.json({
       success: true,
       user,
+      completedProjects,
+      completedProjectsCount: completedProjects.length,
     });
   } catch (error) {
     return res.status(500).json({
