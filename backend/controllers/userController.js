@@ -50,6 +50,17 @@ export const getAllUser = async (req, res) => {
         resume: user.resume || "",
         studentIdCard: user.studentIdCard || "",
         nationalIdCard: user.nationalIdCard || "",
+        studentInstitutionName: user.studentInstitutionName || "",
+        studentFullName: user.studentFullName || "",
+        studentDateOfBirth: user.studentDateOfBirth || "",
+        studentIdNumber: user.studentIdNumber || "",
+        studentContactEmail: user.studentContactEmail || "",
+        studentPhoneNumber: user.studentPhoneNumber || "",
+        studentAddressLine1: user.studentAddressLine1 || "",
+        studentAddressLine2: user.studentAddressLine2 || "",
+        studentCity: user.studentCity || "",
+        studentStateProvince: user.studentStateProvince || "",
+        studentPostalCode: user.studentPostalCode || "",
         identityVerificationStatus:
           user.identityVerificationStatus || "not_submitted",
         linkedinUrl: user.linkedinUrl || "",
@@ -80,6 +91,17 @@ export const updateProfile = async (req, res) => {
       resume,
       studentIdCard,
       nationalIdCard,
+      studentInstitutionName,
+      studentFullName,
+      studentDateOfBirth,
+      studentIdNumber,
+      studentContactEmail,
+      studentPhoneNumber,
+      studentAddressLine1,
+      studentAddressLine2,
+      studentCity,
+      studentStateProvince,
+      studentPostalCode,
       linkedinUrl,
       bio,
       interests,
@@ -110,6 +132,39 @@ export const updateProfile = async (req, res) => {
     }
     if (typeof specialization === "string") {
       user.specialization = specialization.trim();
+    }
+    if (typeof studentInstitutionName === "string") {
+      user.studentInstitutionName = studentInstitutionName.trim();
+    }
+    if (typeof studentFullName === "string") {
+      user.studentFullName = studentFullName.trim();
+    }
+    if (typeof studentDateOfBirth === "string") {
+      user.studentDateOfBirth = studentDateOfBirth.trim();
+    }
+    if (typeof studentIdNumber === "string") {
+      user.studentIdNumber = studentIdNumber.trim();
+    }
+    if (typeof studentContactEmail === "string") {
+      user.studentContactEmail = studentContactEmail.trim();
+    }
+    if (typeof studentPhoneNumber === "string") {
+      user.studentPhoneNumber = studentPhoneNumber.trim();
+    }
+    if (typeof studentAddressLine1 === "string") {
+      user.studentAddressLine1 = studentAddressLine1.trim();
+    }
+    if (typeof studentAddressLine2 === "string") {
+      user.studentAddressLine2 = studentAddressLine2.trim();
+    }
+    if (typeof studentCity === "string") {
+      user.studentCity = studentCity.trim();
+    }
+    if (typeof studentStateProvince === "string") {
+      user.studentStateProvince = studentStateProvince.trim();
+    }
+    if (typeof studentPostalCode === "string") {
+      user.studentPostalCode = studentPostalCode.trim();
     }
 
     if (user.identityVerificationStatus !== "verified") {
@@ -145,6 +200,17 @@ export const updateProfile = async (req, res) => {
         resume: user.resume || "",
         studentIdCard: user.studentIdCard || "",
         nationalIdCard: user.nationalIdCard || "",
+        studentInstitutionName: user.studentInstitutionName || "",
+        studentFullName: user.studentFullName || "",
+        studentDateOfBirth: user.studentDateOfBirth || "",
+        studentIdNumber: user.studentIdNumber || "",
+        studentContactEmail: user.studentContactEmail || "",
+        studentPhoneNumber: user.studentPhoneNumber || "",
+        studentAddressLine1: user.studentAddressLine1 || "",
+        studentAddressLine2: user.studentAddressLine2 || "",
+        studentCity: user.studentCity || "",
+        studentStateProvince: user.studentStateProvince || "",
+        studentPostalCode: user.studentPostalCode || "",
         identityVerificationStatus:
           user.identityVerificationStatus || "not_submitted",
         linkedinUrl: user.linkedinUrl || "",

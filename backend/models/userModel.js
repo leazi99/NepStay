@@ -45,6 +45,50 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  studentInstitutionName: {
+    type: String,
+    default: "",
+  },
+  studentFullName: {
+    type: String,
+    default: "",
+  },
+  studentDateOfBirth: {
+    type: String,
+    default: "",
+  },
+  studentIdNumber: {
+    type: String,
+    default: "",
+  },
+  studentContactEmail: {
+    type: String,
+    default: "",
+  },
+  studentPhoneNumber: {
+    type: String,
+    default: "",
+  },
+  studentAddressLine1: {
+    type: String,
+    default: "",
+  },
+  studentAddressLine2: {
+    type: String,
+    default: "",
+  },
+  studentCity: {
+    type: String,
+    default: "",
+  },
+  studentStateProvince: {
+    type: String,
+    default: "",
+  },
+  studentPostalCode: {
+    type: String,
+    default: "",
+  },
   identityVerificationStatus: {
     type: String,
     enum: ["not_submitted", "pending", "verified", "rejected"],
