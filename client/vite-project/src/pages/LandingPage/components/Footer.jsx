@@ -14,13 +14,13 @@ const Footer = () => {
               </div>
               <h3 className='text-2xl font-bold text-gray-700'>KaamSathi</h3>
             </div>
-            <p className={`text-sm text-gray-600 max-w-md mx-auto `}>Connecting Talent With Opportunities.Your career success is our mission.</p>
+            <p className={`text-sm text-gray-600 max-w-md mx-auto `}>Connecting talent with opportunities through trusted hiring and career growth.</p>
 
           </div>
 
           <div className='space-y-2'>
             <p className={`text-sm text-gray-600`}>&copy;{new Date().getFullYear()} KaamSathi. All rights reserved.</p>
-            <p className={`text-xs text-gray-500`}>Happy Coding..</p>
+            <p className={`text-xs text-gray-500`}>Built for job seekers and employers.</p>
           </div>
 
         </div>

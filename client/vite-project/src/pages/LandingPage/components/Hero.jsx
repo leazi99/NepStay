@@ -34,7 +34,7 @@ const Hero = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className='text-xl md:text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed'
           >
-            Find the perfect job or hire the right talent with our platform.
+            KaamSathi helps job seekers discover meaningful opportunities and helps employers hire skilled talent faster.
           </Motion.p>
 
           <Motion.div
