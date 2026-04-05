@@ -162,10 +162,6 @@ const Login = () => {
 
   return (
     <div style={styles.page}>
-
-      <div style={{ ...styles.blob, ...styles.blob1 }} />
-      <div style={{ ...styles.blob, ...styles.blob2 }} />
-
       <div style={styles.card}>
 
 
@@ -356,7 +352,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#f1f5f9',
+    background: '#ffffff',
     fontFamily: "'Inter', sans-serif",
     padding: '24px 16px',
     position: 'relative',

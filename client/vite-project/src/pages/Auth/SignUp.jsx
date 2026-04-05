@@ -154,10 +154,6 @@ const SignUp = () => {
 
   return (
     <div style={styles.page}>
-
-      <div style={{ ...styles.blob, ...styles.blob1 }} />
-      <div style={{ ...styles.blob, ...styles.blob2 }} />
-
       <Motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
@@ -396,7 +392,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#f1f5f9',
+    background: '#ffffff',
     fontFamily: "'Inter', sans-serif",
     padding: '32px 16px',
     position: 'relative',
