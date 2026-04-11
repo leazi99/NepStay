@@ -47,6 +47,34 @@ const clearAuthCookie = (res) => {
   res.clearCookie("token", buildAuthCookieOptions());
 };
 
+const getSuspensionEndTs = (user) => {
+  if (!user?.suspensionEndsAt) return 0;
+  const timestamp = new Date(user.suspensionEndsAt).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
+const isUserSuspended = (user) => getSuspensionEndTs(user) > Date.now();
+
+const getSuspensionMessage = (user) => {
+  const endTimestamp = getSuspensionEndTs(user);
+  if (!endTimestamp) return "Your account is currently suspended.";
+
+  return `Your account is suspended until ${new Date(endTimestamp).toLocaleString()}.`;
+};
+
+const enforceSuspension = (res, user) => {
+  if (!isUserSuspended(user)) return false;
+
+  clearAuthCookie(res);
+  return res.status(403).json({
+    success: false,
+    suspended: true,
+    message: getSuspensionMessage(user),
+    suspensionEndsAt: user.suspensionEndsAt,
+    suspensionReason: user.suspensionReason || "",
+  });
+};
+
 const getPublicUser = (user) => ({
   _id: user._id,
   name: user.name,
@@ -68,6 +96,8 @@ const getPublicUser = (user) => ({
   latestEducation: user.latestEducation || "",
   specialization: user.specialization || "",
   themePreference: user.themePreference || "light",
+  suspensionEndsAt: user.suspensionEndsAt || null,
+  suspensionReason: user.suspensionReason || "",
 });
 
 export const register = async (req, res) => {
@@ -192,6 +222,17 @@ export const login = async (req, res) => {
         requiresVerification: true,
         message: "Please verify your email before login",
         email: user.email,
+      });
+    }
+
+    if (isUserSuspended(user)) {
+      clearAuthCookie(res);
+      return res.status(403).json({
+        success: false,
+        suspended: true,
+        message: getSuspensionMessage(user),
+        suspensionEndsAt: user.suspensionEndsAt,
+        suspensionReason: user.suspensionReason || "",
       });
     }
 
@@ -364,6 +405,11 @@ export const isAuthenticated = async (req, res) => {
       });
     }
 
+    const suspendedResponse = enforceSuspension(res, user);
+    if (suspendedResponse) {
+      return suspendedResponse;
+    }
+
     return res.json({
       success: true,
       message: "User is authenticated",
@@ -390,6 +436,11 @@ export const getSession = async (req, res) => {
         success: false,
         message: "User not found",
       });
+    }
+
+    const suspendedResponse = enforceSuspension(res, user);
+    if (suspendedResponse) {
+      return suspendedResponse;
     }
 
     const expiresAt = req.user?.exp ? req.user.exp * 1000 : null;
@@ -423,6 +474,11 @@ export const refreshSession = async (req, res) => {
         success: false,
         message: "User not found",
       });
+    }
+
+    const suspendedResponse = enforceSuspension(res, user);
+    if (suspendedResponse) {
+      return suspendedResponse;
     }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {

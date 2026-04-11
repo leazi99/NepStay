@@ -16,10 +16,10 @@ import { useAuth } from "../../context/AuthContext";
 
 const MetricCard = ({ title, value, icon: Icon, isDark }) => (
   <div
-    className={`rounded-2xl border p-4 sm:p-5 transition ${
+    className={`rounded-2xl border p-4 sm:p-5 transition-all hover:-translate-y-0.5 ${
       isDark
-        ? "border-slate-700 bg-slate-900/80"
-        : "border-gray-200 bg-white shadow-sm"
+        ? "border-slate-700 bg-slate-900/80 hover:bg-slate-900"
+        : "border-gray-200 bg-white shadow-sm hover:shadow-md"
     }`}
   >
     <div className="flex items-start justify-between gap-3">
@@ -58,6 +58,8 @@ const AdminDashboard = () => {
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
   const [activityLogs, setActivityLogs] = useState([]);
+  const [suspensionDaysInput, setSuspensionDaysInput] = useState({});
+  const [suspensionReasonInput, setSuspensionReasonInput] = useState({});
 
   const pushActivity = (message) => {
     setActivityLogs((prev) =>
@@ -128,10 +130,15 @@ const AdminDashboard = () => {
           item._id === userId
             ? {
                 ...item,
-                ...(payload.role ? { role: payload.role } : {}),
-                ...(payload.identityVerificationStatus
-                  ? { identityVerificationStatus: payload.identityVerificationStatus }
-                  : {}),
+                ...(response.data?.user || {}),
+                ...(response.data?.user
+                  ? {}
+                  : {
+                      ...(payload.role ? { role: payload.role } : {}),
+                      ...(payload.identityVerificationStatus
+                        ? { identityVerificationStatus: payload.identityVerificationStatus }
+                        : {}),
+                    }),
               }
             : item,
         ),
@@ -143,6 +150,25 @@ const AdminDashboard = () => {
       if (payload.identityVerificationStatus) {
         pushActivity(`Updated verification for ${userId} to ${payload.identityVerificationStatus}`);
       }
+      if (payload.suspensionDays) {
+        pushActivity(`Suspended user ${userId} for ${payload.suspensionDays} day(s)`);
+      }
+      if (payload.clearSuspension) {
+        pushActivity(`Removed suspension for user ${userId}`);
+      }
+
+      setSuspensionDaysInput((prev) => ({
+        ...prev,
+        [userId]: "",
+      }));
+
+      if (payload.suspensionDays || payload.clearSuspension) {
+        setSuspensionReasonInput((prev) => ({
+          ...prev,
+          [userId]: "",
+        }));
+      }
+
       toast.success("User updated");
     } catch {
       toast.error("Failed to update user");
@@ -191,6 +217,53 @@ const AdminDashboard = () => {
     };
   }, [users, payments]);
 
+  const getSuspensionStatus = (suspensionEndsAt) => {
+    if (!suspensionEndsAt) {
+      return {
+        active: false,
+        label: "Active",
+        textClass: isDark ? "text-emerald-300" : "text-emerald-700",
+      };
+    }
+
+    const endTs = new Date(suspensionEndsAt).getTime();
+    if (!Number.isFinite(endTs) || endTs <= Date.now()) {
+      return {
+        active: false,
+        label: "Active",
+        textClass: isDark ? "text-emerald-300" : "text-emerald-700",
+      };
+    }
+
+    return {
+      active: true,
+      label: `Suspended until ${new Date(endTs).toLocaleString()}`,
+      textClass: isDark ? "text-amber-300" : "text-amber-700",
+    };
+  };
+
+  const getVerificationBadgeClass = (status) => {
+    if (status === "verified") {
+      return isDark
+        ? "bg-emerald-900/40 text-emerald-300 border-emerald-700"
+        : "bg-emerald-50 text-emerald-700 border-emerald-200";
+    }
+    if (status === "pending") {
+      return isDark
+        ? "bg-amber-900/40 text-amber-300 border-amber-700"
+        : "bg-amber-50 text-amber-700 border-amber-200";
+    }
+    if (status === "rejected") {
+      return isDark
+        ? "bg-rose-900/40 text-rose-300 border-rose-700"
+        : "bg-rose-50 text-rose-700 border-rose-200";
+    }
+
+    return isDark
+      ? "bg-slate-800 text-slate-300 border-slate-700"
+      : "bg-gray-50 text-gray-700 border-gray-200";
+  };
+
   if (loading) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${isDark ? "bg-slate-950" : "bg-gray-50"}`}>
@@ -207,8 +280,8 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className={`min-h-screen ${isDark ? "bg-slate-950 text-slate-100" : "bg-gray-50 text-gray-900"}`}>
-      <div className={`border-b ${isDark ? "border-slate-700 bg-slate-900/80" : "border-gray-200 bg-white"}`}>
+    <div className={`min-h-screen pb-10 ${isDark ? "bg-slate-950 text-slate-100" : "bg-gray-50 text-gray-900"}`}>
+      <div className={`sticky top-0 z-10 border-b backdrop-blur ${isDark ? "border-slate-700 bg-slate-900/85" : "border-gray-200 bg-white/90"}`}>
         <div className="max-w-7xl mx-auto px-4 py-5 flex items-center justify-between gap-4">
           <div>
             <h1 className={`text-2xl font-bold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Admin Dashboard</h1>
@@ -399,71 +472,56 @@ const AdminDashboard = () => {
                   No users match the current filters.
                 </div>
               ) : (
-                <table className="w-full text-sm">
-                  <thead className={isDark ? "bg-slate-800" : "bg-gray-50"}>
-                    <tr>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-500">Name</th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-500">Email</th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-500">Student ID</th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-500">National ID</th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-500">Role</th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-500">Verification</th>
-                      <th className="text-left px-4 py-3 font-semibold text-gray-500">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((item, index) => (
-                      <tr
+                <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {users.map((item) => {
+                    const suspensionStatus = getSuspensionStatus(item.suspensionEndsAt);
+                    const isSelf = String(item._id) === String(user?._id || "");
+                    const customDaysValue = suspensionDaysInput[item._id] || "";
+                    const reasonValue = suspensionReasonInput[item._id] || "";
+                    const disableSuspendActions = updatingUserId === item._id || isSelf;
+
+                    return (
+                      <div
                         key={item._id}
-                        className={`border-t ${
-                          isDark
-                            ? `${index % 2 === 0 ? "bg-slate-900" : "bg-slate-900/70"} border-slate-800`
-                            : `${index % 2 === 0 ? "bg-white" : "bg-gray-50/40"} border-gray-100`
+                        className={`rounded-xl border p-4 ${
+                          isDark ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white"
                         }`}
                       >
-                        <td className={`px-4 py-3 font-medium ${isDark ? "text-slate-100" : "text-gray-900"}`}>{item.name}</td>
-                        <td className={`px-4 py-3 ${isDark ? "text-slate-300" : "text-gray-600"}`}>{item.email}</td>
-                        <td className={`px-4 py-3 ${isDark ? "text-slate-300" : "text-gray-600"}`}>
-                          {item.studentIdCard ? (
-                            <a
-                              href={item.studentIdCard}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-blue-600 hover:text-blue-700 hover:underline"
-                            >
-                              View Student ID
-                            </a>
-                          ) : (
-                            <span className={isDark ? "text-slate-500" : "text-gray-400"}>Not uploaded</span>
-                          )}
-                        </td>
-                        <td className={`px-4 py-3 ${isDark ? "text-slate-300" : "text-gray-600"}`}>
-                          {item.nationalIdCard ? (
-                            <a
-                              href={item.nationalIdCard}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-blue-600 hover:text-blue-700 hover:underline"
-                            >
-                              View National ID
-                            </a>
-                          ) : (
-                            <span className={isDark ? "text-slate-500" : "text-gray-400"}>Not uploaded</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className={`text-base font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>{item.name}</h3>
+                            <p className={`text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}>{item.email}</p>
+                          </div>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-semibold border ${suspensionStatus.active ? (isDark ? "bg-amber-900/40 text-amber-300 border-amber-700" : "bg-amber-50 text-amber-700 border-amber-200") : (isDark ? "bg-emerald-900/40 text-emerald-300 border-emerald-700" : "bg-emerald-50 text-emerald-700 border-emerald-200")}`}>
+                            {suspensionStatus.active ? "Suspended" : "Active"}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                          <div className={`rounded-lg px-2.5 py-2 ${isDark ? "bg-slate-800 text-slate-300" : "bg-gray-50 text-gray-700"}`}>
+                            {item.studentIdCard ? (
+                              <a href={item.studentIdCard} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">View Student ID</a>
+                            ) : "Student ID: Not uploaded"}
+                          </div>
+                          <div className={`rounded-lg px-2.5 py-2 ${isDark ? "bg-slate-800 text-slate-300" : "bg-gray-50 text-gray-700"}`}>
+                            {item.nationalIdCard ? (
+                              <a href={item.nationalIdCard} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">View National ID</a>
+                            ) : "National ID: Not uploaded"}
+                          </div>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <select
                             value={item.role}
                             disabled={updatingUserId === item._id}
                             onChange={(event) => updateUserField(item._id, { role: event.target.value })}
-                            className={`px-2 py-1 rounded border text-sm ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200 bg-white"}`}
+                            className={`px-2.5 py-2 rounded-lg border text-sm ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200 bg-white text-gray-900"}`}
                           >
                             <option value="jobseeker">Jobseeker</option>
                             <option value="employer">Employer</option>
                             <option value="admin">Admin</option>
                           </select>
-                        </td>
-                        <td className="px-4 py-3">
+
                           <select
                             value={item.identityVerificationStatus || "not_submitted"}
                             disabled={updatingUserId === item._id}
@@ -472,44 +530,117 @@ const AdminDashboard = () => {
                                 identityVerificationStatus: event.target.value,
                               })
                             }
-                            className={`px-2 py-1 rounded border text-sm ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200 bg-white"}`}
+                            className={`px-2.5 py-2 rounded-lg border text-sm ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200 bg-white text-gray-900"}`}
                           >
                             <option value="not_submitted">Not submitted</option>
                             <option value="pending">Pending</option>
                             <option value="verified">Verified</option>
                             <option value="rejected">Rejected</option>
                           </select>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() =>
-                                updateUserField(item._id, {
-                                  identityVerificationStatus: "verified",
-                                })
+                        </div>
+
+                        <div className="mt-2">
+                          <span
+                            className={`inline-flex items-center px-2 py-1 rounded-full border text-[11px] font-semibold ${getVerificationBadgeClass(item.identityVerificationStatus || "not_submitted")}`}
+                          >
+                            {(item.identityVerificationStatus || "not_submitted").replace("_", " ")}
+                          </span>
+                          <p className={`text-xs font-medium mt-1 ${suspensionStatus.textClass}`}>{suspensionStatus.label}</p>
+                          {item.suspensionReason ? (
+                            <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Reason: {item.suspensionReason}</p>
+                          ) : null}
+                        </div>
+
+                        <div className="mt-3 flex items-center gap-2 flex-wrap">
+                          <button
+                            onClick={() =>
+                              updateUserField(item._id, {
+                                identityVerificationStatus: "verified",
+                              })
+                            }
+                            disabled={updatingUserId === item._id || !item.studentIdCard || !item.nationalIdCard}
+                            className="px-2.5 py-1.5 rounded bg-green-600 text-white text-xs font-medium hover:bg-green-700 disabled:opacity-50"
+                          >
+                            Verify
+                          </button>
+                          <button
+                            onClick={() =>
+                              updateUserField(item._id, {
+                                identityVerificationStatus: "rejected",
+                              })
+                            }
+                            disabled={updatingUserId === item._id}
+                            className="px-2.5 py-1.5 rounded bg-red-600 text-white text-xs font-medium hover:bg-red-700 disabled:opacity-50"
+                          >
+                            Reject
+                          </button>
+                          <button
+                            onClick={() =>
+                              updateUserField(item._id, {
+                                clearSuspension: true,
+                              })
+                            }
+                            disabled={updatingUserId === item._id || !suspensionStatus.active}
+                            className="px-2.5 py-1.5 rounded bg-slate-600 text-white text-xs font-medium hover:bg-slate-700 disabled:opacity-50"
+                          >
+                            Unsuspend
+                          </button>
+                        </div>
+
+                        <div className={`mt-2 rounded-lg p-2 grid grid-cols-[1fr_70px_auto] gap-2 items-center ${isDark ? "bg-slate-800" : "bg-gray-50"}`}>
+                          <input
+                            type="text"
+                            value={reasonValue}
+                            maxLength={200}
+                            onChange={(event) =>
+                              setSuspensionReasonInput((prev) => ({
+                                ...prev,
+                                [item._id]: event.target.value,
+                              }))
+                            }
+                            placeholder="Reason (optional)"
+                            className={`w-full px-2.5 py-2 rounded border text-xs ${isDark ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-200 bg-white text-gray-900"}`}
+                            disabled={disableSuspendActions}
+                          />
+                          <input
+                            type="number"
+                            min={1}
+                            max={365}
+                            value={customDaysValue}
+                            onChange={(event) =>
+                              setSuspensionDaysInput((prev) => ({
+                                ...prev,
+                                [item._id]: event.target.value,
+                              }))
+                            }
+                            placeholder="14"
+                            className={`w-full px-2 py-2 rounded border text-xs ${isDark ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-200 bg-white text-gray-900"}`}
+                            disabled={disableSuspendActions}
+                          />
+                          <button
+                            onClick={() => {
+                              const parsedDays = customDaysValue === "" ? 14 : Number(customDaysValue);
+                              if (!Number.isInteger(parsedDays) || parsedDays < 1 || parsedDays > 365) {
+                                toast.error("Enter suspension days between 1 and 365");
+                                return;
                               }
-                              disabled={updatingUserId === item._id || !item.studentIdCard || !item.nationalIdCard}
-                              className="px-2.5 py-1 rounded bg-green-600 text-white text-xs font-medium hover:bg-green-700 disabled:opacity-50"
-                            >
-                              Verify
-                            </button>
-                            <button
-                              onClick={() =>
-                                updateUserField(item._id, {
-                                  identityVerificationStatus: "rejected",
-                                })
-                              }
-                              disabled={updatingUserId === item._id}
-                              className="px-2.5 py-1 rounded bg-red-600 text-white text-xs font-medium hover:bg-red-700 disabled:opacity-50"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                              const trimmedReason = String(reasonValue || "").trim();
+                              updateUserField(item._id, {
+                                suspensionDays: parsedDays,
+                                ...(trimmedReason ? { suspensionReason: trimmedReason } : {}),
+                              });
+                            }}
+                            disabled={disableSuspendActions}
+                            className="px-3 py-2 rounded bg-amber-500 text-white text-xs font-medium hover:bg-amber-600 disabled:opacity-50 whitespace-nowrap"
+                            title={isSelf ? "You cannot suspend your own account" : "Suspend user"}
+                          >
+                            Suspend
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           ) : (
@@ -545,39 +676,40 @@ const AdminDashboard = () => {
                   No payments match the current filters.
                 </div>
               ) : (
-                <table className="w-full text-sm">
-                  <thead className={isDark ? "bg-slate-800" : "bg-gray-50"}>
+                <div className="max-h-[68vh] overflow-auto">
+                <table className="w-full min-w-[980px] text-sm">
+                  <thead className={`${isDark ? "bg-slate-800" : "bg-gray-50"} sticky top-0 z-[1]`}>
                     <tr>
-                      <th className="text-left px-4 py-3 text-gray-500 font-semibold">Job</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-semibold">Employer</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-semibold">Freelancer</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-semibold">Amount</th>
-                      <th className="text-left px-4 py-3 text-gray-500 font-semibold">Status</th>
+                      <th className="w-[280px] text-left px-4 py-3 text-gray-500 font-semibold">Job</th>
+                      <th className="w-[200px] text-left px-4 py-3 text-gray-500 font-semibold">Employer</th>
+                      <th className="w-[200px] text-left px-4 py-3 text-gray-500 font-semibold">Freelancer</th>
+                      <th className="w-[140px] text-left px-4 py-3 text-gray-500 font-semibold">Amount</th>
+                      <th className="w-[160px] text-left px-4 py-3 text-gray-500 font-semibold">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {payments.map((item, index) => (
                       <tr
                         key={item._id}
-                        className={`border-t ${
+                        className={`border-t align-top ${
                           isDark
                             ? `${index % 2 === 0 ? "bg-slate-900" : "bg-slate-900/70"} border-slate-800`
                             : `${index % 2 === 0 ? "bg-white" : "bg-gray-50/40"} border-gray-100`
                         }`}
                       >
-                        <td className={`px-4 py-3 font-medium ${isDark ? "text-slate-100" : "text-gray-900"}`}>
+                        <td className={`px-4 py-3.5 font-medium ${isDark ? "text-slate-100" : "text-gray-900"}`}>
                           {item.job?.title || "—"}
                         </td>
-                        <td className={`px-4 py-3 ${isDark ? "text-slate-300" : "text-gray-600"}`}>
+                        <td className={`px-4 py-3.5 ${isDark ? "text-slate-300" : "text-gray-600"}`}>
                           {item.employer?.name || "—"}
                         </td>
-                        <td className={`px-4 py-3 ${isDark ? "text-slate-300" : "text-gray-600"}`}>
+                        <td className={`px-4 py-3.5 ${isDark ? "text-slate-300" : "text-gray-600"}`}>
                           {item.freelancer?.name || "—"}
                         </td>
-                        <td className={`px-4 py-3 font-medium ${isDark ? "text-slate-100" : "text-gray-900"}`}>
+                        <td className={`px-4 py-3.5 font-medium ${isDark ? "text-slate-100" : "text-gray-900"}`}>
                           ${item.amount}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3.5">
                           <select
                             value={item.status}
                             disabled={updatingPaymentId === item._id}
@@ -593,6 +725,7 @@ const AdminDashboard = () => {
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
           )}

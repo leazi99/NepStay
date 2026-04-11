@@ -72,7 +72,7 @@ export const getAdminUsers = async (req, res) => {
     const users = await userModel
       .find(query)
       .select(
-        "name email role avatar isVerified createdAt studentIdCard nationalIdCard identityVerificationStatus",
+        "name email role avatar isVerified createdAt studentIdCard nationalIdCard identityVerificationStatus suspensionEndsAt suspensionReason",
       )
       .sort({ createdAt: -1 });
 
@@ -90,7 +90,13 @@ export const updateAdminUser = async (req, res) => {
     if (!ensureAdmin(req, res)) return;
 
     const { userId } = req.params;
-    const { role, identityVerificationStatus } = req.body;
+    const {
+      role,
+      identityVerificationStatus,
+      suspensionDays,
+      clearSuspension,
+      suspensionReason,
+    } = req.body;
 
     const allowedRoles = ["jobseeker", "employer", "admin"];
     const allowedVerificationStatuses = [
@@ -125,6 +131,35 @@ export const updateAdminUser = async (req, res) => {
       }
 
       user.role = role;
+    }
+
+    if (clearSuspension === true) {
+      user.suspensionEndsAt = null;
+      user.suspensionReason = "";
+    }
+
+    if (suspensionDays !== undefined) {
+      const parsedDays = Number(suspensionDays);
+
+      if (!Number.isInteger(parsedDays) || parsedDays < 1 || parsedDays > 365) {
+        return res.status(400).json({
+          success: false,
+          message: "Suspension days must be an integer between 1 and 365",
+        });
+      }
+
+      if (String(user._id) === String(req.user.id)) {
+        return res.status(400).json({
+          success: false,
+          message: "Admin cannot suspend own account",
+        });
+      }
+
+      const durationMs = parsedDays * 24 * 60 * 60 * 1000;
+      user.suspensionEndsAt = new Date(Date.now() + durationMs);
+      user.suspensionReason = String(suspensionReason || "")
+        .trim()
+        .slice(0, 200);
     }
 
     if (identityVerificationStatus !== undefined) {
@@ -171,6 +206,8 @@ export const updateAdminUser = async (req, res) => {
         email: user.email,
         role: user.role,
         identityVerificationStatus: user.identityVerificationStatus,
+        suspensionEndsAt: user.suspensionEndsAt,
+        suspensionReason: user.suspensionReason,
       },
     });
   } catch (error) {

@@ -26,12 +26,28 @@ const userAuth = async (req, res, next) => {
     if (tokenDecode.id) {
       const user = await userModel
         .findById(tokenDecode.id)
-        .select("_id role email name isVerified");
+        .select(
+          "_id role email name isVerified suspensionEndsAt suspensionReason",
+        );
 
       if (!user) {
         return res.status(401).json({
           success: false,
           message: "User not found",
+        });
+      }
+
+      const suspensionEndTs = user.suspensionEndsAt
+        ? new Date(user.suspensionEndsAt).getTime()
+        : 0;
+
+      if (suspensionEndTs > Date.now()) {
+        return res.status(403).json({
+          success: false,
+          suspended: true,
+          message: `Your account is suspended until ${new Date(suspensionEndTs).toLocaleString()}.`,
+          suspensionEndsAt: user.suspensionEndsAt,
+          suspensionReason: user.suspensionReason || "",
         });
       }
 

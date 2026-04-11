@@ -119,6 +119,15 @@ const userSchema = new mongoose.Schema({
     enum: ["light", "dark"],
     default: "light",
   },
+  suspensionEndsAt: {
+    type: Date,
+    default: null,
+  },
+  suspensionReason: {
+    type: String,
+    default: "",
+    trim: true,
+  },
   companyName: String,
   companyDescription: String,
   companyLogo: String,
