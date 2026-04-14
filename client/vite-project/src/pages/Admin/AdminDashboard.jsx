@@ -707,7 +707,7 @@ const AdminDashboard = () => {
                           {item.freelancer?.name || "—"}
                         </td>
                         <td className={`px-4 py-3.5 font-medium ${isDark ? "text-slate-100" : "text-gray-900"}`}>
-                          ${item.amount}
+                          NPR {item.amount}
                         </td>
                         <td className="px-4 py-3.5">
                           <select

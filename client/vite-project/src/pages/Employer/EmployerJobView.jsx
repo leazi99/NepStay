@@ -118,10 +118,10 @@ const EmployerJobView = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="rounded-xl border border-gray-100 p-4">
                 <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                  <DollarSign className="h-3.5 w-3.5" /> Salary Range
+                  <p className="h-3.5 w-3.5" /> Salary Range
                 </p>
                 <p className="text-sm font-medium text-gray-900 mt-1">
-                  ${job.salaryMin?.toLocaleString()} - ${job.salaryMax?.toLocaleString()} / month
+                  NPR {job.salaryMin?.toLocaleString()} - NPR {job.salaryMax?.toLocaleString()} / month
                 </p>
               </div>
               <div className="rounded-xl border border-gray-100 p-4">
