@@ -2,6 +2,9 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Users,
   Wallet,
+  Briefcase,
+  Trash2,
+  BarChart3,
   Loader2,
   RefreshCw,
   ShieldCheck,
@@ -48,13 +51,19 @@ const AdminDashboard = () => {
 
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState(null);
+  const [reports, setReports] = useState(null);
   const [users, setUsers] = useState([]);
+  const [jobs, setJobs] = useState([]);
   const [payments, setPayments] = useState([]);
-  const [activeTab, setActiveTab] = useState("users");
+  const [activeTab, setActiveTab] = useState("reports");
   const [updatingUserId, setUpdatingUserId] = useState("");
+  const [deletingUserId, setDeletingUserId] = useState("");
+  const [deletingJobId, setDeletingJobId] = useState("");
   const [updatingPaymentId, setUpdatingPaymentId] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("all");
+  const [jobSearch, setJobSearch] = useState("");
+  const [jobStatusFilter, setJobStatusFilter] = useState("all");
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
   const [activityLogs, setActivityLogs] = useState([]);
@@ -87,30 +96,55 @@ const AdminDashboard = () => {
         paymentsParams.set("status", paymentStatusFilter);
       }
 
-      const [overviewRes, usersRes, paymentsRes] = await Promise.all([
+      const jobsParams = new URLSearchParams();
+      if (jobSearch.trim()) jobsParams.set("search", jobSearch.trim());
+      if (jobStatusFilter !== "all") {
+        jobsParams.set("status", jobStatusFilter);
+      }
+
+      const [overviewRes, reportsRes, usersRes, jobsRes, paymentsRes] = await Promise.all([
         axiosInstance.get(API_PATHS.ADMIN.OVERVIEW),
+        axiosInstance.get(API_PATHS.ADMIN.REPORTS),
         axiosInstance.get(
           `${API_PATHS.ADMIN.GET_USERS}${usersParams.toString() ? `?${usersParams.toString()}` : ""}`,
+        ),
+        axiosInstance.get(
+          `${API_PATHS.ADMIN.GET_JOBS}${jobsParams.toString() ? `?${jobsParams.toString()}` : ""}`,
         ),
         axiosInstance.get(
           `${API_PATHS.ADMIN.GET_PAYMENTS}${paymentsParams.toString() ? `?${paymentsParams.toString()}` : ""}`,
         ),
       ]);
 
-      if (!overviewRes.data.success || !usersRes.data.success || !paymentsRes.data.success) {
+      if (
+        !overviewRes.data.success ||
+        !reportsRes.data.success ||
+        !usersRes.data.success ||
+        !jobsRes.data.success ||
+        !paymentsRes.data.success
+      ) {
         toast.error("Failed to load admin data");
         return;
       }
 
       setOverview(overviewRes.data.counts || null);
+      setReports(reportsRes.data.reports || null);
       setUsers(usersRes.data.users || []);
+      setJobs(jobsRes.data.jobs || []);
       setPayments(paymentsRes.data.payments || []);
     } catch {
       toast.error("Failed to load admin data");
     } finally {
       setLoading(false);
     }
-  }, [userSearch, userRoleFilter, paymentSearch, paymentStatusFilter]);
+  }, [
+    userSearch,
+    userRoleFilter,
+    jobSearch,
+    jobStatusFilter,
+    paymentSearch,
+    paymentStatusFilter,
+  ]);
 
   useEffect(() => {
     fetchAdminData();
@@ -199,6 +233,60 @@ const AdminDashboard = () => {
     }
   };
 
+  const deleteUser = async (userId, name) => {
+    const confirmed = window.confirm(
+      `Delete user ${name}? This action removes related jobs, applications, proposals, payments, reviews, chats and notifications.`,
+    );
+
+    if (!confirmed) return;
+
+    setDeletingUserId(userId);
+    try {
+      const response = await axiosInstance.delete(API_PATHS.ADMIN.DELETE_USER(userId));
+
+      if (!response.data.success) {
+        toast.error(response.data.message || "Failed to delete user");
+        return;
+      }
+
+      setUsers((prev) => prev.filter((item) => item._id !== userId));
+      pushActivity(`Deleted user ${name}`);
+      toast.success("User deleted");
+      await fetchAdminData();
+    } catch {
+      toast.error("Failed to delete user");
+    } finally {
+      setDeletingUserId("");
+    }
+  };
+
+  const deleteJob = async (jobId, title) => {
+    const confirmed = globalThis.confirm(
+      `Delete job ${title}? This action removes related proposals, applications, payments, reviews and saved jobs.`,
+    );
+
+    if (!confirmed) return;
+
+    setDeletingJobId(jobId);
+    try {
+      const response = await axiosInstance.delete(API_PATHS.ADMIN.DELETE_JOB(jobId));
+
+      if (!response.data.success) {
+        toast.error(response.data.message || "Failed to delete job");
+        return;
+      }
+
+      setJobs((prev) => prev.filter((item) => item._id !== jobId));
+      pushActivity(`Deleted job ${title}`);
+      toast.success("Job deleted");
+      await fetchAdminData();
+    } catch {
+      toast.error("Failed to delete job");
+    } finally {
+      setDeletingJobId("");
+    }
+  };
+
   const derivedStats = useMemo(() => {
     const pendingVerifications = users.filter(
       (item) => (item.identityVerificationStatus || "not_submitted") === "pending",
@@ -208,14 +296,18 @@ const AdminDashboard = () => {
     ).length;
     const pendingPayments = payments.filter((item) => item.status === "pending").length;
     const completedPayments = payments.filter((item) => item.status === "completed").length;
+    const openJobs = jobs.filter((item) => !item.isClosed).length;
+    const closedJobs = jobs.filter((item) => item.isClosed).length;
 
     return {
       pendingVerifications,
       verifiedUsers,
       pendingPayments,
       completedPayments,
+      openJobs,
+      closedJobs,
     };
-  }, [users, payments]);
+  }, [users, payments, jobs]);
 
   const getSuspensionStatus = (suspensionEndsAt) => {
     if (!suspensionEndsAt) {
@@ -286,7 +378,7 @@ const AdminDashboard = () => {
           <div>
             <h1 className={`text-2xl font-bold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Admin Dashboard</h1>
             <p className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}>
-              Manage users, verify identities, and control payment operations.
+              Manage users, jobs, payments, and system reports.
             </p>
           </div>
 
@@ -315,7 +407,12 @@ const AdminDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <MetricCard title="Total Users" value={overview?.totalUsers} icon={Users} isDark={isDark} />
-          <MetricCard title="Total Payments" value={overview?.totalPayments} icon={Wallet} isDark={isDark} />
+          <MetricCard
+            title="Total Jobs"
+            value={reports?.jobs?.total ?? jobs.length}
+            icon={Briefcase}
+            isDark={isDark}
+          />
           <MetricCard
             title="Pending Verifications"
             value={derivedStats.pendingVerifications}
@@ -323,9 +420,9 @@ const AdminDashboard = () => {
             isDark={isDark}
           />
           <MetricCard
-            title="Completed Payments"
-            value={derivedStats.completedPayments}
-            icon={CircleDollarSign}
+            title="Total Payments"
+            value={overview?.totalPayments}
+            icon={Wallet}
             isDark={isDark}
           />
         </div>
@@ -344,6 +441,42 @@ const AdminDashboard = () => {
                 <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Employers</p>
                 <p className={`text-lg font-semibold mt-1 ${isDark ? "text-slate-100" : "text-gray-900"}`}>
                   {Number(overview?.totalEmployers || 0).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className={`rounded-2xl border p-4 ${isDark ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white"}`}>
+            <p className={`text-xs uppercase tracking-wide flex items-center gap-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+              <BarChart3 className="h-3.5 w-3.5" />
+              System reports
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className={`rounded-xl p-3 ${isDark ? "bg-slate-800" : "bg-gray-50"}`}>
+                <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Open Jobs</p>
+                <p className={`text-lg font-semibold mt-1 ${isDark ? "text-slate-100" : "text-gray-900"}`}>
+                  {Number(reports?.jobs?.open ?? derivedStats.openJobs).toLocaleString()}
+                </p>
+              </div>
+              <div className={`rounded-xl p-3 ${isDark ? "bg-slate-800" : "bg-gray-50"}`}>
+                <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Closed Jobs</p>
+                <p className={`text-lg font-semibold mt-1 ${isDark ? "text-slate-100" : "text-gray-900"}`}>
+                  {Number(reports?.jobs?.closed ?? derivedStats.closedJobs).toLocaleString()}
+                </p>
+              </div>
+              <div className={`rounded-xl p-3 ${isDark ? "bg-slate-800" : "bg-gray-50"}`}>
+                <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Completed Revenue</p>
+                <p className={`text-lg font-semibold mt-1 ${isDark ? "text-slate-100" : "text-gray-900"}`}>
+                  NPR {Number(reports?.payments?.completedRevenue || 0).toLocaleString()}
+                </p>
+              </div>
+              <div className={`rounded-xl p-3 ${isDark ? "bg-slate-800" : "bg-gray-50"}`}>
+                <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Avg Review</p>
+                <p className={`text-lg font-semibold mt-1 ${isDark ? "text-slate-100" : "text-gray-900"}`}>
+                  <span className="inline-flex items-center gap-1">
+                    <CircleDollarSign className="h-4 w-4" />
+                    {Number(reports?.reviews?.averageRating || 0).toFixed(2)} / 5
+                  </span>
                 </p>
               </div>
             </div>
@@ -436,6 +569,43 @@ const AdminDashboard = () => {
               >
                 {payments.length}
               </span>
+            </button>
+            <button
+              onClick={() => setActiveTab("jobs")}
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === "jobs"
+                  ? "bg-blue-600 text-white"
+                  : isDark
+                    ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              <Briefcase className="h-4 w-4" />
+              Jobs
+              <span
+                className={`px-1.5 py-0.5 rounded text-xs ${
+                  activeTab === "jobs"
+                    ? "bg-white/20"
+                    : isDark
+                      ? "bg-slate-700 text-slate-200"
+                      : "bg-white text-gray-700"
+                }`}
+              >
+                {jobs.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab("reports")}
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === "reports"
+                  ? "bg-blue-600 text-white"
+                  : isDark
+                    ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              <BarChart3 className="h-4 w-4" />
+              Reports
             </button>
           </div>
 
@@ -585,6 +755,15 @@ const AdminDashboard = () => {
                           >
                             Unsuspend
                           </button>
+                          <button
+                            onClick={() => deleteUser(item._id, item.name)}
+                            disabled={deletingUserId === item._id || isSelf || item.role === "admin"}
+                            className="px-2.5 py-1.5 rounded bg-rose-600 text-white text-xs font-medium hover:bg-rose-700 disabled:opacity-50 inline-flex items-center gap-1"
+                            title={isSelf ? "You cannot delete your own account" : item.role === "admin" ? "Admin account cannot be deleted" : "Delete user"}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            {deletingUserId === item._id ? "Deleting..." : "Delete"}
+                          </button>
                         </div>
 
                         <div className={`mt-2 rounded-lg p-2 grid grid-cols-[1fr_70px_auto] gap-2 items-center ${isDark ? "bg-slate-800" : "bg-gray-50"}`}>
@@ -642,6 +821,227 @@ const AdminDashboard = () => {
                   })}
                 </div>
               )}
+            </div>
+          ) : activeTab === "jobs" ? (
+            <div className="overflow-x-auto">
+              <div className={`px-4 py-3 border-b flex flex-wrap items-center gap-2 ${isDark ? "border-slate-700 bg-slate-800/60" : "border-gray-200 bg-gray-50"}`}>
+                <div className="relative w-full sm:w-80">
+                  <Search className={`h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-400" : "text-gray-400"}`} />
+                  <input
+                    value={jobSearch}
+                    onChange={(event) => setJobSearch(event.target.value)}
+                    placeholder="Search jobs by title, category or description"
+                    className={`pl-9 pr-3 py-2 rounded-lg border text-sm w-full ${isDark ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-200 bg-white text-gray-900"}`}
+                  />
+                </div>
+                <select
+                  value={jobStatusFilter}
+                  onChange={(event) => setJobStatusFilter(event.target.value)}
+                  className={`px-3 py-2 rounded-lg border text-sm ${isDark ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-200 bg-white text-gray-900"}`}
+                >
+                  <option value="all">All jobs</option>
+                  <option value="open">Open</option>
+                  <option value="closed">Closed</option>
+                </select>
+                <span className={`ml-auto text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+                  Open: {derivedStats.openJobs} • Closed: {derivedStats.closedJobs}
+                </span>
+              </div>
+
+              {jobs.length === 0 ? (
+                <div className={`px-4 py-12 text-center ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+                  <Activity className="h-5 w-5 mx-auto mb-2" />
+                  No jobs match the current filters.
+                </div>
+              ) : (
+                <div className="max-h-[68vh] overflow-auto">
+                  <table className="w-full min-w-[980px] text-sm">
+                    <thead className={`${isDark ? "bg-slate-800" : "bg-gray-50"} sticky top-0 z-[1]`}>
+                      <tr>
+                        <th className="w-[280px] text-left px-4 py-3 text-gray-500 font-semibold">Job</th>
+                        <th className="w-[220px] text-left px-4 py-3 text-gray-500 font-semibold">Company</th>
+                        <th className="w-[160px] text-left px-4 py-3 text-gray-500 font-semibold">Category</th>
+                        <th className="w-[160px] text-left px-4 py-3 text-gray-500 font-semibold">Salary Range</th>
+                        <th className="w-[140px] text-left px-4 py-3 text-gray-500 font-semibold">Status</th>
+                        <th className="w-[140px] text-left px-4 py-3 text-gray-500 font-semibold">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {jobs.map((item, index) => (
+                        <tr
+                          key={item._id}
+                          className={`border-t align-top ${
+                            isDark
+                              ? `${index % 2 === 0 ? "bg-slate-900" : "bg-slate-900/70"} border-slate-800`
+                              : `${index % 2 === 0 ? "bg-white" : "bg-gray-50/40"} border-gray-100`
+                          }`}
+                        >
+                          <td className={`px-4 py-3.5 ${isDark ? "text-slate-100" : "text-gray-900"}`}>
+                            <p className="font-medium">{item.title || "—"}</p>
+                            <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+                              {item.location || "—"} • {item.duration || "—"}
+                            </p>
+                          </td>
+                          <td className={`px-4 py-3.5 ${isDark ? "text-slate-300" : "text-gray-600"}`}>
+                            <p className="font-medium">{item.company?.name || "—"}</p>
+                            <p className="text-xs mt-1">{item.company?.email || "—"}</p>
+                          </td>
+                          <td className={`px-4 py-3.5 ${isDark ? "text-slate-300" : "text-gray-600"}`}>
+                            {item.category || "—"}
+                          </td>
+                          <td className={`px-4 py-3.5 ${isDark ? "text-slate-100" : "text-gray-900"}`}>
+                            NPR {Number(item.salaryMin || 0).toLocaleString()} - {Number(item.salaryMax || 0).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <span
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-semibold border ${
+                                item.isClosed
+                                  ? isDark
+                                    ? "bg-rose-900/40 text-rose-300 border-rose-700"
+                                    : "bg-rose-50 text-rose-700 border-rose-200"
+                                  : isDark
+                                    ? "bg-emerald-900/40 text-emerald-300 border-emerald-700"
+                                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              }`}
+                            >
+                              {item.isClosed ? "Closed" : "Open"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <button
+                              onClick={() => deleteJob(item._id, item.title || "this job")}
+                              disabled={deletingJobId === item._id}
+                              className="px-2.5 py-1.5 rounded bg-rose-600 text-white text-xs font-medium hover:bg-rose-700 disabled:opacity-50 inline-flex items-center gap-1"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              {deletingJobId === item._id ? "Deleting..." : "Delete"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          ) : activeTab === "reports" ? (
+            <div className="p-4 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+                <div className={`rounded-xl border p-3 ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-gray-50"}`}>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Applications</p>
+                  <p className={`mt-1 text-xl font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>
+                    {Number(reports?.applications?.total || 0).toLocaleString()}
+                  </p>
+                  <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+                    Pending {Number(reports?.applications?.pending || 0).toLocaleString()} • Accepted {Number(reports?.applications?.accepted || 0).toLocaleString()} • Rejected {Number(reports?.applications?.rejected || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className={`rounded-xl border p-3 ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-gray-50"}`}>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Proposals</p>
+                  <p className={`mt-1 text-xl font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>
+                    {Number(reports?.proposals?.total || 0).toLocaleString()}
+                  </p>
+                  <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+                    Pending {Number(reports?.proposals?.pending || 0).toLocaleString()} • Accepted {Number(reports?.proposals?.accepted || 0).toLocaleString()} • Rejected {Number(reports?.proposals?.rejected || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className={`rounded-xl border p-3 ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-gray-50"}`}>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Reviews</p>
+                  <p className={`mt-1 text-xl font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>
+                    {Number(reports?.reviews?.total || 0).toLocaleString()}
+                  </p>
+                  <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+                    Avg Rating {Number(reports?.reviews?.averageRating || 0).toFixed(2)} / 5
+                  </p>
+                </div>
+                <div className={`rounded-xl border p-3 ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-gray-50"}`}>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Completed Payments</p>
+                  <p className={`mt-1 text-xl font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>
+                    {Number(reports?.payments?.completedCount || 0).toLocaleString()}
+                  </p>
+                  <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+                    Revenue NPR {Number(reports?.payments?.completedRevenue || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className={`rounded-xl border p-3 ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-gray-50"}`}>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Jobs</p>
+                  <p className={`mt-1 text-xl font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>
+                    {Number(reports?.jobs?.total || 0).toLocaleString()}
+                  </p>
+                  <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+                    Open {Number(reports?.jobs?.open || 0).toLocaleString()} • Closed {Number(reports?.jobs?.closed || 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                <div className={`rounded-xl border p-4 ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-white"}`}>
+                  <p className={`text-sm font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>User Growth</p>
+                  <p className={`mt-2 text-sm ${isDark ? "text-slate-300" : "text-gray-700"}`}>
+                    This month: <span className="font-semibold">{Number(reports?.growth?.users?.thisMonth || 0).toLocaleString()}</span>
+                  </p>
+                  <p className={`text-sm ${isDark ? "text-slate-300" : "text-gray-700"}`}>
+                    Previous month: <span className="font-semibold">{Number(reports?.growth?.users?.previousMonth || 0).toLocaleString()}</span>
+                  </p>
+                </div>
+                <div className={`rounded-xl border p-4 ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-white"}`}>
+                  <p className={`text-sm font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Job Growth</p>
+                  <p className={`mt-2 text-sm ${isDark ? "text-slate-300" : "text-gray-700"}`}>
+                    This month: <span className="font-semibold">{Number(reports?.growth?.jobs?.thisMonth || 0).toLocaleString()}</span>
+                  </p>
+                  <p className={`text-sm ${isDark ? "text-slate-300" : "text-gray-700"}`}>
+                    Previous month: <span className="font-semibold">{Number(reports?.growth?.jobs?.previousMonth || 0).toLocaleString()}</span>
+                  </p>
+                </div>
+                <div className={`rounded-xl border p-4 ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-white"}`}>
+                  <p className={`text-sm font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Completed Payment Growth</p>
+                  <p className={`mt-2 text-sm ${isDark ? "text-slate-300" : "text-gray-700"}`}>
+                    This month: <span className="font-semibold">{Number(reports?.growth?.completedPayments?.thisMonth || 0).toLocaleString()}</span>
+                  </p>
+                  <p className={`text-sm ${isDark ? "text-slate-300" : "text-gray-700"}`}>
+                    Previous month: <span className="font-semibold">{Number(reports?.growth?.completedPayments?.previousMonth || 0).toLocaleString()}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className={`rounded-xl border overflow-hidden ${isDark ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white"}`}>
+                <div className={`px-4 py-3 border-b ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-gray-50"}`}>
+                  <h3 className={`text-sm font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Monthly Trend (Last 6 Months)</h3>
+                </div>
+                {Array.isArray(reports?.monthlyTrend) && reports.monthlyTrend.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[720px] text-sm">
+                      <thead className={`${isDark ? "bg-slate-800" : "bg-gray-50"}`}>
+                        <tr>
+                          <th className="text-left px-4 py-3 text-gray-500 font-semibold">Month</th>
+                          <th className="text-left px-4 py-3 text-gray-500 font-semibold">New Users</th>
+                          <th className="text-left px-4 py-3 text-gray-500 font-semibold">New Jobs</th>
+                          <th className="text-left px-4 py-3 text-gray-500 font-semibold">Completed Payments</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reports.monthlyTrend.map((item, index) => (
+                          <tr
+                            key={`${item.key}-${index}`}
+                            className={`border-t ${
+                              isDark ? "border-slate-800 text-slate-200" : "border-gray-100 text-gray-700"
+                            }`}
+                          >
+                            <td className="px-4 py-3">{item.label || "-"}</td>
+                            <td className="px-4 py-3">{Number(item.users || 0).toLocaleString()}</td>
+                            <td className="px-4 py-3">{Number(item.jobs || 0).toLocaleString()}</td>
+                            <td className="px-4 py-3">{Number(item.completedPayments || 0).toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className={`px-4 py-10 text-center text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+                    No monthly trend data available.
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto">

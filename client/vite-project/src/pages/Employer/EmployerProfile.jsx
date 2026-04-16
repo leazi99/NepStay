@@ -11,6 +11,8 @@ import {
   Sun,
   Bell,
   Shield,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
@@ -39,6 +41,30 @@ const TextAreaField = ({ label, error, ...props }) => (
       className={`w-full px-4 py-3 border rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition resize-none ${error ? "border-red-400 bg-red-50" : "border-gray-200 bg-white"
         }`}
     />
+    {error && <p className="text-xs text-red-500">{error}</p>}
+  </div>
+);
+
+const PasswordField = ({ label, hint, error, isVisible, onToggleVisibility, ...props }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-sm font-medium text-gray-700">{label}</label>
+    {hint && <p className="text-xs text-gray-400 -mt-1">{hint}</p>}
+    <div className="relative">
+      <input
+        {...props}
+        type={isVisible ? "text" : "password"}
+        className={`w-full px-4 pr-11 py-2.5 border rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition ${error ? "border-red-400 bg-red-50" : "border-gray-200 bg-white"
+          }`}
+      />
+      <button
+        type="button"
+        onClick={onToggleVisibility}
+        className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+        aria-label={isVisible ? "Hide password" : "Show password"}
+      >
+        {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
     {error && <p className="text-xs text-red-500">{error}</p>}
   </div>
 );
@@ -121,6 +147,11 @@ const EmployerProfile = () => {
     confirmPassword: "",
   });
   const [passwordErrors, setPasswordErrors] = useState({});
+  const [showPassword, setShowPassword] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
     inAppNotifications: true,
@@ -274,6 +305,13 @@ const EmployerProfile = () => {
     if (passwordErrors[name]) {
       setPasswordErrors((prev) => ({ ...prev, [name]: "" }));
     }
+  };
+
+  const togglePasswordVisibility = (fieldName) => {
+    setShowPassword((prev) => ({
+      ...prev,
+      [fieldName]: !prev[fieldName],
+    }));
   };
 
   const handlePreferenceToggle = (key) => {
@@ -450,32 +488,35 @@ const EmployerProfile = () => {
                 Change Password
               </h2>
               <div className="space-y-4">
-                <InputField
+                <PasswordField
                   label="Current Password *"
                   name="currentPassword"
-                  type="password"
                   placeholder="Enter your current password"
                   value={passwordForm.currentPassword}
                   onChange={handlePasswordInput}
                   error={passwordErrors.currentPassword}
+                  isVisible={showPassword.currentPassword}
+                  onToggleVisibility={() => togglePasswordVisibility("currentPassword")}
                 />
-                <InputField
+                <PasswordField
                   label="New Password *"
                   name="newPassword"
-                  type="password"
                   placeholder="At least 6 characters"
                   value={passwordForm.newPassword}
                   onChange={handlePasswordInput}
                   error={passwordErrors.newPassword}
+                  isVisible={showPassword.newPassword}
+                  onToggleVisibility={() => togglePasswordVisibility("newPassword")}
                 />
-                <InputField
+                <PasswordField
                   label="Confirm New Password *"
                   name="confirmPassword"
-                  type="password"
                   placeholder="Re-enter new password"
                   value={passwordForm.confirmPassword}
                   onChange={handlePasswordInput}
                   error={passwordErrors.confirmPassword}
+                  isVisible={showPassword.confirmPassword}
+                  onToggleVisibility={() => togglePasswordVisibility("confirmPassword")}
                 />
               </div>
             </div>

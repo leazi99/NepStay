@@ -87,8 +87,12 @@ export const API_PATHS = {
 
   ADMIN: {
     OVERVIEW: "/api/admin/overview",
+    REPORTS: "/api/admin/reports",
     GET_USERS: "/api/admin/users",
     UPDATE_USER: (userId) => `/api/admin/users/${userId}`,
+    DELETE_USER: (userId) => `/api/admin/users/${userId}`,
+    GET_JOBS: "/api/admin/jobs",
+    DELETE_JOB: (jobId) => `/api/admin/jobs/${jobId}`,
     GET_PAYMENTS: "/api/admin/payments",
     UPDATE_PAYMENT_STATUS: (paymentId) =>
       `/api/admin/payments/${paymentId}/status`,
