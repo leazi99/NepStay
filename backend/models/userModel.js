@@ -131,6 +131,10 @@ const userSchema = new mongoose.Schema({
   companyName: String,
   companyDescription: String,
   companyLogo: String,
+  companyWebsite: {
+    type: String,
+    default: "",
+  },
   verifyOtp: {
     type: String,
     default: "",

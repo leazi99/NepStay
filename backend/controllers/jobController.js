@@ -172,7 +172,7 @@ export const getJobs = async (req, res) => {
   try {
     const jobs = await jobModel
       .find(query)
-      .populate("company", "name companyName companyLogo");
+      .populate("company", "name companyName companyLogo companyWebsite");
 
     const reviewSummaryMap = await buildEmployerReviewSummaryMap(
       jobs.map((job) => job?.company?._id || job?.company).filter(Boolean),
@@ -240,7 +240,7 @@ export const getJobsEmployer = async (req, res) => {
 
     const jobs = await jobModel
       .find({ company: userId })
-      .populate("company", "name companyName companyLogo")
+      .populate("company", "name companyName companyLogo companyWebsite")
       .lean();
 
     const jobsWithApplicationCounts = await Promise.all(
@@ -274,7 +274,7 @@ export const getJobById = async (req, res) => {
 
     const job = await jobModel
       .findById(id)
-      .populate("company", "name companyName companyLogo");
+      .populate("company", "name companyName companyLogo companyWebsite");
 
     if (!job) {
       return res.status(404).json({

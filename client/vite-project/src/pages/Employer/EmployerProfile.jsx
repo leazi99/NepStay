@@ -130,6 +130,7 @@ const EmployerProfile = () => {
     companyName: "",
     companyDescription: "",
     companyLogo: "",
+    companyWebsite: "",
   });
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -167,6 +168,7 @@ const EmployerProfile = () => {
         companyName: user.companyName || "",
         companyDescription: user.companyDescription || "",
         companyLogo: user.companyLogo || "",
+        companyWebsite: user.companyWebsite || "",
       });
     }
   }, [user]);
@@ -213,6 +215,20 @@ const EmployerProfile = () => {
     const errs = {};
     if (!form.name.trim()) errs.name = "Name is required";
     if (!form.companyName.trim()) errs.companyName = "Company name is required";
+    if (form.companyWebsite?.trim()) {
+      try {
+        const rawValue = form.companyWebsite.trim();
+        const normalizedValue = rawValue.includes("://")
+          ? rawValue
+          : `https://${rawValue}`;
+        const parsed = new URL(normalizedValue);
+        if (!parsed.hostname) {
+          errs.companyWebsite = "Enter a valid website URL";
+        }
+      } catch {
+        errs.companyWebsite = "Enter a valid website URL";
+      }
+    }
     return errs;
   };
 
@@ -222,7 +238,10 @@ const EmployerProfile = () => {
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     try {
       setIsSaving(true);
-      const res = await axiosInstance.put(API_PATHS.USERS.UPDATE_PROFILE, form);
+      const res = await axiosInstance.put(API_PATHS.USERS.UPDATE_PROFILE, {
+        ...form,
+        companyWebsite: form.companyWebsite.trim(),
+      });
       if (res.data?.success) {
         updateUser(res.data.user || form);
         toast.success("Profile updated successfully!");
@@ -458,6 +477,15 @@ const EmployerProfile = () => {
                     value={form.companyDescription}
                     onChange={handleChange}
                     error={errors.companyDescription}
+                  />
+                  <InputField
+                    label="Company Website"
+                    name="companyWebsite"
+                    placeholder="https://yourcompany.com"
+                    value={form.companyWebsite}
+                    onChange={handleChange}
+                    error={errors.companyWebsite}
+                    hint="Optional: job seekers can use this link from your job posts"
                   />
                 </div>
               </div>

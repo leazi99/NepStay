@@ -46,6 +46,12 @@ const JobListItem = ({ job, onSave, onUnsave, onApply, onDislike, nowTs, isDark 
   const [saving, setSaving] = useState(false);
 
   const companyName = job.company?.companyName || job.company?.name || "Company";
+  const companyWebsite = String(job.company?.companyWebsite || "").trim();
+  const companyWebsiteHref = companyWebsite
+    ? companyWebsite.includes("://")
+      ? companyWebsite
+      : `https://${companyWebsite}`
+    : "";
   const companySpent = job.company?.totalSpent || job.company?.spent || "";
   const companyRatingAvg = Number(job.company?.ratingAvg || 0);
   const companyRatingCount = Number(job.company?.ratingCount || 0);
@@ -158,6 +164,17 @@ const JobListItem = ({ job, onSave, onUnsave, onApply, onDislike, nowTs, isDark 
         </span>
         {companySpent ? <span>{companySpent}</span> : null}
         <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {job.jobLocation || "Location not specified"}</span>
+        {companyWebsiteHref ? (
+          <a
+            href={companyWebsiteHref}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(event) => event.stopPropagation()}
+            className="text-blue-500 hover:text-blue-600 hover:underline"
+          >
+            Visit website
+          </a>
+        ) : null}
       </div>
 
       {proposalText ? (

@@ -47,6 +47,7 @@ const JobDetails = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [showProfileVerifyModal, setShowProfileVerifyModal] = useState(false);
   const [showProposalModal, setShowProposalModal] = useState(false);
   const [resumeFile, setResumeFile] = useState(null);
   const [profileResumeUrl, setProfileResumeUrl] = useState("");
@@ -101,6 +102,26 @@ const JobDetails = () => {
     setProfileResumeUrl(user?.resume || "");
   }, [user?.resume]);
 
+  const isProfileCompleteForApply = Boolean(
+    String(user?.latestEducation || "").trim() &&
+    String(user?.specialization || "").trim(),
+  );
+
+  const handleOpenApplyModal = () => {
+    if (!isAuthenticated) {
+      toast.error("Please login to apply");
+      navigate("/login");
+      return;
+    }
+
+    if (!isProfileCompleteForApply) {
+      setShowProfileVerifyModal(true);
+      return;
+    }
+
+    setShowApplyModal(true);
+  };
+
   const handleSaveToggle = async () => {
     if (!isAuthenticated) { toast.error("Please login to save"); return; }
     setSaving(true);
@@ -123,6 +144,12 @@ const JobDetails = () => {
 
   const handleApply = async () => {
     if (!isAuthenticated) { toast.error("Please login to apply"); navigate("/login"); return; }
+
+    if (!isProfileCompleteForApply) {
+      setShowApplyModal(false);
+      setShowProfileVerifyModal(true);
+      return;
+    }
 
     if (!resumeFile && !profileResumeUrl) {
       toast.error("Please select your resume file before applying");
@@ -165,9 +192,17 @@ const JobDetails = () => {
         setResumeFile(null);
         setShowApplyModal(false);
       } else {
+        if (res.data?.needsProfileCompletion) {
+          setShowApplyModal(false);
+          setShowProfileVerifyModal(true);
+        }
         toast.error(res.data.message || "Failed to apply");
       }
-    } catch {
+    } catch (error) {
+      if (error?.response?.data?.needsProfileCompletion) {
+        setShowApplyModal(false);
+        setShowProfileVerifyModal(true);
+      }
       toast.error("Something went wrong");
     } finally {
       setApplying(false);
@@ -235,6 +270,12 @@ const JobDetails = () => {
   const companyName = company?.companyName || company?.name || "Company";
   const companyRatingAvg = Number(company?.ratingAvg || 0);
   const companyRatingCount = Number(company?.ratingCount || 0);
+  const companyWebsite = String(company?.companyWebsite || "").trim();
+  const companyWebsiteHref = companyWebsite
+    ? companyWebsite.includes("://")
+      ? companyWebsite
+      : `https://${companyWebsite}`
+    : "";
 
   return (
     <div className={`${isDark ? "bg-slate-950 text-slate-100" : "bg-gray-50 text-gray-900"} min-h-screen`}>
@@ -329,7 +370,7 @@ const JobDetails = () => {
             <h3 className={`text-base font-semibold mb-3 ${isDark ? "text-slate-100" : "text-gray-900"}`}>Apply for this role</h3>
             {!applicationStatus ? (
               <button
-                onClick={() => setShowApplyModal(true)}
+                onClick={handleOpenApplyModal}
                 className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 text-white py-2.5 text-sm font-medium hover:bg-blue-700 transition-colors"
               >
                 <Send className="h-4 w-4" />
@@ -392,11 +433,49 @@ const JobDetails = () => {
                 {company.companyDescription}
               </p>
             )}
+            {companyWebsiteHref ? (
+              <a
+                href={companyWebsiteHref}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-block text-sm text-blue-500 hover:text-blue-600 hover:underline"
+              >
+                Visit company website
+              </a>
+            ) : null}
           </div>
         </div>
       </div>
 
       </div>
+
+      {showProfileVerifyModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center">
+          <div className={`w-full max-w-md rounded-2xl border p-5 sm:p-6 ${isDark ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-gray-200 text-gray-900"}`}>
+            <h3 className="text-lg font-semibold">Complete your profile first</h3>
+            <p className={`mt-2 text-sm leading-6 ${isDark ? "text-slate-300" : "text-gray-600"}`}>
+              Please complete your latest education and specialization before applying for jobs.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setShowProfileVerifyModal(false)}
+                className={`px-4 py-2 rounded-lg text-sm border ${isDark ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-gray-200 text-gray-700 hover:bg-gray-100"}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowProfileVerifyModal(false);
+                  navigate("/welcome");
+                }}
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                Complete Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Apply Modal */}
       {showApplyModal && (

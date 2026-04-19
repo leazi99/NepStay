@@ -85,6 +85,7 @@ const getPublicUser = (user) => ({
   companyName: user.companyName || "",
   companyDescription: user.companyDescription || "",
   companyLogo: user.companyLogo || "",
+  companyWebsite: user.companyWebsite || "",
   resume: user.resume || "",
   studentIdCard: user.studentIdCard || "",
   nationalIdCard: user.nationalIdCard || "",
@@ -257,6 +258,7 @@ export const login = async (req, res) => {
         companyName: user.companyName || "",
         companyDescription: user.companyDescription || "",
         companyLogo: user.companyLogo || "",
+        companyWebsite: user.companyWebsite || "",
         resume: user.resume || "",
         studentIdCard: user.studentIdCard || "",
         nationalIdCard: user.nationalIdCard || "",
@@ -395,7 +397,7 @@ export const isAuthenticated = async (req, res) => {
     const user = await userModel
       .findById(req.user.id)
       .select(
-        "_id name email role isVerified avatar companyName companyDescription companyLogo resume studentIdCard nationalIdCard identityVerificationStatus linkedinUrl bio interests latestEducation specialization themePreference",
+        "_id name email role isVerified avatar companyName companyDescription companyLogo companyWebsite resume studentIdCard nationalIdCard identityVerificationStatus linkedinUrl bio interests latestEducation specialization themePreference",
       );
 
     if (!user) {
@@ -428,7 +430,7 @@ export const getSession = async (req, res) => {
     const user = await userModel
       .findById(req.user.id)
       .select(
-        "_id name email role isVerified avatar companyName companyDescription companyLogo resume studentIdCard nationalIdCard identityVerificationStatus linkedinUrl bio interests latestEducation specialization themePreference",
+        "_id name email role isVerified avatar companyName companyDescription companyLogo companyWebsite resume studentIdCard nationalIdCard identityVerificationStatus linkedinUrl bio interests latestEducation specialization themePreference",
       );
 
     if (!user) {

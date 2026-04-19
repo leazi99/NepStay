@@ -88,6 +88,7 @@ export const updateProfile = async (req, res) => {
       companyName,
       companyDescription,
       companyLogo,
+      companyWebsite,
       resume,
       studentIdCard,
       nationalIdCard,
@@ -185,6 +186,9 @@ export const updateProfile = async (req, res) => {
         user.companyDescription = companyDescription;
       }
       if (typeof companyLogo === "string") user.companyLogo = companyLogo;
+      if (typeof companyWebsite === "string") {
+        user.companyWebsite = companyWebsite.trim();
+      }
     }
 
     await user.save();
@@ -222,6 +226,7 @@ export const updateProfile = async (req, res) => {
         companyName: user.companyName || "",
         companyDescription: user.companyDescription || "",
         companyLogo: user.companyLogo || "",
+        companyWebsite: user.companyWebsite || "",
       },
       message: "Profile updated successfully",
     });

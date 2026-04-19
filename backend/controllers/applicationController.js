@@ -3,6 +3,12 @@ import jobModel from "../models/jobModel.js";
 import notificationModel from "../models/notificationModel.js";
 import userModel from "../models/userModel.js";
 
+const isJobSeekerProfileComplete = (user) => {
+  const latestEducation = String(user?.latestEducation || "").trim();
+  const specialization = String(user?.specialization || "").trim();
+  return Boolean(latestEducation && specialization);
+};
+
 export const applyToJob = async (req, res) => {
   try {
     const { jobId, resume } = req.body;
@@ -12,6 +18,33 @@ export const applyToJob = async (req, res) => {
       return res.json({
         success: false,
         message: "Job ID is required",
+      });
+    }
+
+    const applicant = await userModel
+      .findById(userId)
+      .select("role latestEducation specialization");
+
+    if (!applicant) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (String(applicant.role) !== "jobseeker") {
+      return res.status(403).json({
+        success: false,
+        message: "Only jobseekers can apply for jobs",
+      });
+    }
+
+    if (!isJobSeekerProfileComplete(applicant)) {
+      return res.status(400).json({
+        success: false,
+        needsProfileCompletion: true,
+        message:
+          "Please complete your profile (latest education and specialization) before applying.",
       });
     }
 
