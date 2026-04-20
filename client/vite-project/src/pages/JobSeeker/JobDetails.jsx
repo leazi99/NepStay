@@ -122,6 +122,21 @@ const JobDetails = () => {
     setShowApplyModal(true);
   };
 
+  const handleOpenProposalModal = () => {
+    if (!isAuthenticated) {
+      toast.error("Please login to submit a proposal");
+      navigate("/login");
+      return;
+    }
+
+    if (!isProfileCompleteForApply) {
+      setShowProfileVerifyModal(true);
+      return;
+    }
+
+    setShowProposalModal(true);
+  };
+
   const handleSaveToggle = async () => {
     if (!isAuthenticated) { toast.error("Please login to save"); return; }
     setSaving(true);
@@ -216,6 +231,12 @@ const JobDetails = () => {
       return;
     }
 
+    if (!isProfileCompleteForApply) {
+      setShowProposalModal(false);
+      setShowProfileVerifyModal(true);
+      return;
+    }
+
     const amount = Number(proposedAmount);
     if (!coverLetter.trim() || !Number.isFinite(amount) || amount <= 0) {
       toast.error("Please add a cover letter and valid proposal amount");
@@ -230,6 +251,10 @@ const JobDetails = () => {
       });
 
       if (!response.data?.success) {
+        if (response.data?.needsProfileCompletion) {
+          setShowProposalModal(false);
+          setShowProfileVerifyModal(true);
+        }
         toast.error(response.data?.message || "Failed to submit proposal");
         return;
       }
@@ -240,6 +265,10 @@ const JobDetails = () => {
       setProposedAmount("");
       toast.success("Proposal submitted successfully");
     } catch (error) {
+      if (error?.response?.data?.needsProfileCompletion) {
+        setShowProposalModal(false);
+        setShowProfileVerifyModal(true);
+      }
       toast.error(error?.response?.data?.message || "Failed to submit proposal");
     } finally {
       setSubmittingProposal(false);
@@ -381,7 +410,7 @@ const JobDetails = () => {
             )}
             {!proposalStatus ? (
               <button
-                onClick={() => setShowProposalModal(true)}
+                onClick={handleOpenProposalModal}
                 className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 text-white py-2.5 text-sm font-medium hover:bg-emerald-700 transition-colors"
               >
                 <Send className="h-4 w-4" />
@@ -454,7 +483,7 @@ const JobDetails = () => {
           <div className={`w-full max-w-md rounded-2xl border p-5 sm:p-6 ${isDark ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-gray-200 text-gray-900"}`}>
             <h3 className="text-lg font-semibold">Complete your profile first</h3>
             <p className={`mt-2 text-sm leading-6 ${isDark ? "text-slate-300" : "text-gray-600"}`}>
-              Please complete your latest education and specialization before applying for jobs.
+              Please complete your latest education and specialization before applying for jobs or submitting proposals.
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button

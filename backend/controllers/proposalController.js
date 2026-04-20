@@ -27,6 +27,12 @@ const ensureEmployer = (req, res) => {
   return true;
 };
 
+const isJobSeekerProfileComplete = (user) => {
+  const latestEducation = String(user?.latestEducation || "").trim();
+  const specialization = String(user?.specialization || "").trim();
+  return Boolean(latestEducation && specialization);
+};
+
 export const createProposal = async (req, res) => {
   try {
     if (!ensureJobSeeker(req, res)) return;
@@ -38,6 +44,26 @@ export const createProposal = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "jobId, coverLetter and proposedAmount are required",
+      });
+    }
+
+    const freelancer = await userModel
+      .findById(req.user.id)
+      .select("latestEducation specialization");
+
+    if (!freelancer) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (!isJobSeekerProfileComplete(freelancer)) {
+      return res.status(400).json({
+        success: false,
+        needsProfileCompletion: true,
+        message:
+          "Please complete your profile (latest education and specialization) before submitting a proposal.",
       });
     }
 

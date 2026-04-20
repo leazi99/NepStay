@@ -105,7 +105,7 @@ const MessagesContent = ({ isDark, userRole, userId }) => {
     try {
       await axiosInstance.post(API_PATHS.USERS.PING_PRESENCE);
     } catch {
-      // ignore heartbeat failures silently
+      // Ignore errors from presence ping
     }
   }, []);
 
