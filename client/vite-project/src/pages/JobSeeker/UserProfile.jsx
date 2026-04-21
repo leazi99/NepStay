@@ -81,19 +81,6 @@ const UserProfile = () => {
     avatar: "",
     resume: "",
     studentIdCard: "",
-    nationalIdCard: "",
-    studentInstitutionName: "",
-    studentFullName: "",
-    studentDateOfBirth: "",
-    studentIdNumber: "",
-    studentContactEmail: "",
-    studentPhoneNumber: "",
-    studentAddressLine1: "",
-    studentAddressLine2: "",
-    studentCity: "",
-    studentStateProvince: "",
-    studentPostalCode: "",
-    identityVerificationStatus: "not_submitted",
     latestEducation: "",
     specialization: "",
     linkedinUrl: "",
@@ -111,7 +98,6 @@ const UserProfile = () => {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [resumeUploading, setResumeUploading] = useState(false);
   const [studentIdUploading, setStudentIdUploading] = useState(false);
-  const [nationalIdUploading, setNationalIdUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [deletingResume, setDeletingResume] = useState(false);
@@ -120,7 +106,6 @@ const UserProfile = () => {
   const [averageRating, setAverageRating] = useState(0);
   const [submittingReviewPaymentId, setSubmittingReviewPaymentId] = useState("");
   const [reviewDrafts, setReviewDrafts] = useState({});
-  const [showVerificationForm, setShowVerificationForm] = useState(false);
   const [errors, setErrors] = useState({});
   const showFeedbackAndRatings = false;
 
@@ -132,19 +117,6 @@ const UserProfile = () => {
       avatar: user.avatar || "",
       resume: user.resume || "",
       studentIdCard: user.studentIdCard || "",
-      nationalIdCard: user.nationalIdCard || "",
-      studentInstitutionName: user.studentInstitutionName || "",
-      studentFullName: user.studentFullName || user.name || "",
-      studentDateOfBirth: user.studentDateOfBirth || "",
-      studentIdNumber: user.studentIdNumber || "",
-      studentContactEmail: user.studentContactEmail || user.email || "",
-      studentPhoneNumber: user.studentPhoneNumber || "",
-      studentAddressLine1: user.studentAddressLine1 || "",
-      studentAddressLine2: user.studentAddressLine2 || "",
-      studentCity: user.studentCity || "",
-      studentStateProvince: user.studentStateProvince || "",
-      studentPostalCode: user.studentPostalCode || "",
-      identityVerificationStatus: user.identityVerificationStatus || "not_submitted",
       latestEducation: user.latestEducation || "",
       specialization: user.specialization || "",
       linkedinUrl: user.linkedinUrl || "",
@@ -209,38 +181,6 @@ const UserProfile = () => {
   const textSecondary = isDark ? "text-slate-300" : "text-gray-500";
   const specializationOptions = SPECIALIZATIONS[form.latestEducation] || [];
 
-  const isStudentVerificationComplete = useMemo(() => {
-    const requiredFields = [
-      form.studentInstitutionName,
-      form.studentFullName,
-      form.studentDateOfBirth,
-      form.studentIdNumber,
-      form.studentContactEmail,
-      form.studentPhoneNumber,
-      form.studentAddressLine1,
-      form.studentCity,
-      form.studentStateProvince,
-      form.studentPostalCode,
-      form.studentIdCard,
-      form.nationalIdCard,
-    ];
-
-    return requiredFields.every((field) => Boolean(String(field || "").trim()));
-  }, [
-    form.studentInstitutionName,
-    form.studentFullName,
-    form.studentDateOfBirth,
-    form.studentIdNumber,
-    form.studentContactEmail,
-    form.studentPhoneNumber,
-    form.studentAddressLine1,
-    form.studentCity,
-    form.studentStateProvince,
-    form.studentPostalCode,
-    form.studentIdCard,
-    form.nationalIdCard,
-  ]);
-
   const parseInterests = (value) =>
     value
       .split(",")
@@ -254,15 +194,15 @@ const UserProfile = () => {
     const hasEducation = Boolean(form.latestEducation.trim());
     const hasSpecialization = Boolean(form.specialization.trim());
     const hasResume = Boolean(form.resume.trim());
+    const hasStudentId = Boolean(form.studentIdCard.trim());
     const hasLinkedin = Boolean(form.linkedinUrl.trim());
-    const docsReady = isStudentVerificationComplete;
 
     const items = [
       { key: "personal", label: "Personal Info", completed: hasName && hasBio },
       { key: "preferences", label: "Job Preferences", completed: hasInterests && hasEducation && hasSpecialization },
       { key: "resume", label: "Resume", completed: hasResume },
+      { key: "student_id", label: "Student ID Card", completed: hasStudentId },
       { key: "links", label: "Portfolio/LinkedIn", completed: hasLinkedin },
-      { key: "verification", label: "Identity Verification", completed: docsReady },
     ];
 
     const completedCount = items.filter((item) => item.completed).length;
@@ -276,8 +216,8 @@ const UserProfile = () => {
     form.latestEducation,
     form.specialization,
     form.resume,
+    form.studentIdCard,
     form.linkedinUrl,
-    isStudentVerificationComplete,
   ]);
 
   const handleChange = (event) => {
@@ -362,93 +302,31 @@ const UserProfile = () => {
     }
   };
 
-  const handleVerificationDocUpload = async (event, type) => {
+  const handleStudentIdUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const formData = new FormData();
     formData.append("document", file);
 
-    if (type === "student") setStudentIdUploading(true);
-    if (type === "national") setNationalIdUploading(true);
-
+    setStudentIdUploading(true);
     try {
-      const response = await axiosInstance.post(
-        API_PATHS.AUTH.UPLOAD_VERIFICATION_DOC,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        },
-      );
+      const response = await axiosInstance.post(API_PATHS.AUTH.UPLOAD_VERIFICATION_DOC, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       if (!response.data.success || !response.data.documentUrl) {
         toast.error(response.data.message || "Upload failed");
         return;
       }
 
-      const documentUrl = response.data.documentUrl;
-
-      setForm((prev) => {
-        const next = {
-          ...prev,
-          studentIdCard: type === "student" ? documentUrl : prev.studentIdCard,
-          nationalIdCard: type === "national" ? documentUrl : prev.nationalIdCard,
-        };
-
-        next.identityVerificationStatus =
-          next.studentIdCard && next.nationalIdCard ? "pending" : "not_submitted";
-
-        return next;
-      });
-
-      const nextStudentIdCard =
-        type === "student" ? documentUrl : form.studentIdCard;
-      const nextNationalIdCard =
-        type === "national" ? documentUrl : form.nationalIdCard;
-      const nextVerificationStatus =
-        nextStudentIdCard && nextNationalIdCard ? "pending" : "not_submitted";
-
-      updateUser({
-        studentIdCard: nextStudentIdCard,
-        nationalIdCard: nextNationalIdCard,
-        identityVerificationStatus: nextVerificationStatus,
-      });
-
-      if (nextStudentIdCard && nextNationalIdCard) {
-        const submitResponse = await axiosInstance.put(API_PATHS.USERS.UPDATE_PROFILE, {
-          studentIdCard: nextStudentIdCard,
-          nationalIdCard: nextNationalIdCard,
-        });
-
-        if (!submitResponse.data.success) {
-          toast.error(
-            submitResponse.data.message || "Failed to submit verification documents",
-          );
-          return;
-        }
-
-        if (submitResponse.data.user) {
-          setForm((prev) => ({
-            ...prev,
-            studentIdCard: submitResponse.data.user.studentIdCard || prev.studentIdCard,
-            nationalIdCard:
-              submitResponse.data.user.nationalIdCard || prev.nationalIdCard,
-            identityVerificationStatus:
-              submitResponse.data.user.identityVerificationStatus ||
-              prev.identityVerificationStatus,
-          }));
-          updateUser(submitResponse.data.user);
-        }
-
-        toast.success("Verification documents submitted successfully");
-      }
-
-      toast.success(`${type === "student" ? "Student ID" : "National ID"} uploaded successfully`);
+      setForm((prev) => ({ ...prev, studentIdCard: response.data.documentUrl }));
+      updateUser({ studentIdCard: response.data.documentUrl });
+      toast.success("Student ID uploaded successfully");
     } catch {
-      toast.error("Failed to upload document");
+      toast.error("Failed to upload Student ID");
     } finally {
-      if (type === "student") setStudentIdUploading(false);
-      if (type === "national") setNationalIdUploading(false);
+      setStudentIdUploading(false);
     }
   };
 
@@ -459,71 +337,6 @@ const UserProfile = () => {
 
     if (form.linkedinUrl && !/^https?:\/\//i.test(form.linkedinUrl)) {
       nextErrors.linkedinUrl = "LinkedIn URL should start with http:// or https://";
-    }
-
-    const verificationTouched = [
-      form.studentInstitutionName,
-      form.studentFullName,
-      form.studentDateOfBirth,
-      form.studentIdNumber,
-      form.studentContactEmail,
-      form.studentPhoneNumber,
-      form.studentAddressLine1,
-      form.studentAddressLine2,
-      form.studentCity,
-      form.studentStateProvince,
-      form.studentPostalCode,
-      form.studentIdCard,
-      form.nationalIdCard,
-    ].some((field) => Boolean(String(field || "").trim()));
-
-    if (verificationTouched && !form.studentInstitutionName.trim()) {
-      nextErrors.studentInstitutionName = "College/Institution name is required";
-    }
-    if (verificationTouched && !form.studentFullName.trim()) {
-      nextErrors.studentFullName = "Student full name is required";
-    }
-    if (verificationTouched && !form.studentDateOfBirth.trim()) {
-      nextErrors.studentDateOfBirth = "Date of birth is required";
-    }
-    if (verificationTouched && !form.studentIdNumber.trim()) {
-      nextErrors.studentIdNumber = "Student ID number is required";
-    }
-    if (verificationTouched && !form.studentContactEmail.trim()) {
-      nextErrors.studentContactEmail = "Contact email is required";
-    } else if (
-      verificationTouched &&
-      form.studentContactEmail.trim() &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.studentContactEmail.trim())
-    ) {
-      nextErrors.studentContactEmail = "Enter a valid contact email";
-    }
-    if (verificationTouched && !form.studentPhoneNumber.trim()) {
-      nextErrors.studentPhoneNumber = "Phone number is required";
-    } else if (
-      verificationTouched &&
-      form.studentPhoneNumber.trim() &&
-      !/^[0-9+\-\s()]{7,20}$/.test(form.studentPhoneNumber.trim())
-    ) {
-      nextErrors.studentPhoneNumber = "Enter a valid phone number";
-    }
-    if (verificationTouched && !form.studentAddressLine1.trim()) {
-      nextErrors.studentAddressLine1 = "Address line 1 is required";
-    }
-    if (verificationTouched && !form.studentCity.trim()) {
-      nextErrors.studentCity = "City is required";
-    }
-    if (verificationTouched && !form.studentStateProvince.trim()) {
-      nextErrors.studentStateProvince = "State/Province is required";
-    }
-    if (verificationTouched && !form.studentPostalCode.trim()) {
-      nextErrors.studentPostalCode = "Postal/Zip code is required";
-    }
-    if (verificationTouched && !form.studentIdCard) {
-      nextErrors.studentIdCard = "Student ID document is required";
-    }
-    if (verificationTouched && !form.nationalIdCard) {
-      nextErrors.nationalIdCard = "National ID document is required";
     }
 
     return nextErrors;
@@ -545,18 +358,6 @@ const UserProfile = () => {
         avatar: form.avatar,
         resume: form.resume,
         studentIdCard: form.studentIdCard,
-        nationalIdCard: form.nationalIdCard,
-        studentInstitutionName: form.studentInstitutionName,
-        studentFullName: form.studentFullName,
-        studentDateOfBirth: form.studentDateOfBirth,
-        studentIdNumber: form.studentIdNumber,
-        studentContactEmail: form.studentContactEmail,
-        studentPhoneNumber: form.studentPhoneNumber,
-        studentAddressLine1: form.studentAddressLine1,
-        studentAddressLine2: form.studentAddressLine2,
-        studentCity: form.studentCity,
-        studentStateProvince: form.studentStateProvince,
-        studentPostalCode: form.studentPostalCode,
         latestEducation: form.latestEducation,
         specialization: form.specialization,
         linkedinUrl: form.linkedinUrl,
@@ -694,7 +495,7 @@ const UserProfile = () => {
         <div className="max-w-4xl mx-auto">
           <div>
             <h1 className="text-3xl font-bold text-white">Freelancer Profile</h1>
-            <p className="text-sm mt-2 text-blue-100">Update your details, resume, ID cards, bio, interests and password</p>
+            <p className="text-sm mt-2 text-blue-100">Update your details, resume, bio, interests and password</p>
           </div>
         </div>
       </div>
@@ -955,262 +756,70 @@ const UserProfile = () => {
             </div>
           </div>
 
-          {isStudentVerificationComplete && !showVerificationForm ? (
-            <div className={`rounded-2xl border shadow-sm p-6 ${cardClass}`}>
-              <div className={`flex items-start gap-3 ${isDark ? "text-green-300" : "text-green-700"}`}>
-                <CheckCircle className="h-5 w-5 mt-0.5" />
-                <div>
-                  <h3 className="text-sm font-semibold">Student verification form completed</h3>
-                  <p className={`text-sm mt-1 ${textSecondary}`}>
-                    You have submitted your student details with Student ID and National ID. This form is now hidden.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowVerificationForm(true)}
-                    className="mt-3 inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
-                  >
-                    Show form again
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-          <div className={`rounded-2xl border shadow-sm p-6 space-y-5 ${cardClass}`}>
-            <div>
-              <h2 className={`font-semibold text-base flex items-center gap-2 ${textPrimary}`}>
-                <FileBadge className="h-4 w-4 text-blue-500" />
-                Student ID & NID Registration
-              </h2>
-              <p className={`text-sm mt-1 ${textSecondary}`}>
-                Fill all required details and upload both documents to complete identity verification.
-              </p>
-              {isStudentVerificationComplete ? (
-                <button
-                  type="button"
-                  onClick={() => setShowVerificationForm(false)}
-                  className="mt-3 inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Hide form
-                </button>
-              ) : null}
-            </div>
+          <div className={`rounded-2xl border shadow-sm p-6 space-y-4 ${cardClass}`}>
+            <h2 className={`font-semibold text-base flex items-center gap-2 ${textPrimary}`}>
+              <FileBadge className="h-4 w-4 text-blue-500" />
+              Student ID Card
+            </h2>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <InputField
-                  label="College / Institution Name"
-                  name="studentInstitutionName"
-                  placeholder="Enter your college name"
-                  value={form.studentInstitutionName}
-                  onChange={handleChange}
-                  error={errors.studentInstitutionName}
-                  isDark={isDark}
-                />
-                <InputField
-                  label="Student Full Name"
-                  name="studentFullName"
-                  placeholder="Enter your full name"
-                  value={form.studentFullName}
-                  onChange={handleChange}
-                  error={errors.studentFullName}
-                  isDark={isDark}
-                />
-                <InputField
-                  label="Date of Birth"
-                  name="studentDateOfBirth"
-                  type="date"
-                  value={form.studentDateOfBirth}
-                  onChange={handleChange}
-                  error={errors.studentDateOfBirth}
-                  isDark={isDark}
-                />
-                <InputField
-                  label="Student ID Number"
-                  name="studentIdNumber"
-                  placeholder="Enter your student ID number"
-                  value={form.studentIdNumber}
-                  onChange={handleChange}
-                  error={errors.studentIdNumber}
-                  isDark={isDark}
-                />
-                <InputField
-                  label="Contact Email"
-                  name="studentContactEmail"
-                  type="email"
-                  placeholder="example@email.com"
-                  value={form.studentContactEmail}
-                  onChange={handleChange}
-                  error={errors.studentContactEmail}
-                  isDark={isDark}
-                />
-                <InputField
-                  label="Phone Number"
-                  name="studentPhoneNumber"
-                  placeholder="98XXXXXXXX"
-                  value={form.studentPhoneNumber}
-                  onChange={handleChange}
-                  error={errors.studentPhoneNumber}
-                  isDark={isDark}
-                />
-                <div className="sm:col-span-2">
-                  <InputField
-                    label="Street Address Line 1"
-                    name="studentAddressLine1"
-                    placeholder="Street address"
-                    value={form.studentAddressLine1}
-                    onChange={handleChange}
-                    error={errors.studentAddressLine1}
-                    isDark={isDark}
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <InputField
-                    label="Street Address Line 2"
-                    name="studentAddressLine2"
-                    placeholder="Apartment, suite, unit (optional)"
-                    value={form.studentAddressLine2}
-                    onChange={handleChange}
-                    isDark={isDark}
-                  />
-                </div>
-                <InputField
-                  label="City"
-                  name="studentCity"
-                  placeholder="City"
-                  value={form.studentCity}
-                  onChange={handleChange}
-                  error={errors.studentCity}
-                  isDark={isDark}
-                />
-                <InputField
-                  label="State / Province"
-                  name="studentStateProvince"
-                  placeholder="State / Province"
-                  value={form.studentStateProvince}
-                  onChange={handleChange}
-                  error={errors.studentStateProvince}
-                  isDark={isDark}
-                />
-                <InputField
-                  label="Postal / Zip Code"
-                  name="studentPostalCode"
-                  placeholder="Postal code"
-                  value={form.studentPostalCode}
-                  onChange={handleChange}
-                  error={errors.studentPostalCode}
-                  isDark={isDark}
-                />
-              </div>
-
-            <div className="flex items-center gap-2 text-xs">
-              <span className={`px-2.5 py-1 rounded-full font-medium ${
-                form.identityVerificationStatus === "verified"
-                  ? "bg-green-50 text-green-700"
-                  : form.identityVerificationStatus === "pending"
-                    ? "bg-amber-50 text-amber-700"
-                    : form.identityVerificationStatus === "rejected"
-                      ? "bg-red-50 text-red-700"
-                      : "bg-gray-100 text-gray-600"
-              }`}>
-                {form.identityVerificationStatus === "verified"
-                  ? "Verified"
-                  : form.identityVerificationStatus === "pending"
-                    ? "Verification Pending"
-                    : form.identityVerificationStatus === "rejected"
-                      ? "Verification Rejected"
-                      : "Not Submitted"}
-              </span>
-              <span className={textSecondary}>Accepted formats: PDF, JPG, JPEG, PNG</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className={`rounded-xl border p-4 ${isDark ? "border-slate-700 bg-slate-900/40" : "border-gray-200 bg-white"}`}>
-                <div className="flex items-center justify-between gap-3">
-                  <p className={`text-sm font-semibold ${textPrimary}`}>Student ID Card</p>
-                  <span className={`text-[11px] px-2 py-0.5 rounded-full ${form.studentIdCard ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                    {form.studentIdCard ? "Uploaded" : "Missing"}
-                  </span>
-                </div>
-
-                <label className={`mt-3 flex flex-col items-center justify-center gap-2 cursor-pointer rounded-xl border-2 border-dashed px-4 py-7 text-center transition ${
-                  isDark ? "border-slate-600 hover:border-blue-500" : "border-gray-300 hover:border-blue-400"
-                }`}>
-                  {studentIdUploading ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                  ) : (
-                    <Upload className="h-5 w-5 text-blue-600" />
-                  )}
-                  <p className={`text-sm font-medium ${textPrimary}`}>
-                    {studentIdUploading ? "Uploading Student ID..." : "Upload Student ID"}
-                  </p>
-                  <p className={`text-xs ${textSecondary}`}>Click to choose file</p>
-                  <input
-                    type="file"
-                    accept=".pdf,.png,.jpg,.jpeg"
-                    onChange={(event) => handleVerificationDocUpload(event, "student")}
-                    className="hidden"
-                  />
-                </label>
-
-                {form.studentIdCard ? (
+            {form.studentIdCard ? (
+              <div className={`flex items-center gap-3 p-4 border rounded-xl ${isDark ? "bg-green-900/20 border-green-700" : "bg-green-50 border-green-200"}`}>
+                <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium ${isDark ? "text-green-300" : "text-green-800"}`}>Student ID uploaded</p>
                   <a
                     href={form.studentIdCard}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-3 inline-flex text-xs text-blue-600 hover:underline break-all"
+                    className={`text-xs hover:underline truncate block ${isDark ? "text-green-400" : "text-green-700"}`}
                   >
-                    View uploaded Student ID
+                    {form.studentIdCard}
                   </a>
-                ) : (
-                  <p className={`mt-3 text-xs ${textSecondary}`}>No document uploaded yet.</p>
-                )}
-                {errors.studentIdCard ? <p className="mt-2 text-xs text-red-500">{errors.studentIdCard}</p> : null}
-              </div>
-
-              <div className={`rounded-xl border p-4 ${isDark ? "border-slate-700 bg-slate-900/40" : "border-gray-200 bg-white"}`}>
-                <div className="flex items-center justify-between gap-3">
-                  <p className={`text-sm font-semibold ${textPrimary}`}>National ID Card (NID)</p>
-                  <span className={`text-[11px] px-2 py-0.5 rounded-full ${form.nationalIdCard ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                    {form.nationalIdCard ? "Uploaded" : "Missing"}
-                  </span>
                 </div>
-
-                <label className={`mt-3 flex flex-col items-center justify-center gap-2 cursor-pointer rounded-xl border-2 border-dashed px-4 py-7 text-center transition ${
-                  isDark ? "border-slate-600 hover:border-blue-500" : "border-gray-300 hover:border-blue-400"
-                }`}>
-                  {nationalIdUploading ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                  ) : (
-                    <Upload className="h-5 w-5 text-blue-600" />
-                  )}
-                  <p className={`text-sm font-medium ${textPrimary}`}>
-                    {nationalIdUploading ? "Uploading National ID..." : "Upload National ID"}
-                  </p>
-                  <p className={`text-xs ${textSecondary}`}>Click to choose file</p>
-                  <input
-                    type="file"
-                    accept=".pdf,.png,.jpg,.jpeg"
-                    onChange={(event) => handleVerificationDocUpload(event, "national")}
-                    className="hidden"
-                  />
-                </label>
-
-                {form.nationalIdCard ? (
-                  <a
-                    href={form.nationalIdCard}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-3 inline-flex text-xs text-blue-600 hover:underline break-all"
-                  >
-                    View uploaded National ID
-                  </a>
-                ) : (
-                  <p className={`mt-3 text-xs ${textSecondary}`}>No document uploaded yet.</p>
-                )}
-                {errors.nationalIdCard ? <p className="mt-2 text-xs text-red-500">{errors.nationalIdCard}</p> : null}
+                <button
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev, studentIdCard: "" }))}
+                  className="p-2 rounded-lg hover:bg-red-100 text-red-400 hover:text-red-600 transition-colors flex-shrink-0"
+                  title="Remove Student ID"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
+            ) : (
+              <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${isDark ? "border-slate-600" : "border-gray-200"}`}>
+                <FileBadge className={`h-8 w-8 mx-auto mb-3 ${isDark ? "text-slate-400" : "text-gray-300"}`} />
+                <p className={`text-sm mb-3 ${isDark ? "text-slate-300" : "text-gray-500"}`}>Upload your Student ID (PDF, JPG, PNG)</p>
+                <label className="cursor-pointer">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                    {studentIdUploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    {studentIdUploading ? "Uploading..." : "Upload Student ID"}
+                  </span>
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleStudentIdUpload} className="hidden" />
+                </label>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="student-id-link" className={`text-sm font-medium ${isDark ? "text-slate-200" : "text-gray-700"}`}>Or paste Student ID link</label>
+              <input
+                id="student-id-link"
+                type="url"
+                name="studentIdCard"
+                placeholder="https://drive.google.com/..."
+                value={form.studentIdCard}
+                onChange={handleChange}
+                className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none transition ${
+                  isDark
+                    ? "border-slate-700 bg-slate-800 text-slate-100 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+                    : "border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+                }`}
+              />
             </div>
           </div>
-          )}
 
           <div className="flex justify-end">
             <button

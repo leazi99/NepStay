@@ -210,12 +210,24 @@ const JobListItem = ({ job, onSave, onUnsave, onApply, onDislike, nowTs, isDark 
 const JobDashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const resolveThemePreference = useCallback(() => {
+    if (user?.themePreference === "dark" || user?.themePreference === "light") {
+      return user.themePreference;
+    }
+
+    const activeTheme = localStorage.getItem("themePreference:active");
+    return activeTheme === "dark" ? "dark" : "light";
+  }, [user?.themePreference]);
+
+  const [themePreference, setThemePreference] = useState(resolveThemePreference);
   const [jobs, setJobs] = useState([]);
+  const [appliedJobs, setAppliedJobs] = useState([]);
+  const [isLoadingAppliedJobs, setIsLoadingAppliedJobs] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [nowTs] = useState(() => Date.now());
   const [dislikedJobIds, setDislikedJobIds] = useState([]);
-  const isDark = (user?.themePreference || "light") === "dark";
+  const isDark = themePreference === "dark";
 
   const dislikedStorageKey = `disliked_jobs_${user?._id || "guest"}`;
 
@@ -242,6 +254,20 @@ const JobDashboard = () => {
     budgetRange: "",
     sortBy: "best",
   });
+
+  useEffect(() => {
+    setThemePreference(resolveThemePreference());
+  }, [resolveThemePreference, isAuthenticated]);
+
+  useEffect(() => {
+    const syncTheme = () => setThemePreference(resolveThemePreference());
+    window.addEventListener("themePreferenceChanged", syncTheme);
+    window.addEventListener("storage", syncTheme);
+    return () => {
+      window.removeEventListener("themePreferenceChanged", syncTheme);
+      window.removeEventListener("storage", syncTheme);
+    };
+  }, [resolveThemePreference]);
 
   useEffect(() => {
     if (!isAuthenticated || !user) return;
@@ -328,6 +354,61 @@ const JobDashboard = () => {
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs]);
+
+  useEffect(() => {
+    const fetchAppliedJobs = async () => {
+      if (!isAuthenticated) {
+        setAppliedJobs([]);
+        return;
+      }
+
+      setIsLoadingAppliedJobs(true);
+      try {
+        const response = await axiosInstance.get(API_PATHS.APPLICATIONS.GET_MY_APPLICATIONS);
+        if (!response.data?.success) {
+          setAppliedJobs([]);
+          return;
+        }
+
+        const applications = Array.isArray(response.data.applications)
+          ? response.data.applications
+          : [];
+
+        setAppliedJobs(applications);
+      } catch {
+        setAppliedJobs([]);
+      } finally {
+        setIsLoadingAppliedJobs(false);
+      }
+    };
+
+    fetchAppliedJobs();
+  }, [isAuthenticated, user?._id]);
+
+  const getApplicationBadgeClasses = (status) => {
+    if (status === "Accepted") {
+      return "bg-emerald-100 text-emerald-700";
+    }
+    if (status === "Rejected") {
+      return "bg-red-100 text-red-700";
+    }
+    return "bg-amber-100 text-amber-700";
+  };
+
+  const getApplicationStatusText = (status) => {
+    if (status === "Accepted") return "Accepted";
+    if (status === "Rejected") return "Rejected";
+    return "Pending";
+  };
+
+  const formatAppliedDate = (dateValue) => {
+    if (!dateValue) return "Recently";
+    return new Date(dateValue).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
 
   const handleSave = async (jobId) => {
     if (!isAuthenticated) {
@@ -619,6 +700,81 @@ const JobDashboard = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className={`rounded-2xl border p-4 ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className={`text-sm sm:text-base font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>
+                  Applied Jobs
+                </h3>
+                {isAuthenticated ? (
+                  <span className={`text-xs sm:text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+                    {appliedJobs.length} applied
+                  </span>
+                ) : null}
+              </div>
+
+              {!isAuthenticated ? (
+                <div className={`mt-3 rounded-xl border px-3 py-3 flex items-center justify-between ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-gray-50"}`}>
+                  <p className={`text-sm ${isDark ? "text-slate-300" : "text-gray-600"}`}>
+                    Login to see jobs you have applied for.
+                  </p>
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                  >
+                    Login
+                  </button>
+                </div>
+              ) : isLoadingAppliedJobs ? (
+                <div className="mt-3 flex justify-center py-4">
+                  <div className="h-6 w-6 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
+                </div>
+              ) : appliedJobs.length === 0 ? (
+                <p className={`mt-3 text-sm ${isDark ? "text-slate-300" : "text-gray-600"}`}>
+                  You have not applied to any jobs yet.
+                </p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {appliedJobs.slice(0, 5).map((application) => {
+                    const status = getApplicationStatusText(application.status);
+                    const companyName =
+                      application.job?.company?.companyName
+                      || application.job?.company?.name
+                      || "Company";
+
+                    return (
+                      <div
+                        key={application._id}
+                        className={`rounded-xl border px-3 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-gray-50"}`}
+                      >
+                        <div>
+                          <p className={`text-sm font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>
+                            {application.job?.title || "Job not available"}
+                          </p>
+                          <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+                            {companyName} • Applied on {formatAppliedDate(application.createdAt)}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getApplicationBadgeClasses(status)}`}>
+                            {status}
+                          </span>
+                          {application.job?._id ? (
+                            <button
+                              onClick={() => navigate(`/job/${application.job._id}`)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                            >
+                              View Job
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {isLoading ? (

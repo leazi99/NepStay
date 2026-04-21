@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import {
   Briefcase,
@@ -19,27 +20,36 @@ import kaamSathiLogoMini from "../../assets/kaamsathi-logo-mini.svg";
 
 const FreelancerNavbar = ({ active = "dashboard" }) => {
   const navigate = useNavigate();
-  const { user, updateUser, logout } = useAuth();
+  const { user, isAuthenticated, updateUser, logout } = useAuth();
+  const getActiveTheme = () => {
+    const activeTheme = localStorage.getItem("themePreference:active");
+    return activeTheme === "dark" ? "dark" : "light";
+  };
+
+  const [guestTheme, setGuestTheme] = useState(getActiveTheme);
   const [isSwitchingTheme, setIsSwitchingTheme] = useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
-  const isDark = (user?.themePreference || "light") === "dark";
-  const workspaceLabel = "Freelancer Workspace";
+  const activeTheme = isAuthenticated ? (user?.themePreference || "light") : guestTheme;
+  const isDark = activeTheme === "dark";
+  const workspaceLabel = isAuthenticated ? "Freelancer Workspace" : "Browse Jobs";
 
-  const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: Briefcase, path: "/freelancer-dashboard" },
-    { id: "saved", label: "Saved Jobs", icon: Heart, path: "/saved-jobs" },
-    { id: "messages", label: "Messages", icon: MessageSquare, path: "/freelancer/messages" },
-    { id: "notifications", label: "Alerts", icon: Bell, path: "/notifications" },
-    { id: "profile", label: "Profile", icon: User, path: "/profile" },
-  ];
+  const navItems = isAuthenticated
+    ? [
+      { id: "dashboard", label: "Dashboard", icon: Briefcase, path: "/freelancer-dashboard" },
+      { id: "saved", label: "Saved Jobs", icon: Heart, path: "/saved-jobs" },
+      { id: "messages", label: "Messages", icon: MessageSquare, path: "/freelancer/messages" },
+      { id: "notifications", label: "Alerts", icon: Bell, path: "/notifications" },
+      { id: "profile", label: "Profile", icon: User, path: "/profile" },
+    ]
+    : [
+      { id: "dashboard", label: "Jobs", icon: Briefcase, path: "/freelancer-dashboard" },
+    ];
 
   const fetchBadgeCounts = async () => {
     try {
-      const [notificationResponse] = await Promise.all([
-        axiosInstance.get(API_PATHS.NOTIFICATIONS.GET_ALL),
-      ]);
+      const notificationResponse = await axiosInstance.get(API_PATHS.NOTIFICATIONS.GET_ALL);
 
       const notifications = notificationResponse.data?.success
         ? notificationResponse.data.notifications || []
@@ -65,8 +75,35 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
     return () => clearInterval(interval);
   }, [user?._id]);
 
+  useEffect(() => {
+    if (isAuthenticated) return;
+
+    const syncTheme = () => {
+      const nextTheme = getActiveTheme();
+      setGuestTheme(nextTheme);
+      document.documentElement.classList.toggle("dark", nextTheme === "dark");
+    };
+
+    syncTheme();
+    window.addEventListener("storage", syncTheme);
+    window.addEventListener("themePreferenceChanged", syncTheme);
+    return () => {
+      window.removeEventListener("storage", syncTheme);
+      window.removeEventListener("themePreferenceChanged", syncTheme);
+    };
+  }, [isAuthenticated]);
+
   const toggleTheme = async () => {
     const nextTheme = isDark ? "light" : "dark";
+
+    if (!isAuthenticated) {
+      document.documentElement.classList.toggle("dark", nextTheme === "dark");
+      localStorage.setItem("themePreference:active", nextTheme);
+      setGuestTheme(nextTheme);
+      window.dispatchEvent(new Event("themePreferenceChanged"));
+      return;
+    }
+
     setIsSwitchingTheme(true);
     try {
       const res = await axiosInstance.put(API_PATHS.USERS.UPDATE_PROFILE, {
@@ -77,12 +114,21 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
       } else {
         updateUser({ themePreference: nextTheme });
       }
+      window.dispatchEvent(new Event("themePreferenceChanged"));
     } catch {
       updateUser({ themePreference: nextTheme });
+      window.dispatchEvent(new Event("themePreferenceChanged"));
     } finally {
       setIsSwitchingTheme(false);
     }
   };
+
+  let themeIcon = <Moon className="h-4 w-4" />;
+  if (isSwitchingTheme) {
+    themeIcon = <Loader2 className="h-4 w-4 animate-spin" />;
+  } else if (isDark) {
+    themeIcon = <Sun className="h-4 w-4" />;
+  }
 
   return (
     <header className={`sticky top-0 z-30 border-b ${isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}>
@@ -116,25 +162,28 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = active === item.id;
-            const badgeCount =
-              item.id === "notifications"
-                ? unreadNotificationCount
-                : item.id === "messages"
-                  ? unreadMessageCount
-                  : 0;
+            let badgeCount = 0;
+            if (item.id === "notifications") {
+              badgeCount = unreadNotificationCount;
+            }
+            if (item.id === "messages") {
+              badgeCount = unreadMessageCount;
+            }
+            let itemClasses = "text-gray-600 hover:bg-gray-100";
+            if (!isActive && isDark) {
+              itemClasses = "text-slate-300 hover:bg-slate-800";
+            }
+            if (isActive && !isDark) {
+              itemClasses = "bg-blue-50 text-blue-700";
+            }
+            if (isActive && isDark) {
+              itemClasses = "bg-blue-900/50 text-blue-200";
+            }
             return (
               <button
                 key={item.id}
                 onClick={() => navigate(item.path)}
-                className={`inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
-                  isActive
-                    ? isDark
-                      ? "bg-blue-900/50 text-blue-200"
-                      : "bg-blue-50 text-blue-700"
-                    : isDark
-                      ? "text-slate-300 hover:bg-slate-800"
-                      : "text-gray-600 hover:bg-gray-100"
-                }`}
+                className={`inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${itemClasses}`}
               >
                 <Icon className="h-4 w-4" />
                 <span className="hidden md:inline">{item.label}</span>
@@ -161,31 +210,48 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
                 : "text-gray-700 hover:bg-gray-100"
             }`}
           >
-            {isSwitchingTheme ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : isDark ? (
-              <Sun className="h-4 w-4" />
-            ) : (
-              <Moon className="h-4 w-4" />
-            )}
+            {themeIcon}
             <span className="hidden sm:inline">{isDark ? "Light" : "Dark"}</span>
           </button>
 
-          <button
-            onClick={logout}
-            className={`inline-flex items-center gap-2 px-2.5 sm:px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
-              isDark
-                ? "text-rose-300 hover:bg-rose-900/30"
-                : "text-rose-600 hover:bg-rose-50"
-            }`}
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
+          {isAuthenticated ? (
+            <button
+              onClick={logout}
+              className={`inline-flex items-center gap-2 px-2.5 sm:px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                isDark
+                  ? "text-rose-300 hover:bg-rose-900/30"
+                  : "text-rose-600 hover:bg-rose-50"
+              }`}
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => navigate("/login")}
+                className={`inline-flex items-center gap-2 px-2.5 sm:px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  isDark ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                Login
+              </button>
+              <button
+                onClick={() => navigate("/signup")}
+                className="inline-flex items-center gap-2 px-2.5 sm:px-3 py-2 rounded-xl text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              >
+                Sign Up
+              </button>
+            </>
+          )}
         </div>
       </div>
     </header>
   );
+};
+
+FreelancerNavbar.propTypes = {
+  active: PropTypes.string,
 };
 
 export default FreelancerNavbar;

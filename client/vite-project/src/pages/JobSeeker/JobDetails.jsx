@@ -37,7 +37,17 @@ const JobDetails = () => {
   const { jobId } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated, updateUser } = useAuth();
-  const isDark = (user?.themePreference || "light") === "dark";
+  const resolveThemePreference = () => {
+    if (user?.themePreference === "dark" || user?.themePreference === "light") {
+      return user.themePreference;
+    }
+
+    const activeTheme = localStorage.getItem("themePreference:active");
+    return activeTheme === "dark" ? "dark" : "light";
+  };
+
+  const [themePreference, setThemePreference] = useState(resolveThemePreference);
+  const isDark = themePreference === "dark";
 
   const [job, setJob] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,6 +65,20 @@ const JobDetails = () => {
   const [coverLetter, setCoverLetter] = useState("");
   const [proposedAmount, setProposedAmount] = useState("");
   const [submittingProposal, setSubmittingProposal] = useState(false);
+
+  useEffect(() => {
+    setThemePreference(resolveThemePreference());
+  }, [user?.themePreference]);
+
+  useEffect(() => {
+    const syncTheme = () => setThemePreference(resolveThemePreference());
+    window.addEventListener("themePreferenceChanged", syncTheme);
+    window.addEventListener("storage", syncTheme);
+    return () => {
+      window.removeEventListener("themePreferenceChanged", syncTheme);
+      window.removeEventListener("storage", syncTheme);
+    };
+  }, [user?.themePreference]);
 
   useEffect(() => {
     const fetchJob = async () => {

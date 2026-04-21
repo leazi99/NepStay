@@ -55,10 +55,10 @@ const App = () => {
         <Route path='/verifyEmail' element={<VerifyEmail />} />
         <Route path='/verifyemail' element={<VerifyEmail />} />
         <Route path='/find-jobs' element={<Navigate to='/freelancer-dashboard' replace />} />
+        <Route path='/freelancer-dashboard' element={<JobDashboard />} />
+        <Route path='/job/:jobId' element={<JobDetails />} />
 
         <Route element={<ProtectedRoutes requiredRole="jobseeker" />}>
-          <Route path='/freelancer-dashboard' element={<JobDashboard />} />
-          <Route path='/job/:jobId' element={<JobDetails />} />
           <Route path='/saved-jobs' element={<SavedJobs />} />
           <Route path='/my-proposals' element={<MyProposals />} />
           <Route path='/client-reviews' element={<Reviews />} />

@@ -435,7 +435,7 @@ const EmployerProfile = () => {
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <InputField
-                    label="Your Name *"
+                    label="Your Name"
                     name="name"
                     placeholder="John Doe"
                     value={form.name}
@@ -462,9 +462,9 @@ const EmployerProfile = () => {
                 </h2>
                 <div className="space-y-4">
                   <InputField
-                    label="Company Name *"
+                    label="Company Name"
                     name="companyName"
-                    placeholder="Acme Corp"
+                    placeholder="Your company name"
                     value={form.companyName}
                     onChange={handleChange}
                     error={errors.companyName}
@@ -485,7 +485,6 @@ const EmployerProfile = () => {
                     value={form.companyWebsite}
                     onChange={handleChange}
                     error={errors.companyWebsite}
-                    hint="Optional: job seekers can use this link from your job posts"
                   />
                 </div>
               </div>

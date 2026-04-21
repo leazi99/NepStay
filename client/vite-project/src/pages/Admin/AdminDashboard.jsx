@@ -6,7 +6,6 @@ import {
   Trash2,
   BarChart3,
   Loader2,
-  RefreshCw,
   ShieldCheck,
   CircleDollarSign,
   Search,
@@ -45,6 +44,49 @@ const MetricCard = ({ title, value, icon: Icon, isDark }) => (
   </div>
 );
 
+const PaginationControls = ({ currentPage, totalPages, onPageChange, isDark }) => {
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="mt-4 flex items-center justify-between gap-3">
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage <= 1}
+        className={`px-3 py-1.5 rounded-lg text-xs font-medium border disabled:opacity-50 ${
+          isDark
+            ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
+            : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"
+        }`}
+      >
+        Previous
+      </button>
+
+      <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+        Page {currentPage} of {totalPages}
+      </p>
+
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage >= totalPages}
+        className={`px-3 py-1.5 rounded-lg text-xs font-medium border disabled:opacity-50 ${
+          isDark
+            ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
+            : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"
+        }`}
+      >
+        Next
+      </button>
+    </div>
+  );
+};
+
+const PAGE_SIZE = {
+  users: 9,
+  jobs: 10,
+  payments: 10,
+  reportsTrend: 6,
+};
+
 const AdminDashboard = () => {
   const { logout, user } = useAuth();
   const isDark = (user?.themePreference || "light") === "dark";
@@ -66,6 +108,10 @@ const AdminDashboard = () => {
   const [jobStatusFilter, setJobStatusFilter] = useState("all");
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
+  const [usersPage, setUsersPage] = useState(1);
+  const [jobsPage, setJobsPage] = useState(1);
+  const [paymentsPage, setPaymentsPage] = useState(1);
+  const [reportsTrendPage, setReportsTrendPage] = useState(1);
   const [activityLogs, setActivityLogs] = useState([]);
   const [suspensionDaysInput, setSuspensionDaysInput] = useState({});
   const [suspensionReasonInput, setSuspensionReasonInput] = useState({});
@@ -149,6 +195,18 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchAdminData();
   }, [fetchAdminData]);
+
+  useEffect(() => {
+    setUsersPage(1);
+  }, [userSearch, userRoleFilter]);
+
+  useEffect(() => {
+    setJobsPage(1);
+  }, [jobSearch, jobStatusFilter]);
+
+  useEffect(() => {
+    setPaymentsPage(1);
+  }, [paymentSearch, paymentStatusFilter]);
 
   const updateUserField = async (userId, payload) => {
     setUpdatingUserId(userId);
@@ -309,6 +367,52 @@ const AdminDashboard = () => {
     };
   }, [users, payments, jobs]);
 
+  const monthlyTrend = useMemo(
+    () => (Array.isArray(reports?.monthlyTrend) ? reports.monthlyTrend : []),
+    [reports?.monthlyTrend],
+  );
+
+  const usersTotalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE.users));
+  const jobsTotalPages = Math.max(1, Math.ceil(jobs.length / PAGE_SIZE.jobs));
+  const paymentsTotalPages = Math.max(1, Math.ceil(payments.length / PAGE_SIZE.payments));
+  const reportsTrendTotalPages = Math.max(1, Math.ceil(monthlyTrend.length / PAGE_SIZE.reportsTrend));
+
+  useEffect(() => {
+    setUsersPage((prev) => Math.min(prev, usersTotalPages));
+  }, [usersTotalPages]);
+
+  useEffect(() => {
+    setJobsPage((prev) => Math.min(prev, jobsTotalPages));
+  }, [jobsTotalPages]);
+
+  useEffect(() => {
+    setPaymentsPage((prev) => Math.min(prev, paymentsTotalPages));
+  }, [paymentsTotalPages]);
+
+  useEffect(() => {
+    setReportsTrendPage((prev) => Math.min(prev, reportsTrendTotalPages));
+  }, [reportsTrendTotalPages]);
+
+  const paginatedUsers = useMemo(() => {
+    const start = (usersPage - 1) * PAGE_SIZE.users;
+    return users.slice(start, start + PAGE_SIZE.users);
+  }, [users, usersPage]);
+
+  const paginatedJobs = useMemo(() => {
+    const start = (jobsPage - 1) * PAGE_SIZE.jobs;
+    return jobs.slice(start, start + PAGE_SIZE.jobs);
+  }, [jobs, jobsPage]);
+
+  const paginatedPayments = useMemo(() => {
+    const start = (paymentsPage - 1) * PAGE_SIZE.payments;
+    return payments.slice(start, start + PAGE_SIZE.payments);
+  }, [payments, paymentsPage]);
+
+  const paginatedMonthlyTrend = useMemo(() => {
+    const start = (reportsTrendPage - 1) * PAGE_SIZE.reportsTrend;
+    return monthlyTrend.slice(start, start + PAGE_SIZE.reportsTrend);
+  }, [monthlyTrend, reportsTrendPage]);
+
   const getSuspensionStatus = (suspensionEndsAt) => {
     if (!suspensionEndsAt) {
       return {
@@ -383,17 +487,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={fetchAdminData}
-              className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                isDark
-                  ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
-                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </button>
+            
             <button
               onClick={logout}
               className="px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm font-medium"
@@ -642,8 +736,9 @@ const AdminDashboard = () => {
                   No users match the current filters.
                 </div>
               ) : (
+                <>
                 <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {users.map((item) => {
+                  {paginatedUsers.map((item) => {
                     const suspensionStatus = getSuspensionStatus(item.suspensionEndsAt);
                     const isSelf = String(item._id) === String(user?._id || "");
                     const customDaysValue = suspensionDaysInput[item._id] || "";
@@ -820,6 +915,15 @@ const AdminDashboard = () => {
                     );
                   })}
                 </div>
+                <div className="px-4 pb-4">
+                  <PaginationControls
+                    currentPage={usersPage}
+                    totalPages={usersTotalPages}
+                    onPageChange={setUsersPage}
+                    isDark={isDark}
+                  />
+                </div>
+                </>
               )}
             </div>
           ) : activeTab === "jobs" ? (
@@ -854,6 +958,7 @@ const AdminDashboard = () => {
                   No jobs match the current filters.
                 </div>
               ) : (
+                <>
                 <div className="max-h-[68vh] overflow-auto">
                   <table className="w-full min-w-[980px] text-sm">
                     <thead className={`${isDark ? "bg-slate-800" : "bg-gray-50"} sticky top-0 z-[1]`}>
@@ -867,7 +972,7 @@ const AdminDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {jobs.map((item, index) => (
+                      {paginatedJobs.map((item, index) => (
                         <tr
                           key={item._id}
                           className={`border-t align-top ${
@@ -922,6 +1027,15 @@ const AdminDashboard = () => {
                     </tbody>
                   </table>
                 </div>
+                <div className="px-4 pb-4">
+                  <PaginationControls
+                    currentPage={jobsPage}
+                    totalPages={jobsTotalPages}
+                    onPageChange={setJobsPage}
+                    isDark={isDark}
+                  />
+                </div>
+                </>
               )}
             </div>
           ) : activeTab === "reports" ? (
@@ -1008,7 +1122,7 @@ const AdminDashboard = () => {
                 <div className={`px-4 py-3 border-b ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-gray-50"}`}>
                   <h3 className={`text-sm font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Monthly Trend (Last 6 Months)</h3>
                 </div>
-                {Array.isArray(reports?.monthlyTrend) && reports.monthlyTrend.length > 0 ? (
+                {monthlyTrend.length > 0 ? (
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[720px] text-sm">
                       <thead className={`${isDark ? "bg-slate-800" : "bg-gray-50"}`}>
@@ -1020,7 +1134,7 @@ const AdminDashboard = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {reports.monthlyTrend.map((item, index) => (
+                        {paginatedMonthlyTrend.map((item, index) => (
                           <tr
                             key={`${item.key}-${index}`}
                             className={`border-t ${
@@ -1041,6 +1155,14 @@ const AdminDashboard = () => {
                     No monthly trend data available.
                   </div>
                 )}
+                <div className="px-4 pb-4">
+                  <PaginationControls
+                    currentPage={reportsTrendPage}
+                    totalPages={reportsTrendTotalPages}
+                    onPageChange={setReportsTrendPage}
+                    isDark={isDark}
+                  />
+                </div>
               </div>
             </div>
           ) : (
@@ -1076,6 +1198,7 @@ const AdminDashboard = () => {
                   No payments match the current filters.
                 </div>
               ) : (
+                <>
                 <div className="max-h-[68vh] overflow-auto">
                 <table className="w-full min-w-[980px] text-sm">
                   <thead className={`${isDark ? "bg-slate-800" : "bg-gray-50"} sticky top-0 z-[1]`}>
@@ -1088,7 +1211,7 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {payments.map((item, index) => (
+                    {paginatedPayments.map((item, index) => (
                       <tr
                         key={item._id}
                         className={`border-t align-top ${
@@ -1126,6 +1249,15 @@ const AdminDashboard = () => {
                   </tbody>
                 </table>
                 </div>
+                <div className="px-4 pb-4">
+                  <PaginationControls
+                    currentPage={paymentsPage}
+                    totalPages={paymentsTotalPages}
+                    onPageChange={setPaymentsPage}
+                    isDark={isDark}
+                  />
+                </div>
+                </>
               )}
             </div>
           )}
