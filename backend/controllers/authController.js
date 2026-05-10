@@ -430,7 +430,7 @@ export const getSession = async (req, res) => {
     const user = await userModel
       .findById(req.user.id)
       .select(
-        "_id name email role isVerified avatar companyName companyDescription companyLogo companyWebsite resume studentIdCard nationalIdCard identityVerificationStatus linkedinUrl bio interests latestEducation specialization themePreference",
+        "_id name email role isVerified avatar companyName companyDescription companyLogo companyWebsite resume studentIdCard  identityVerificationStatus linkedinUrl bio interests latestEducation specialization themePreference",
       );
 
     if (!user) {
