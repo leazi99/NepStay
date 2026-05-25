@@ -1,4 +1,5 @@
-export const BASE_URL = "http://localhost:4000";
+export const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:4001";
 
 export const API_PATHS = {
   AUTH: {
@@ -27,6 +28,31 @@ export const API_PATHS = {
     SAVE_JOB: (id) => `/api/save-jobs/save/${id}`,
     UNSAVE_JOB: (id) => `/api/save-jobs/unsave/${id}`,
     GET_SAVED_JOBS: "/api/save-jobs",
+  },
+
+  HOTELS: {
+    GET_ALL: "/api/hotels",
+    GET_BY_ID: (id) => `/api/hotels/${id}`,
+    CREATE: "/api/hotels",
+    UPDATE: (id) => `/api/hotels/${id}`,
+    DELETE: (id) => `/api/hotels/${id}`,
+    GET_FEATURED: "/api/hotels/featured",
+  },
+
+  ROOMS: {
+    GET_BY_ID: (id) => `/api/rooms/${id}`,
+    CREATE: "/api/rooms",
+    UPDATE: (id) => `/api/rooms/${id}`,
+    DELETE: (id) => `/api/rooms/${id}`,
+    GET_BY_HOTEL: (hotelId) => `/api/rooms/hotel/${hotelId}`,
+  },
+
+  BOOKINGS: {
+    CREATE: "/api/bookings",
+    GET_MINE: "/api/bookings/mine",
+    GET_BY_ID: (id) => `/api/bookings/${id}`,
+    GET_FOR_ROOM: (roomId) => `/api/bookings/room/${roomId}`,
+    UPDATE_STATUS: (id) => `/api/bookings/${id}`,
   },
 
   APPLICATIONS: {

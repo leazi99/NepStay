@@ -1,5 +1,6 @@
 import React from 'react'
 import { ChevronDown } from 'lucide-react'
+import PropTypes from 'prop-types'
 import { useNavigate } from 'react-router-dom'
 
 const ProfileDropdown = ({
@@ -37,7 +38,7 @@ const ProfileDropdown = ({
       <div className='hidden sm:block text-left'>
         <p className={`text-sm font-medium ${isDark ? "text-slate-100" : "text-gray-900"}`}>{displayName}</p>
         <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>
-          {role === 'employer' || role === 'client' ? 'Employer' : 'Freelancer'}
+          {role === 'hotelstaff' ? 'Hotel Staff' : 'Guest'}
         </p>
       </div>
       <ChevronDown className={`h-4 w-4 ${isDark ? "text-slate-400" : "text-gray-400"}`} />
@@ -50,15 +51,21 @@ const ProfileDropdown = ({
           </p>
           <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>{displayEmail}</p>
         </div>
-        <a
-          onClick={() => navigate(role === 'jobseeker' || role === 'freelancer' ? '/profile' : '/company-profile')}
-          className={`block px-4 py-2 text-sm transition-colors ${isDark ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-50"}`}>
-          View Profile</a>
+        <button
+          type="button"
+          onClick={() => navigate(role === 'customer' ? '/profile' : '/hotel-profile')}
+          className={`block w-full text-left px-4 py-2 text-sm transition-colors ${isDark ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-50"}`}>
+          View Profile
+        </button>
 
         <div className={`border-t mt-2 pt-2 ${isDark ? "border-slate-700" : "border-gray-100"}`}>
-          <a href="#"
-            onClick={(e) => { e.preventDefault(); onLogout(); }}
-            className='block px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors'>Sign Out</a>
+          <button
+            type="button"
+            onClick={onLogout}
+            className='block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors'
+          >
+            Sign Out
+          </button>
         </div>
       </div>
     )}
@@ -66,3 +73,14 @@ const ProfileDropdown = ({
 }
 
 export default ProfileDropdown
+
+ProfileDropdown.propTypes = {
+  isOpen: PropTypes.bool,
+  onToggle: PropTypes.func.isRequired,
+  avatar: PropTypes.string,
+  companyName: PropTypes.string,
+  email: PropTypes.string,
+  role: PropTypes.string,
+  isDark: PropTypes.bool,
+  onLogout: PropTypes.func.isRequired,
+};

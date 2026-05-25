@@ -293,7 +293,7 @@ const AdminDashboard = () => {
 
   const deleteUser = async (userId, name) => {
     const confirmed = window.confirm(
-      `Delete user ${name}? This action removes related jobs, applications, proposals, payments, reviews, chats and notifications.`,
+      `Delete user ${name}? This action removes related rooms, reservations, booking requests, payments, reviews, chats and notifications.`,
     );
 
     if (!confirmed) return;
@@ -320,7 +320,7 @@ const AdminDashboard = () => {
 
   const deleteJob = async (jobId, title) => {
     const confirmed = globalThis.confirm(
-      `Delete job ${title}? This action removes related proposals, applications, payments, reviews and saved jobs.`,
+      `Delete room ${title}? This action removes related booking requests, reservations, payments, reviews and saved rooms.`,
     );
 
     if (!confirmed) return;
@@ -330,16 +330,16 @@ const AdminDashboard = () => {
       const response = await axiosInstance.delete(API_PATHS.ADMIN.DELETE_JOB(jobId));
 
       if (!response.data.success) {
-        toast.error(response.data.message || "Failed to delete job");
+        toast.error(response.data.message || "Failed to delete room");
         return;
       }
 
       setJobs((prev) => prev.filter((item) => item._id !== jobId));
-      pushActivity(`Deleted job ${title}`);
-      toast.success("Job deleted");
+      pushActivity(`Deleted room ${title}`);
+      toast.success("Room deleted");
       await fetchAdminData();
     } catch {
-      toast.error("Failed to delete job");
+      toast.error("Failed to delete room");
     } finally {
       setDeletingJobId("");
     }
@@ -482,7 +482,7 @@ const AdminDashboard = () => {
           <div>
             <h1 className={`text-2xl font-bold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Admin Dashboard</h1>
             <p className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}>
-              Manage users, jobs, payments, and system reports.
+              Manage users, rooms, payments, and system reports.
             </p>
           </div>
 
@@ -502,7 +502,7 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <MetricCard title="Total Users" value={overview?.totalUsers} icon={Users} isDark={isDark} />
           <MetricCard
-            title="Total Jobs"
+            title="Total Rooms"
             value={reports?.jobs?.total ?? jobs.length}
             icon={Briefcase}
             isDark={isDark}
@@ -526,13 +526,13 @@ const AdminDashboard = () => {
             <p className={`text-xs uppercase tracking-wide ${isDark ? "text-slate-400" : "text-gray-500"}`}>Users split</p>
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div className={`rounded-xl p-3 ${isDark ? "bg-slate-800" : "bg-gray-50"}`}>
-                <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Jobseekers</p>
+                <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Guests</p>
                 <p className={`text-lg font-semibold mt-1 ${isDark ? "text-slate-100" : "text-gray-900"}`}>
                   {Number(overview?.totalJobseekers || 0).toLocaleString()}
                 </p>
               </div>
               <div className={`rounded-xl p-3 ${isDark ? "bg-slate-800" : "bg-gray-50"}`}>
-                <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Employers</p>
+                <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Hotel Staff</p>
                 <p className={`text-lg font-semibold mt-1 ${isDark ? "text-slate-100" : "text-gray-900"}`}>
                   {Number(overview?.totalEmployers || 0).toLocaleString()}
                 </p>
@@ -547,13 +547,13 @@ const AdminDashboard = () => {
             </p>
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div className={`rounded-xl p-3 ${isDark ? "bg-slate-800" : "bg-gray-50"}`}>
-                <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Open Jobs</p>
+                <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Available Rooms</p>
                 <p className={`text-lg font-semibold mt-1 ${isDark ? "text-slate-100" : "text-gray-900"}`}>
                   {Number(reports?.jobs?.open ?? derivedStats.openJobs).toLocaleString()}
                 </p>
               </div>
               <div className={`rounded-xl p-3 ${isDark ? "bg-slate-800" : "bg-gray-50"}`}>
-                <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Closed Jobs</p>
+                <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Unavailable Rooms</p>
                 <p className={`text-lg font-semibold mt-1 ${isDark ? "text-slate-100" : "text-gray-900"}`}>
                   {Number(reports?.jobs?.closed ?? derivedStats.closedJobs).toLocaleString()}
                 </p>
@@ -675,7 +675,7 @@ const AdminDashboard = () => {
               }`}
             >
               <Briefcase className="h-4 w-4" />
-              Jobs
+              Rooms
               <span
                 className={`px-1.5 py-0.5 rounded text-xs ${
                   activeTab === "jobs"
@@ -721,8 +721,8 @@ const AdminDashboard = () => {
                   className={`px-3 py-2 rounded-lg border text-sm ${isDark ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-200 bg-white text-gray-900"}`}
                 >
                   <option value="all">All roles</option>
-                  <option value="jobseeker">Jobseeker</option>
-                  <option value="employer">Employer</option>
+                  <option value="jobseeker">Guest</option>
+                  <option value="employer">Hotel Staff</option>
                   <option value="admin">Admin</option>
                 </select>
                 <span className={`ml-auto text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>
@@ -782,8 +782,8 @@ const AdminDashboard = () => {
                             onChange={(event) => updateUserField(item._id, { role: event.target.value })}
                             className={`px-2.5 py-2 rounded-lg border text-sm ${isDark ? "border-slate-700 bg-slate-800 text-slate-100" : "border-gray-200 bg-white text-gray-900"}`}
                           >
-                            <option value="jobseeker">Jobseeker</option>
-                            <option value="employer">Employer</option>
+                            <option value="jobseeker">Guest</option>
+                            <option value="employer">Hotel Staff</option>
                             <option value="admin">Admin</option>
                           </select>
 
@@ -934,7 +934,7 @@ const AdminDashboard = () => {
                   <input
                     value={jobSearch}
                     onChange={(event) => setJobSearch(event.target.value)}
-                    placeholder="Search jobs by title, category or description"
+                    placeholder="Search rooms by name, category or description"
                     className={`pl-9 pr-3 py-2 rounded-lg border text-sm w-full ${isDark ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-200 bg-white text-gray-900"}`}
                   />
                 </div>
@@ -943,7 +943,7 @@ const AdminDashboard = () => {
                   onChange={(event) => setJobStatusFilter(event.target.value)}
                   className={`px-3 py-2 rounded-lg border text-sm ${isDark ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-200 bg-white text-gray-900"}`}
                 >
-                  <option value="all">All jobs</option>
+                  <option value="all">All rooms</option>
                   <option value="open">Open</option>
                   <option value="closed">Closed</option>
                 </select>
@@ -955,7 +955,7 @@ const AdminDashboard = () => {
               {jobs.length === 0 ? (
                 <div className={`px-4 py-12 text-center ${isDark ? "text-slate-400" : "text-gray-500"}`}>
                   <Activity className="h-5 w-5 mx-auto mb-2" />
-                  No jobs match the current filters.
+                  No rooms match the current filters.
                 </div>
               ) : (
                 <>
@@ -963,10 +963,10 @@ const AdminDashboard = () => {
                   <table className="w-full min-w-[980px] text-sm">
                     <thead className={`${isDark ? "bg-slate-800" : "bg-gray-50"} sticky top-0 z-[1]`}>
                       <tr>
-                        <th className="w-[280px] text-left px-4 py-3 text-gray-500 font-semibold">Job</th>
-                        <th className="w-[220px] text-left px-4 py-3 text-gray-500 font-semibold">Company</th>
+                        <th className="w-[280px] text-left px-4 py-3 text-gray-500 font-semibold">Room</th>
+                        <th className="w-[220px] text-left px-4 py-3 text-gray-500 font-semibold">Hotel</th>
                         <th className="w-[160px] text-left px-4 py-3 text-gray-500 font-semibold">Category</th>
-                        <th className="w-[160px] text-left px-4 py-3 text-gray-500 font-semibold">Salary Range</th>
+                        <th className="w-[160px] text-left px-4 py-3 text-gray-500 font-semibold">Price Range</th>
                         <th className="w-[140px] text-left px-4 py-3 text-gray-500 font-semibold">Status</th>
                         <th className="w-[140px] text-left px-4 py-3 text-gray-500 font-semibold">Action</th>
                       </tr>
@@ -995,7 +995,7 @@ const AdminDashboard = () => {
                             {item.category || "—"}
                           </td>
                           <td className={`px-4 py-3.5 ${isDark ? "text-slate-100" : "text-gray-900"}`}>
-                            NPR {Number(item.salaryMin || 0).toLocaleString()} - {Number(item.salaryMax || 0).toLocaleString()}
+                            NPR {Number(item.salaryMin || 0).toLocaleString()} - {Number(item.salaryMax || 0).toLocaleString()} / night
                           </td>
                           <td className="px-4 py-3.5">
                             <span
@@ -1014,7 +1014,7 @@ const AdminDashboard = () => {
                           </td>
                           <td className="px-4 py-3.5">
                             <button
-                              onClick={() => deleteJob(item._id, item.title || "this job")}
+                              onClick={() => deleteJob(item._id, item.title || "this room")}
                               disabled={deletingJobId === item._id}
                               className="px-2.5 py-1.5 rounded bg-rose-600 text-white text-xs font-medium hover:bg-rose-700 disabled:opacity-50 inline-flex items-center gap-1"
                             >
@@ -1042,7 +1042,7 @@ const AdminDashboard = () => {
             <div className="p-4 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
                 <div className={`rounded-xl border p-3 ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-gray-50"}`}>
-                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Applications</p>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Reservations</p>
                   <p className={`mt-1 text-xl font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>
                     {Number(reports?.applications?.total || 0).toLocaleString()}
                   </p>
@@ -1051,7 +1051,7 @@ const AdminDashboard = () => {
                   </p>
                 </div>
                 <div className={`rounded-xl border p-3 ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-gray-50"}`}>
-                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Proposals</p>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Booking Requests</p>
                   <p className={`mt-1 text-xl font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>
                     {Number(reports?.proposals?.total || 0).toLocaleString()}
                   </p>
@@ -1078,7 +1078,7 @@ const AdminDashboard = () => {
                   </p>
                 </div>
                 <div className={`rounded-xl border p-3 ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-gray-50"}`}>
-                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Jobs</p>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Rooms</p>
                   <p className={`mt-1 text-xl font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>
                     {Number(reports?.jobs?.total || 0).toLocaleString()}
                   </p>
@@ -1099,7 +1099,7 @@ const AdminDashboard = () => {
                   </p>
                 </div>
                 <div className={`rounded-xl border p-4 ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-white"}`}>
-                  <p className={`text-sm font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Job Growth</p>
+                  <p className={`text-sm font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Room Listing Growth</p>
                   <p className={`mt-2 text-sm ${isDark ? "text-slate-300" : "text-gray-700"}`}>
                     This month: <span className="font-semibold">{Number(reports?.growth?.jobs?.thisMonth || 0).toLocaleString()}</span>
                   </p>
@@ -1129,7 +1129,7 @@ const AdminDashboard = () => {
                         <tr>
                           <th className="text-left px-4 py-3 text-gray-500 font-semibold">Month</th>
                           <th className="text-left px-4 py-3 text-gray-500 font-semibold">New Users</th>
-                          <th className="text-left px-4 py-3 text-gray-500 font-semibold">New Jobs</th>
+                          <th className="text-left px-4 py-3 text-gray-500 font-semibold">New Rooms</th>
                           <th className="text-left px-4 py-3 text-gray-500 font-semibold">Completed Payments</th>
                         </tr>
                       </thead>
@@ -1173,7 +1173,7 @@ const AdminDashboard = () => {
                   <input
                     value={paymentSearch}
                     onChange={(event) => setPaymentSearch(event.target.value)}
-                    placeholder="Search payments by job, employer, freelancer"
+                    placeholder="Search payments by room, hotel, guest"
                     className={`pl-9 pr-3 py-2 rounded-lg border text-sm w-full ${isDark ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-200 bg-white text-gray-900"}`}
                   />
                 </div>
@@ -1203,9 +1203,9 @@ const AdminDashboard = () => {
                 <table className="w-full min-w-[980px] text-sm">
                   <thead className={`${isDark ? "bg-slate-800" : "bg-gray-50"} sticky top-0 z-[1]`}>
                     <tr>
-                      <th className="w-[280px] text-left px-4 py-3 text-gray-500 font-semibold">Job</th>
-                      <th className="w-[200px] text-left px-4 py-3 text-gray-500 font-semibold">Employer</th>
-                      <th className="w-[200px] text-left px-4 py-3 text-gray-500 font-semibold">Freelancer</th>
+                      <th className="w-[280px] text-left px-4 py-3 text-gray-500 font-semibold">Room</th>
+                      <th className="w-[200px] text-left px-4 py-3 text-gray-500 font-semibold">Hotel</th>
+                      <th className="w-[200px] text-left px-4 py-3 text-gray-500 font-semibold">Guest</th>
                       <th className="w-[140px] text-left px-4 py-3 text-gray-500 font-semibold">Amount</th>
                       <th className="w-[160px] text-left px-4 py-3 text-gray-500 font-semibold">Status</th>
                     </tr>

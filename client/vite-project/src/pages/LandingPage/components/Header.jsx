@@ -1,5 +1,5 @@
 import React from 'react'
-import { Briefcase } from 'lucide-react';
+import { Hotel } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 
@@ -20,13 +20,13 @@ const Header = () => {
           <div className='flex items-center justify-between h-16'>
             <div className='flex items-center space-x-3'>
               <div className='w-8 h-8 bg-gradient-to-r from-orange-600 to-orange-600 rounded-lg flex items-center justify-center'>
-                <Briefcase className='w-5 h-5 text-white' />
+                <Hotel className='w-5 h-5 text-white' />
               </div>
-              <span className='text-xl font-bold text-gray-900'>KaamSathi</span>
+              <span className='text-xl font-bold text-gray-900'>Nepstay</span>
             </div>
             <nav className='hidden md:flex items-center space-x-8'>
-              <button onClick={() => navigate('/freelancer-dashboard')} className='text-gray-600 hover:text-gray-900 transition-colors font-medium'>Find Jobs</button>
-              <button onClick={() => navigate(isAuthenticated && user?.role === "employer" ? "/employer-dashboard" : "/login")} className='text-gray-600 hover:text-gray-900 transition-colors font-medium'>For Employer</button>
+              <button onClick={() => navigate('/hotels')} className='text-gray-600 hover:text-gray-900 transition-colors font-medium'>Book Rooms</button>
+              <button onClick={() => navigate(isAuthenticated && user?.role === "hotelstaff" ? "/hotel-staff-dashboard" : "/login")} className='text-gray-600 hover:text-gray-900 transition-colors font-medium'>For Hotel Staff</button>
               <a href='#about-us' onClick={scrollToAbout} className='text-gray-600 hover:text-gray-900 transition-colors font-medium'>About Us</a>
             </nav>
 
@@ -35,7 +35,7 @@ const Header = () => {
                 <div className='flex items-center space-x-3'>
                   <span className=''>Welcome, {user?.name || user?.fullName}</span>
                   <a
-                    href={user?.role === 'employer' ? "/employer-dashboard" : "/freelancer-dashboard"}
+                    href={user?.role === 'hotelstaff' ? "/hotel-staff-dashboard" : "/guest-dashboard"}
                     className='font-medium hover:from-orange-700 hover:to-orange-700 transition-all duration-300 shadow-sm hover:shadow-md rounded-lg px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-600 text-white'
                   >
                     Dashboard

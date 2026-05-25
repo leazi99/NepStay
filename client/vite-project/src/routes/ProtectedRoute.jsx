@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoutes = ({ requiredRole }) => {
@@ -13,9 +14,9 @@ const ProtectedRoutes = ({ requiredRole }) => {
       .replace(/[_-]+/g, " ")
       .replace(/\s+/g, " ");
 
-    if (["client", "employer"].includes(value)) return "employer";
-    if (["freelancer", "jobseeker", "job seeker"].includes(value)) {
-      return "jobseeker";
+    if (["client", "employer", "staff"].includes(value)) return "hotelstaff";
+    if (["freelancer", "jobseeker", "job seeker", "guest"].includes(value)) {
+      return "customer";
     }
     if (value === "admin") return "admin";
     return value;
@@ -38,14 +39,14 @@ const ProtectedRoutes = ({ requiredRole }) => {
   }
 
   if (neededRole && userRole !== neededRole) {
-    const fallbackPath =
-      userRole === "admin"
-        ? "/admin-dashboard"
-        : userRole === "employer"
-          ? "/employer-dashboard"
-          : userRole === "jobseeker"
-            ? "/freelancer-dashboard"
-            : "/login";
+    let fallbackPath = "/login";
+    if (userRole === "admin") {
+      fallbackPath = "/admin-dashboard";
+    } else if (userRole === "hotelstaff") {
+      fallbackPath = "/hotel-staff-dashboard";
+    } else if (userRole === "customer") {
+      fallbackPath = "/guest-dashboard";
+    }
 
     if (fallbackPath === location.pathname) {
       return <Navigate to="/login" replace />;
@@ -55,6 +56,10 @@ const ProtectedRoutes = ({ requiredRole }) => {
   }
 
   return <Outlet />;
+};
+
+ProtectedRoutes.propTypes = {
+  requiredRole: PropTypes.string,
 };
 
 export default ProtectedRoutes;

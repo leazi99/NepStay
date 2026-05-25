@@ -39,13 +39,13 @@ const Login = () => {
       .replace(/[_-]+/g, ' ')
       .replace(/\s+/g, ' ');
 
-    if (['client', 'employer'].includes(value)) return 'employer';
-    if (['freelancer', 'jobseeker', 'job seeker'].includes(value)) return 'jobseeker';
+    if (['client', 'employer', 'staff', 'vendor'].includes(value)) return 'hotelstaff';
+    if (['freelancer', 'jobseeker', 'job seeker', 'guest'].includes(value)) return 'customer';
     if (value === 'admin') return 'admin';
     return value;
   };
 
-  const isJobseekerOnboardingComplete = (userData) =>
+  const isGuestProfileComplete = (userData) =>
     Boolean(String(userData?.latestEducation || '').trim())
     && Boolean(String(userData?.specialization || '').trim());
 
@@ -109,23 +109,27 @@ const Login = () => {
       let nextPath = '/welcome';
       if (role === 'admin') {
         nextPath = '/admin-dashboard';
-      } else if (role === 'employer') {
-        nextPath = '/employer-dashboard';
-      } else if (role === 'jobseeker' && isJobseekerOnboardingComplete(data.user)) {
-        nextPath = '/freelancer-dashboard';
+      } else if (role === 'hotelstaff') {
+        nextPath = '/hotel-staff-dashboard';
+      } else if (role === 'customer' && isGuestProfileComplete(data.user)) {
+        nextPath = '/guest-dashboard';
       }
 
       setTimeout(() => {
         navigate(nextPath);
       }, 1500);
     } catch (error) {
+      const networkError =
+        !error.response && (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED');
       setFormState((prev) => ({
         ...prev,
         loading: false,
         errors: {
           submit:
             error.response?.data?.message ||
-            'Login failed. Please check your credentials.',
+            (networkError
+              ? 'Unable to reach server. Please ensure backend is running.'
+              : 'Login failed. Please check your credentials.'),
         },
       }));
     }

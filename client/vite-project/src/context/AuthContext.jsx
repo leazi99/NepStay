@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect, useRef } from "react";
-import axiosInstance from "../utils/axiosInstance";
-import { clearStoredAuthToken, storeAuthToken } from "../utils/axiosInstance";
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from "react";
+import PropTypes from "prop-types";
+import axiosInstance, { clearStoredAuthToken, storeAuthToken } from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPaths";
 
 const AuthContext = createContext();
@@ -15,9 +15,9 @@ const normalizeRole = (role) => {
     .replace(/[_-]+/g, " ")
     .replace(/\s+/g, " ");
 
-  if (["client", "employer"].includes(value)) return "employer";
-  if (["freelancer", "jobseeker", "job seeker"].includes(value)) {
-    return "jobseeker";
+  if (["client", "employer", "staff", "vendor"].includes(value)) return "hotelstaff";
+  if (["freelancer", "jobseeker", "job seeker", "guest"].includes(value)) {
+    return "customer";
   }
   if (value === "admin") return "admin";
   return value;
@@ -120,7 +120,7 @@ export const AuthProvider = ({ children }) => {
     document.documentElement.classList.remove("dark");
 
     if (redirect) {
-      window.location.href = "/";
+        globalThis.location.href = "/";
     }
   };
 
@@ -152,24 +152,33 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user, user?.themePreference, user?.email, user?.role]);
 
+  const performAuthCheck = async () => {
+    try {
+      const sessionOk = await fetchSession();
+      if (sessionOk) {
+        return true;
+      }
+
+      const { data } = await axiosInstance.post(API_PATHS.AUTH.IS_AUTHENTICATED);
+      if (data?.success && data?.user) {
+        applySessionState(data.user, null);
+        return true;
+      }
+
+      clearAuthState();
+      return false;
+    } catch (error) {
+      console.error("Auth check failed:", error);
+      clearAuthState();
+      return false;
+    }
+  };
+
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     const runInitialAuthCheck = async () => {
       try {
-        const sessionOk = await fetchSession();
-        if (sessionOk) {
-          return;
-        }
-
-        const { data } = await axiosInstance.post(API_PATHS.AUTH.IS_AUTHENTICATED);
-        if (data?.success && data?.user) {
-          applySessionState(data.user, null);
-        } else {
-          clearAuthState();
-        }
-      } catch (error) {
-        console.error("Auth check failed:", error);
-        clearAuthState();
+        await performAuthCheck();
       } finally {
         setLoading(false);
       }
@@ -181,24 +190,9 @@ export const AuthProvider = ({ children }) => {
   /* eslint-enable react-hooks/exhaustive-deps */
 
   const checkAuthStatus = async () => {
-    try {
-      const sessionOk = await fetchSession();
-      if (sessionOk) {
-        return;
-      }
-
-      const { data } = await axiosInstance.post(API_PATHS.AUTH.IS_AUTHENTICATED);
-      if (data?.success && data?.user) {
-        applySessionState(data.user, null);
-      } else {
-        clearAuthState();
-      }
-    } catch (error) {
-      console.error("Auth check failed:", error);
-      clearAuthState();
-    } finally {
-      setLoading(false);
-    }
+    const isAuthenticatedNow = await performAuthCheck();
+    setLoading(false);
+    return isAuthenticatedNow;
   };
 
   const refreshSession = async () => {
@@ -242,7 +236,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUser = (updatedUserData) => {
-    const newUserData = normalizeUser({ ...(user || {}), ...updatedUserData });
+    const newUserData = normalizeUser(user ? { ...user, ...updatedUserData } : { ...updatedUserData });
     setUser(newUserData);
     if (updatedUserData?.themePreference) {
       persistThemePreference(newUserData, updatedUserData.themePreference);
@@ -250,16 +244,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const value = {
-    user,
-    loading,
-    isAuthenticated,
-    login,
-    logout,
-    updateUser,
-    checkAuthStatus,
-    refreshSession,
-  };
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      isAuthenticated,
+      login,
+      logout,
+      updateUser,
+      checkAuthStatus,
+      refreshSession,
+    }),
+    [user, loading, isAuthenticated],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+AuthProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 

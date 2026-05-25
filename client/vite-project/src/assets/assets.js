@@ -11,7 +11,7 @@ import work from "./work.svg";
 export const assets = {
   arrow_icon,
   lock_icon,
-  kaamlogo,
+  nepstaylogo: kaamlogo,
   mail_icon,
   person_icon,
   hand_wave,

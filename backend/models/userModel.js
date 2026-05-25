@@ -1,10 +1,19 @@
 import mongoose from "mongoose";
 
 const normalizeRole = (value) => {
-  if (!value) return "jobseeker";
+  if (!value) return "customer";
   const role = String(value).toLowerCase();
-  if (role === "jobseeker" || role === "freelancer") return "jobseeker";
-  if (role === "employer" || role === "client") return "employer";
+  if (role === "jobseeker" || role === "freelancer" || role === "guest") {
+    return "customer";
+  }
+  if (
+    role === "employer" ||
+    role === "client" ||
+    role === "staff" ||
+    role === "vendor"
+  ) {
+    return "hotelstaff";
+  }
   if (role === "admin") return "admin";
   return role;
 };
@@ -27,8 +36,8 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ["jobseeker", "employer", "admin"],
-    default: "jobseeker",
+    enum: ["customer", "hotelstaff", "admin"],
+    default: "customer",
     required: true,
     set: normalizeRole,
   },

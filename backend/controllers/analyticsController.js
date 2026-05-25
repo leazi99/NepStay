@@ -1,128 +1,82 @@
-import jobModel from "../models/jobModel.js";
-import applicationModel from "../models/applicationModel.js";
+import hotelModel from "../models/hotelModel.js";
+import roomModel from "../models/roomModel.js";
+import bookingModel from "../models/bookingModel.js";
+import paymentModel from "../models/paymentModel.js";
 
 const getTrend = (current, previous) => {
   if (previous === 0) return current > 0 ? 100 : 0;
   return Math.round(((current - previous) / previous) * 100);
 };
 
-const getEmployerAnalytics = async (req, res) => {
+const getHotelAnalytics = async (req, res) => {
   try {
     const role = String(req.user.role || "").toLowerCase();
-    if (role !== "employer" && role !== "client") {
-      return res.status(403).json({
-        message: "Access denied",
-      });
+    if (role !== "hotelstaff" && role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
     }
 
-    const companyId = req.user.id;
-
+    const managerId = req.user.id;
     const now = new Date();
-
     const last7Days = new Date(now);
     last7Days.setDate(now.getDate() - 7);
     const prev7Days = new Date(now);
     prev7Days.setDate(now.getDate() - 14);
 
-    const totalActiveJobs = await jobModel.countDocuments({
-      company: companyId,
-      isClosed: false,
+    const hotels = await hotelModel.find({ manager: managerId }).select("_id");
+    const hotelIds = hotels.map((h) => h._id);
+
+    const totalRooms = await roomModel.countDocuments({
+      hotel: { $in: hotelIds },
     });
-    const jobs = await jobModel
-      .find({
-        company: companyId,
-      })
-      .select("_id")
-      .lean();
-
-    const jobIds = jobs.map((job) => job._id);
-
-    const totalApplications = await applicationModel.countDocuments({
-      job: { $in: jobIds },
+    const totalBookings = await bookingModel.countDocuments({
+      hotel: { $in: hotelIds },
     });
-
-    const totalHired = await applicationModel.countDocuments({
-      job: { $in: jobIds },
-      status: { $in: ["Accepted", "Hired"] },
-    });
-
-    const activeJobsLast7 = await jobModel.countDocuments({
-      company: companyId,
+    const bookingsLast7 = await bookingModel.countDocuments({
+      hotel: { $in: hotelIds },
       createdAt: { $gte: last7Days, $lte: now },
     });
-
-    const activeJobsPrev7 = await jobModel.countDocuments({
-      company: companyId,
+    const bookingsPrev7 = await bookingModel.countDocuments({
+      hotel: { $in: hotelIds },
       createdAt: { $gte: prev7Days, $lte: last7Days },
     });
 
-    const activateJobTrend = getTrend(activeJobsLast7, activeJobsPrev7);
+    const bookingTrend = getTrend(bookingsLast7, bookingsPrev7);
 
-    const applicationsLast7 = await applicationModel.countDocuments({
-      job: { $in: jobIds },
-      createdAt: { $gte: prev7Days, $lte: last7Days },
+    const completedPayments = await paymentModel.countDocuments({
+      hotel: { $in: hotelIds },
+      status: "completed",
     });
+    const revenueAgg = await paymentModel.aggregate([
+      { $match: { hotel: { $in: hotelIds }, status: "completed" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]);
+    const totalRevenue = Number(revenueAgg?.[0]?.total || 0);
 
-    const applicationPrev7 = await applicationModel.countDocuments({
-      job: { $in: jobIds },
-      createdAt: { $gte: prev7Days, $lte: last7Days },
-    });
-
-    const applicantTrend = getTrend(applicationPrev7, applicationsLast7);
-
-    const hiredLast7 = await applicationModel.countDocuments({
-      job: { $in: jobIds },
-      status: { $in: ["Accepted", "Hired"] },
-      createdAt: { $gte: last7Days, $lte: now },
-    });
-
-    const hiredPrev7 = await applicationModel.countDocuments({
-      job: { $in: jobIds },
-      status: { $in: ["Accepted", "Hired"] },
-      createdAt: { $gte: prev7Days, $lte: last7Days },
-    });
-
-    const hiredTrend = getTrend(hiredLast7, hiredPrev7);
-
-    const recentJobs = await jobModel
-      .find({ company: companyId })
-      .sort({
-        createdAt: -1,
-      })
-      .limit(5)
-      .select("title location type createdAt isClosed");
-
-    const recentApplications = await applicationModel
-      .find({
-        job: { $in: jobIds },
-      })
+    const recentBookings = await bookingModel
+      .find({ hotel: { $in: hotelIds } })
       .sort({ createdAt: -1 })
       .limit(5)
-      .populate("applicant", "name email avatar")
-      .populate("job", "title");
+      .populate("customer", "name email")
+      .populate("room", "title roomNumber");
 
-    res.json({
+    return res.json({
+      success: true,
       counts: {
-        totalActiveJobs,
-        totalApplications,
-        totalHired,
-        trends: {
-          activeJobs: activateJobTrend,
-          totalApplications: applicantTrend,
-          totalHired: hiredTrend,
-        },
+        totalHotels: hotelIds.length,
+        totalRooms,
+        totalBookings,
+        bookingsThisWeek: bookingsLast7,
+        bookingTrend,
+        completedPayments,
+        totalRevenue,
       },
-      data: {
-        recentJobs,
-        recentApplications,
-      },
+      data: { recentBookings },
     });
   } catch (error) {
-    return res.status(500).json({
-      message: "Failed to fetch analytics",
-      error: error.message,
-    });
+    return res
+      .status(500)
+      .json({ message: "Failed to fetch analytics", error: error.message });
   }
 };
 
-export default getEmployerAnalytics;
+export default getHotelAnalytics;

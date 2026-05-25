@@ -7,14 +7,16 @@ const normalizeEmail = (email) =>
   String(email || "")
     .trim()
     .toLowerCase();
-const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegex = (value) =>
+  String(value || "").replace(new RegExp("[.*+?^${}()|[\\]\\\\]", "g"), "\\$&");
 const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const normalizeAuthRole = (role) => {
   const value = String(role || "")
     .toLowerCase()
     .trim();
-  if (value === "freelancer" || value === "jobseeker") return "jobseeker";
-  if (value === "client" || value === "employer") return "employer";
+  if (["freelancer", "jobseeker", "guest"].includes(value)) return "customer";
+  if (["client", "employer", "staff", "vendor"].includes(value))
+    return "hotelstaff";
   if (value === "admin") return "admin";
   return value;
 };
@@ -114,7 +116,7 @@ export const register = async (req, res) => {
 
     const normalizedRole = normalizeAuthRole(role);
 
-    if (!["jobseeker", "employer"].includes(normalizedRole)) {
+    if (!["customer", "hotelstaff", "admin"].includes(normalizedRole)) {
       return res.json({
         success: false,
         message: "Invalid role",

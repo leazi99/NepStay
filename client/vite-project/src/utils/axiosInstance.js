@@ -2,7 +2,7 @@ import axios from "axios";
 
 import { BASE_URL } from "./apiPaths";
 
-export const AUTH_TOKEN_STORAGE_KEY = "kaamsathi_access_token";
+export const AUTH_TOKEN_STORAGE_KEY = "nepstay_access_token";
 
 export const getStoredAuthToken = () =>
   localStorage.getItem(AUTH_TOKEN_STORAGE_KEY) || "";

@@ -1,10 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+/* Fonts loaded in index.html (Inter, Poppins) */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+
+  :root {
+    --nep-primary: #2563EB;
+    --nep-accent: #6D28D9;
+    --nep-warm: #F59E0B;
+    --nep-muted: #64748B;
+    --nep-bg: #FFFFFF;
+    --nep-surface: #F8FAFF;
+  }
+
 
   html,
   body,
@@ -74,7 +84,7 @@
 }
 
 * {
-  font-family: "Outfit", sans-serif;
+  font-family: "Poppins", "Inter", sans-serif;
 }
 
 html.dark .bg-white {

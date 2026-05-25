@@ -7,11 +7,15 @@ import { useAuth } from '../../../context/AuthContext';
 const Hero = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  let dashboardPath = "/login";
+  if (isAuthenticated) {
+    dashboardPath = user?.role === "hotelstaff" ? "/hotel-staff-dashboard" : "/guest-dashboard";
+  }
 
   const stats = [
-    { icon: Users, label: "Active Users", value: "100K+" },
-    { icon: Building2, label: "Companies", value: "10K+" },
-    { icon: TrendingUp, label: "Jobs Posted", value: "50K+" },
+    { icon: Users, label: "Active Guests", value: "100K+" },
+    { icon: Building2, label: "Hotels", value: "10K+" },
+    { icon: TrendingUp, label: "Bookings", value: "50K+" },
   ];
   return (
     <section className="relative pt-24 pb-10 bg-white min-h-screen flex items-center">
@@ -23,9 +27,9 @@ const Hero = () => {
             transition={{ duration: 0.6 }}
             className='text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight pt-10'
           >
-            Find Your Dream Job or
+            Find Your Perfect Stay or
             <span className='block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent ml-2'>
-              Perfect Hire</span>
+              Hotel Experience</span>
           </Motion.h1>
 
           <Motion.p
@@ -34,7 +38,7 @@ const Hero = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className='text-xl md:text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed'
           >
-            KaamSathi helps job seekers discover meaningful opportunities and helps employers hire skilled talent faster.
+            Nepstay helps guests discover great stays and helps hotel teams manage bookings, rooms, and service with less friction.
           </Motion.p>
 
           <Motion.div
@@ -48,11 +52,11 @@ const Hero = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="group bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-2"
-              onClick={() => navigate("/freelancer-dashboard")}
+              onClick={() => navigate("/guest-dashboard")}
             >
 
               <Search className='w-5 h-5' />
-              <span>Find Jobs</span>
+              <span>Find Rooms</span>
               <ArrowRight className='w-5 h-5 group-hover:translate-x-1 transition-transform' />
             </Motion.button>
 
@@ -60,17 +64,9 @@ const Hero = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className='bg-white border-2 border-gray-200 text-gray-600 px-8 py-4 rounded-xl font-semibold text-lg hover:border-gray-300 hover:bg-gray-50 transition-all  duration-300 shadow-sm hover:shadow-md'
-              onClick={() => {
-                navigate(
-                  isAuthenticated
-                    ? user?.role === "employer"
-                      ? "/employer-dashboard"
-                      : "/freelancer-dashboard"
-                    : "/login");
-
-              }}
+              onClick={() => navigate(dashboardPath)}
             >
-              Post a Job
+              Manage Booking
             </Motion.button>
 
             <Motion.button
@@ -91,7 +87,7 @@ const Hero = () => {
           >
             {stats.map((stat, index) => (
               <Motion.div
-                key={index}
+                key={stat.label}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 * index }}

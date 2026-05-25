@@ -1,30 +1,30 @@
 import React from 'react';
-import { Users, BriefcaseBusiness, ShieldCheck, Sparkles } from 'lucide-react';
+import { Users, Building2, ShieldCheck, Sparkles } from 'lucide-react';
 
 const aboutHighlights = [
   {
     icon: Users,
-    title: 'For Job Seekers',
+    title: 'For Guests',
     description:
-      'Create a profile, showcase your skills, and apply to opportunities that match your goals and experience.',
+      'Discover and book standard, deluxe, and suite rooms effortlessly. Track your reservations, payments, and history in a unified guest dashboard.',
   },
   {
-    icon: BriefcaseBusiness,
-    title: 'For Employers',
+    icon: Building2,
+    title: 'For Hotel Staff',
     description:
-      'Post jobs, review qualified applicants, and hire faster with a streamlined recruitment workflow.',
+      'Manage rooms, handle reservations, track occupancies, and monitor billing with role-based dashboards tailored for hospitality teams.',
   },
   {
     icon: ShieldCheck,
-    title: 'Trusted Platform',
+    title: 'Seamless Bookings',
     description:
-      'KaamSathi is built to support reliable communication, transparent hiring, and better decision making.',
+      'Get instant confirmations, secure payments, and reliable room service requests, ensuring a smooth stay from check-in to check-out.',
   },
   {
     icon: Sparkles,
-    title: 'Career Growth',
+    title: 'Efficient Operations',
     description:
-      'From first internships to experienced roles, we help people and companies grow together.',
+      'Empower your hotel business with analytics, easy room inventory updates, and responsive staff-guest communications.',
   },
 ];
 
@@ -35,13 +35,12 @@ const AboutUs = () => {
         <div className='max-w-5xl mx-auto'>
           <div className='text-center mb-12'>
             <h2 className='text-3xl md:text-4xl font-bold text-gray-900 mb-4'>
-              About <span className='text-orange-600'>KaamSathi</span>
+              About <span className='text-orange-600'>Nepstay</span>
             </h2>
             <p className='text-lg text-gray-600 leading-relaxed max-w-3xl mx-auto'>
-              KaamSathi is a job and hiring platform created to connect talented people with the right opportunities.
-              Our goal is simple: make hiring easier for employers and make job discovery clearer and faster for job seekers.
-              With role-based dashboards, messaging, applications, and review features, KaamSathi supports the full journey from
-              job posting to successful hiring.
+              Nepstay is a modern hotel management and booking platform created to connect guests with their ideal stays and empower hotel staff with efficient management tools.
+              Our goal is simple: make hotel operations and reservations smoother for hotel owners, and make booking a seamless experience for guests.
+              With role-based dashboards, messaging, room postings, and review features, Nepstay supports the full journey from reservation to check-out.
             </p>
           </div>
 

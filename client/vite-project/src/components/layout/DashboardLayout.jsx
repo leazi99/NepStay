@@ -6,14 +6,14 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { NAVIGATION_MENU } from "../../utils/data";
 import ProfileDropdown from "./ProfileDropdown";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
-import kaamSathiLogo from "../../assets/kaamsathi-logo.svg";
-import kaamSathiLogoMini from "../../assets/kaamsathi-logo-mini.svg";
+import nepstayLogo from "../../assets/nepstay-logo.svg";
+import nepstayLogoMini from "../../assets/nepstay-logo-mini.svg";
 
 const NavigationItem = ({
   item, isActive, onClick, isCollapsed, badgeCount, isDark
@@ -65,9 +65,9 @@ const DashboardLayout = ({ activeMenu, children }) => {
   const workspaceLabel =
     normalizedRole === "admin"
       ? "Admin Workspace"
-      : normalizedRole === "employer" || normalizedRole === "client"
-        ? "Employer Workspace"
-        : "Freelancer Workspace";
+      : normalizedRole === "hotelstaff"
+        ? "Hotel Staff Workspace"
+        : "Guest Workspace";
 
   useEffect(() => {
     const handleResize = () => {
@@ -125,8 +125,9 @@ const DashboardLayout = ({ activeMenu, children }) => {
   }, [user?._id]);
 
   const handleNavigation = (itemId) => {
+    const selectedItem = NAVIGATION_MENU.find((item) => item.id === itemId);
     setActiveNavItem(itemId);
-    navigate(`/${itemId}`);
+    navigate(selectedItem?.path || `/${itemId}`);
     if (isMobile) {
       setSidebarOpen(false);
     }
@@ -147,10 +148,10 @@ const DashboardLayout = ({ activeMenu, children }) => {
           <div className={`h-16 px-4 border-b flex items-center ${isDark ? "border-slate-700" : "border-gray-200"}`}>
             <Link className="inline-flex items-center gap-3" to='/'>
               <div className='h-9 w-9 rounded-xl overflow-hidden shadow-sm border border-blue-500/30 bg-blue-600 flex items-center justify-center'>
-                <img src={kaamSathiLogoMini} alt='KaamSathi' className='h-full w-full object-cover sm:hidden' />
-                <img src={kaamSathiLogo} alt='KaamSathi' className='h-full w-full object-cover hidden sm:block' />
+                <img src={nepstayLogoMini} alt='Nepstay' className='h-full w-full object-cover sm:hidden' />
+                <img src={nepstayLogo} alt='Nepstay' className='h-full w-full object-cover hidden sm:block' />
               </div>
-              <span className={`text-lg font-bold tracking-tight ${isDark ? "text-slate-100" : "text-gray-900"} href="/"`}>KaamSathi</span>
+              <span className={`text-lg font-bold tracking-tight ${isDark ? "text-slate-100" : "text-gray-900"} href="/"`}>Nepstay</span>
             </Link>
           </div>
 
@@ -215,7 +216,7 @@ const DashboardLayout = ({ activeMenu, children }) => {
                 <h1 className={`text-base md:text-lg font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Welcome Back</h1>
                 <div className='flex items-center gap-2 mt-0.5'>
                   <p className={`text-xs md:text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}>
-                    Here's what's happening with your jobs today.
+                    Here's what's happening with your reservations today.
                   </p>
                   <span
                     className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${isDark
@@ -247,7 +248,7 @@ const DashboardLayout = ({ activeMenu, children }) => {
             </div>
           </header>
           <main className='p-4 md:p-6'>
-            {children}
+            {children || <Outlet />}
           </main>
         </div>
       </div>

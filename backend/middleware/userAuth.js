@@ -2,9 +2,14 @@ import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
 
 const normalizeRole = (role) => {
-  const value = String(role || "").toLowerCase();
-  if (value === "client") return "employer";
-  if (value === "freelancer") return "jobseeker";
+  const value = String(role || "")
+    .toLowerCase()
+    .trim();
+  if (["client", "employer", "staff", "vendor"].includes(value))
+    return "hotelstaff";
+  if (["customer", "freelancer", "jobseeker", "guest"].includes(value))
+    return "customer";
+  if (value === "admin") return "admin";
   return value;
 };
 
@@ -66,9 +71,12 @@ const userAuth = async (req, res, next) => {
     }
     next();
   } catch (error) {
-    res.status(401).json({
+    return res.status(401).json({
       success: false,
-      message: "Invalid or expired session",
+      message:
+        error?.name === "TokenExpiredError"
+          ? "Session expired. Login again."
+          : "Invalid or expired session",
     });
   }
 };

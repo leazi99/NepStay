@@ -157,7 +157,7 @@ const WelcomeOnboarding = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
       <div className="w-full max-w-xl rounded-3xl bg-slate-100 py-10 px-6 sm:px-10 text-center">
-        <img src={assets.kaamlogo} alt="KaamSathi" className="h-10 sm:h-12 mx-auto" />
+        <img src={assets.nepstaylogo || assets.kaamlogo} alt="Nepstay" className="h-10 sm:h-12 mx-auto" />
 
         <h1 className="mt-8 text-3xl sm:text-4xl font-semibold text-gray-800">Welcome, {user?.name || "User"}</h1>
 

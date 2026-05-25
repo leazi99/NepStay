@@ -2,40 +2,35 @@ import mongoose from "mongoose";
 
 const paymentSchema = new mongoose.Schema(
   {
-    employer: {
+    booking: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Booking",
+      default: null,
+    },
+    customer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    freelancer: {
+    hotel: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    job: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "job",
-      required: true,
-    },
-    application: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Application",
-      required: true,
+      ref: "Hotel",
+      required: false,
     },
     amount: {
       type: Number,
       required: true,
-      min: 1,
+      min: 0,
     },
     paymentMethod: {
       type: String,
-      enum: ["bank_transfer", "esewa", "khalti"],
-      default: "bank_transfer",
+      enum: ["stripe", "esewa", "khalti", "bank_transfer"],
+      default: "stripe",
     },
     status: {
       type: String,
       enum: ["pending", "completed", "failed"],
-      default: "completed",
+      default: "pending",
     },
     notes: {
       type: String,
@@ -43,7 +38,12 @@ const paymentSchema = new mongoose.Schema(
     },
     currency: {
       type: String,
-      default: "npr",
+      default: "usd",
+    },
+    transactionId: {
+      type: String,
+      default: "",
+      index: true,
     },
     stripeSessionId: {
       type: String,
@@ -53,6 +53,7 @@ const paymentSchema = new mongoose.Schema(
     stripePaymentIntentId: {
       type: String,
       default: "",
+      index: true,
     },
     khaltiPidx: {
       type: String,
@@ -62,14 +63,13 @@ const paymentSchema = new mongoose.Schema(
     khaltiTransactionId: {
       type: String,
       default: "",
-    },
-    transactionId: {
-      type: String,
-      default: "",
+      index: true,
     },
   },
   { timestamps: true },
 );
+
+paymentSchema.index({ booking: 1 });
 
 const paymentModel =
   mongoose.models.Payment || mongoose.model("Payment", paymentSchema);

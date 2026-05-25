@@ -15,8 +15,8 @@ import {
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { useAuth } from "../../context/AuthContext";
-import kaamSathiLogo from "../../assets/kaamsathi-logo.svg";
-import kaamSathiLogoMini from "../../assets/kaamsathi-logo-mini.svg";
+import nepstayLogo from "../../assets/nepstay-logo.svg";
+import nepstayLogoMini from "../../assets/nepstay-logo-mini.svg";
 
 const FreelancerNavbar = ({ active = "dashboard" }) => {
   const navigate = useNavigate();
@@ -33,18 +33,18 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
 
   const activeTheme = isAuthenticated ? (user?.themePreference || "light") : guestTheme;
   const isDark = activeTheme === "dark";
-  const workspaceLabel = isAuthenticated ? "Freelancer Workspace" : "Browse Jobs";
+  const workspaceLabel = isAuthenticated ? "Guest Workspace" : "Browse Rooms";
 
   const navItems = isAuthenticated
     ? [
-      { id: "dashboard", label: "Dashboard", icon: Briefcase, path: "/freelancer-dashboard" },
-      { id: "saved", label: "Saved Jobs", icon: Heart, path: "/saved-jobs" },
+      { id: "dashboard", label: "Dashboard", icon: Briefcase, path: "/guest-dashboard" },
+      { id: "saved", label: "Saved Rooms", icon: Heart, path: "/saved-rooms" },
       { id: "messages", label: "Messages", icon: MessageSquare, path: "/freelancer/messages" },
       { id: "notifications", label: "Alerts", icon: Bell, path: "/notifications" },
       { id: "profile", label: "Profile", icon: User, path: "/profile" },
     ]
     : [
-      { id: "dashboard", label: "Jobs", icon: Briefcase, path: "/freelancer-dashboard" },
+      { id: "dashboard", label: "Rooms", icon: Briefcase, path: "/guest-dashboard" },
     ];
 
   const fetchBadgeCounts = async () => {
@@ -85,11 +85,11 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
     };
 
     syncTheme();
-    window.addEventListener("storage", syncTheme);
-    window.addEventListener("themePreferenceChanged", syncTheme);
+    globalThis.addEventListener("storage", syncTheme);
+    globalThis.addEventListener("themePreferenceChanged", syncTheme);
     return () => {
-      window.removeEventListener("storage", syncTheme);
-      window.removeEventListener("themePreferenceChanged", syncTheme);
+      globalThis.removeEventListener("storage", syncTheme);
+      globalThis.removeEventListener("themePreferenceChanged", syncTheme);
     };
   }, [isAuthenticated]);
 
@@ -100,7 +100,7 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
       document.documentElement.classList.toggle("dark", nextTheme === "dark");
       localStorage.setItem("themePreference:active", nextTheme);
       setGuestTheme(nextTheme);
-      window.dispatchEvent(new Event("themePreferenceChanged"));
+      globalThis.dispatchEvent(new Event("themePreferenceChanged"));
       return;
     }
 
@@ -114,10 +114,10 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
       } else {
         updateUser({ themePreference: nextTheme });
       }
-      window.dispatchEvent(new Event("themePreferenceChanged"));
+      globalThis.dispatchEvent(new Event("themePreferenceChanged"));
     } catch {
       updateUser({ themePreference: nextTheme });
-      window.dispatchEvent(new Event("themePreferenceChanged"));
+      globalThis.dispatchEvent(new Event("themePreferenceChanged"));
     } finally {
       setIsSwitchingTheme(false);
     }
@@ -135,15 +135,15 @@ const FreelancerNavbar = ({ active = "dashboard" }) => {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3">
         <div className="min-w-0 flex items-center gap-2 sm:gap-3 shrink-0">
           <button
-            onClick={() => navigate("/freelancer-dashboard")}
+            onClick={() => navigate("/")}
             className="inline-flex items-center gap-2.5 sm:gap-3 flex-shrink-0"
           >
             <span className="h-9 w-9 rounded-xl overflow-hidden shadow-sm border border-blue-500/30 bg-blue-600 flex items-center justify-center">
-              <img src={kaamSathiLogoMini} alt="KaamSathi" className="h-full w-full object-cover sm:hidden" />
-              <img src={kaamSathiLogo} alt="KaamSathi" className="h-full w-full object-cover hidden sm:block"  />
+              <img src={nepstayLogoMini} alt="Nepstay" className="h-full w-full object-cover sm:hidden" />
+              <img src={nepstayLogo} alt="Nepstay" className="h-full w-full object-cover hidden sm:block"  />
             </span>
             <span  href="/" className={`text-base sm:text-lg font-bold tracking-tight ${isDark ? "text-slate-100" : "text-gray-900"}>`  }>
-              KaamSathi
+              Nepstay
             </span>
           </button>
           <span

@@ -1,10 +1,9 @@
 import userModel from "../models/userModel.js";
 import paymentModel from "../models/paymentModel.js";
-import jobModel from "../models/jobModel.js";
-import applicationModel from "../models/applicationModel.js";
-import proposalModel from "../models/proposalModel.js";
+import hotelModel from "../models/hotelModel.js";
+import roomModel from "../models/roomModel.js";
+import bookingModel from "../models/bookingModel.js";
 import reviewModel from "../models/reviewModel.js";
-import savedModel from "../models/savedModel.js";
 import messageModel from "../models/messageModel.js";
 import chatRoomModel from "../models/chatRoomModel.js";
 import notificationModel from "../models/notificationModel.js";
@@ -27,17 +26,23 @@ export const getAdminOverview = async (req, res) => {
 
     const [
       totalUsers,
-      totalJobseekers,
-      totalEmployers,
+      totalCustomers,
+      totalStaff,
       pendingVerification,
+      totalHotels,
+      totalRooms,
+      totalBookings,
       totalPayments,
       completedPayments,
       pendingPayments,
     ] = await Promise.all([
       userModel.countDocuments({}),
-      userModel.countDocuments({ role: "jobseeker" }),
-      userModel.countDocuments({ role: "employer" }),
+      userModel.countDocuments({ role: "customer" }),
+      userModel.countDocuments({ role: "hotelstaff" }),
       userModel.countDocuments({ identityVerificationStatus: "pending" }),
+      hotelModel.countDocuments({}),
+      roomModel.countDocuments({}),
+      bookingModel.countDocuments({}),
       paymentModel.countDocuments({}),
       paymentModel.countDocuments({ status: "completed" }),
       paymentModel.countDocuments({ status: "pending" }),
@@ -47,9 +52,12 @@ export const getAdminOverview = async (req, res) => {
       success: true,
       counts: {
         totalUsers,
-        totalJobseekers,
-        totalEmployers,
+        totalCustomers,
+        totalStaff,
         pendingVerification,
+        totalHotels,
+        totalRooms,
+        totalBookings,
         totalPayments,
         completedPayments,
         pendingPayments,
@@ -81,7 +89,7 @@ export const getAdminUsers = async (req, res) => {
     const users = await userModel
       .find(query)
       .select(
-        "name email role avatar isVerified createdAt studentIdCard nationalIdCard identityVerificationStatus suspensionEndsAt suspensionReason",
+        "name email role avatar isVerified createdAt identityVerificationStatus suspensionEndsAt suspensionReason",
       )
       .sort({ createdAt: -1 });
 
@@ -107,7 +115,7 @@ export const updateAdminUser = async (req, res) => {
       suspensionReason,
     } = req.body;
 
-    const allowedRoles = ["jobseeker", "employer", "admin"];
+    const allowedRoles = ["customer", "hotelstaff", "admin"];
     const allowedVerificationStatuses = [
       "not_submitted",
       "pending",
@@ -229,12 +237,14 @@ export const getAdminPayments = async (req, res) => {
     if (!ensureAdmin(req, res)) return;
 
     const { status = "all", search = "" } = req.query;
-
     const payments = await paymentModel
       .find(status === "all" ? {} : { status })
-      .populate("job", "title")
-      .populate("employer", "name email")
-      .populate("freelancer", "name email")
+      .populate({
+        path: "booking",
+        populate: [{ path: "room" }, { path: "hotel" }],
+      })
+      .populate("customer", "name email")
+      .populate("hotel", "name location")
       .sort({ createdAt: -1 });
 
     const normalizedSearch = String(search || "")
@@ -243,19 +253,14 @@ export const getAdminPayments = async (req, res) => {
 
     const filteredPayments = normalizedSearch
       ? payments.filter((payment) => {
-          const jobTitle = payment.job?.title || "";
-          const employerName = payment.employer?.name || "";
-          const employerEmail = payment.employer?.email || "";
-          const freelancerName = payment.freelancer?.name || "";
-          const freelancerEmail = payment.freelancer?.email || "";
+          const roomTitle = String(payment.booking?.room?.title || "");
+          const hotelName = String(
+            payment.hotel?.name || payment.booking?.hotel?.name || "",
+          );
+          const customerName = String(payment.customer?.name || "");
+          const customerEmail = String(payment.customer?.email || "");
 
-          const searchable = [
-            jobTitle,
-            employerName,
-            employerEmail,
-            freelancerName,
-            freelancerEmail,
-          ]
+          const searchable = [roomTitle, hotelName, customerName, customerEmail]
             .join(" ")
             .toLowerCase();
 
@@ -263,101 +268,13 @@ export const getAdminPayments = async (req, res) => {
         })
       : payments;
 
-    return res.json({
-      success: true,
-      payments: filteredPayments,
-    });
+    return res.json({ success: true, payments: filteredPayments });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
 
-export const getAdminJobs = async (req, res) => {
-  try {
-    if (!ensureAdmin(req, res)) return;
-
-    const { status = "all", search = "" } = req.query;
-
-    const statusFilter = {};
-    if (status === "open") {
-      statusFilter.isClosed = false;
-    }
-    if (status === "closed") {
-      statusFilter.isClosed = true;
-    }
-
-    const query = {
-      ...statusFilter,
-      ...(search
-        ? {
-            $or: [
-              { title: { $regex: search, $options: "i" } },
-              { description: { $regex: search, $options: "i" } },
-              { category: { $regex: search, $options: "i" } },
-            ],
-          }
-        : {}),
-    };
-
-    const jobs = await jobModel
-      .find(query)
-      .populate("company", "name email")
-      .sort({ createdAt: -1 });
-
-    return res.json({
-      success: true,
-      jobs,
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-export const deleteAdminJob = async (req, res) => {
-  try {
-    if (!ensureAdmin(req, res)) return;
-
-    const { jobId } = req.params;
-
-    const job = await jobModel.findById(jobId).select("_id title");
-
-    if (!job) {
-      return res.status(404).json({
-        success: false,
-        message: "Job not found",
-      });
-    }
-
-    const payments = await paymentModel
-      .find({ job: jobId })
-      .select("_id application");
-
-    const paymentIds = payments.map((item) => item._id);
-    const applicationIdsFromPayments = payments
-      .map((item) => item.application)
-      .filter(Boolean);
-
-    await Promise.all([
-      savedModel.deleteMany({ job: jobId }),
-      proposalModel.deleteMany({ job: jobId }),
-      applicationModel.deleteMany({
-        $or: [{ job: jobId }, { _id: { $in: applicationIdsFromPayments } }],
-      }),
-      paymentModel.deleteMany({ job: jobId }),
-      reviewModel.deleteMany({
-        $or: [{ job: jobId }, { payment: { $in: paymentIds } }],
-      }),
-      jobModel.findByIdAndDelete(jobId),
-    ]);
-
-    return res.json({
-      success: true,
-      message: "Job deleted successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-};
+// Hotel-focused admin endpoints — hotel/room/booking/payment reports are below
 
 export const deleteAdminUser = async (req, res) => {
   try {
@@ -388,8 +305,11 @@ export const deleteAdminUser = async (req, res) => {
       });
     }
 
-    const jobsByUser = await jobModel.find({ company: userId }).select("_id");
-    const jobIds = jobsByUser.map((job) => job._id);
+    // If user is a hotel manager, collect hotels/rooms/bookings to cascade-delete
+    const hotelsByUser = await hotelModel
+      .find({ manager: userId })
+      .select("_id");
+    const hotelIds = hotelsByUser.map((h) => h._id);
 
     const chatRooms = await chatRoomModel
       .find({ participants: userId })
@@ -397,33 +317,14 @@ export const deleteAdminUser = async (req, res) => {
     const roomIds = chatRooms.map((room) => room._id);
 
     await Promise.all([
-      savedModel.deleteMany({
-        $or: [{ jobseeker: userId }, { job: { $in: jobIds } }],
-      }),
-      proposalModel.deleteMany({
-        $or: [{ freelancer: userId }, { job: { $in: jobIds } }],
-      }),
-      applicationModel.deleteMany({
-        $or: [{ applicant: userId }, { job: { $in: jobIds } }],
-      }),
-      paymentModel.deleteMany({
-        $or: [
-          { employer: userId },
-          { freelancer: userId },
-          { job: { $in: jobIds } },
-        ],
-      }),
-      reviewModel.deleteMany({
-        $or: [
-          { reviewer: userId },
-          { reviewee: userId },
-          { job: { $in: jobIds } },
-        ],
-      }),
+      // cascade delete bookings/payments/reviews related to user's hotels
+      bookingModel.deleteMany({ hotel: { $in: hotelIds } }),
+      paymentModel.deleteMany({ hotel: { $in: hotelIds } }),
+      reviewModel.deleteMany({ hotel: { $in: hotelIds } }),
       notificationModel.deleteMany({
         $or: [{ recipient: userId }, { sender: userId }],
       }),
-      analyticsModel.deleteMany({ employer: userId }),
+      analyticsModel.deleteMany({ hotel: { $in: hotelIds } }),
       messageModel.updateMany({}, { $pull: { readBy: userId } }),
       roomIds.length
         ? messageModel.deleteMany({ room: { $in: roomIds } })
@@ -431,7 +332,7 @@ export const deleteAdminUser = async (req, res) => {
       roomIds.length
         ? chatRoomModel.deleteMany({ _id: { $in: roomIds } })
         : null,
-      jobModel.deleteMany({ company: userId }),
+      hotelModel.deleteMany({ manager: userId }),
       userModel.findByIdAndDelete(userId),
     ]);
 
@@ -468,42 +369,26 @@ export const getAdminReports = async (req, res) => {
     const sixMonthStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
     const [
-      totalJobs,
-      openJobs,
-      closedJobs,
-      totalApplications,
-      pendingApplications,
-      acceptedApplications,
-      rejectedApplications,
-      totalProposals,
-      pendingProposals,
-      acceptedProposals,
-      rejectedProposals,
+      totalHotels,
+      totalRooms,
+      totalBookings,
       totalReviews,
       avgReviewResult,
       completedPayments,
       completedPaymentAmount,
       usersThisMonth,
       usersPreviousMonth,
-      jobsThisMonth,
-      jobsPreviousMonth,
+      hotelsThisMonth,
+      hotelsPreviousMonth,
       paymentsThisMonth,
       paymentsPreviousMonth,
       monthlyUsers,
-      monthlyJobs,
+      monthlyHotels,
       monthlyPayments,
     ] = await Promise.all([
-      jobModel.countDocuments({}),
-      jobModel.countDocuments({ isClosed: false }),
-      jobModel.countDocuments({ isClosed: true }),
-      applicationModel.countDocuments({}),
-      applicationModel.countDocuments({ status: "Pending" }),
-      applicationModel.countDocuments({ status: "Accepted" }),
-      applicationModel.countDocuments({ status: "Rejected" }),
-      proposalModel.countDocuments({}),
-      proposalModel.countDocuments({ status: "pending" }),
-      proposalModel.countDocuments({ status: "accepted" }),
-      proposalModel.countDocuments({ status: "rejected" }),
+      hotelModel.countDocuments({}),
+      roomModel.countDocuments({}),
+      bookingModel.countDocuments({}),
       reviewModel.countDocuments({}),
       reviewModel.aggregate([
         { $group: { _id: null, avgRating: { $avg: "$rating" } } },
@@ -517,8 +402,8 @@ export const getAdminReports = async (req, res) => {
       userModel.countDocuments({
         createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd },
       }),
-      jobModel.countDocuments({ createdAt: { $gte: currentMonthStart } }),
-      jobModel.countDocuments({
+      hotelModel.countDocuments({ createdAt: { $gte: currentMonthStart } }),
+      hotelModel.countDocuments({
         createdAt: { $gte: previousMonthStart, $lte: previousMonthEnd },
       }),
       paymentModel.countDocuments({
@@ -541,7 +426,7 @@ export const getAdminReports = async (req, res) => {
           },
         },
       ]),
-      jobModel.aggregate([
+      hotelModel.aggregate([
         { $match: { createdAt: { $gte: sixMonthStart } } },
         {
           $group: {
@@ -554,12 +439,7 @@ export const getAdminReports = async (req, res) => {
         },
       ]),
       paymentModel.aggregate([
-        {
-          $match: {
-            status: "completed",
-            createdAt: { $gte: sixMonthStart },
-          },
-        },
+        { $match: { status: "completed", createdAt: { $gte: sixMonthStart } } },
         {
           $group: {
             _id: {
@@ -614,22 +494,14 @@ export const getAdminReports = async (req, res) => {
     return res.json({
       success: true,
       reports: {
-        jobs: {
-          total: totalJobs,
-          open: openJobs,
-          closed: closedJobs,
+        hotels: {
+          total: totalHotels,
         },
-        applications: {
-          total: totalApplications,
-          pending: pendingApplications,
-          accepted: acceptedApplications,
-          rejected: rejectedApplications,
+        rooms: {
+          total: totalRooms,
         },
-        proposals: {
-          total: totalProposals,
-          pending: pendingProposals,
-          accepted: acceptedProposals,
-          rejected: rejectedProposals,
+        bookings: {
+          total: totalBookings,
         },
         reviews: {
           total: totalReviews,
@@ -646,9 +518,9 @@ export const getAdminReports = async (req, res) => {
             thisMonth: usersThisMonth,
             previousMonth: usersPreviousMonth,
           },
-          jobs: {
-            thisMonth: jobsThisMonth,
-            previousMonth: jobsPreviousMonth,
+          hotels: {
+            thisMonth: hotelsThisMonth,
+            previousMonth: hotelsPreviousMonth,
           },
           completedPayments: {
             thisMonth: paymentsThisMonth,
@@ -679,15 +551,17 @@ export const updatePaymentStatusByAdmin = async (req, res) => {
 
     const payment = await paymentModel
       .findByIdAndUpdate(paymentId, { status }, { new: true })
-      .populate("job", "title")
-      .populate("employer", "name email")
-      .populate("freelancer", "name email");
+      .populate({
+        path: "booking",
+        populate: [{ path: "room" }, { path: "hotel" }],
+      })
+      .populate("customer", "name email")
+      .populate("hotel", "name location");
 
     if (!payment) {
-      return res.status(404).json({
-        success: false,
-        message: "Payment not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "Payment not found" });
     }
 
     return res.json({

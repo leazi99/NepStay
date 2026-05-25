@@ -163,7 +163,7 @@ const SignUp = () => {
         {/* header */}
         <div style={styles.formHeader}>
           <h2 style={styles.formTitle}>Create Account</h2>
-          <p style={styles.formSub}>Join thousands of professionals finding their dream jobs</p>
+          <p style={styles.formSub}>Join as a customer or vendor to manage stays and bookings</p>
         </div>
 
         <form onSubmit={handleSubmit} style={styles.form} noValidate>
@@ -259,8 +259,8 @@ const SignUp = () => {
             <label style={styles.label}>I am a…</label>
             <div style={styles.roleRow}>
               {[
-                { value: 'jobseeker', label: 'Freelancer', icon: <UserCheck size={17} /> },
-                { value: 'employer', label: 'Employer', icon: <Building2 size={17} /> },
+                { value: 'customer', label: 'Customer', icon: <UserCheck size={17} /> },
+                { value: 'vendor', label: 'Vendor', icon: <Building2 size={17} /> },
               ].map(({ value, label, icon }) => {
                 const active = formData.role === value;
                 return (

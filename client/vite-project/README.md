@@ -1,4 +1,4 @@
-# KaamSathi Role-Based Test Cases
+# Nepstay Role-Based Test Cases
 
 This checklist is organized by role and can be used for manual QA execution.
 

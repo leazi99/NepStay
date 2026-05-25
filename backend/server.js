@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express from "express";
-import http from "http";
+import http from "node:http";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -9,20 +9,28 @@ import { Server } from "socket.io";
 import connectDB from "./config/mongodb.js";
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/authRoutes.js";
-import path from "path";
-import jobRoutes from "./routes/jobRoutes.js";
-import applicationRoutes from "./routes/applicationRoutes.js";
-import savedJobsRoutes from "./routes/savedJobsRoutes.js";
-import analyticsRoutes from "./routes/analyticsRoutes.js";
+import path from "node:path";
+// Job portal routes - commented out for hotel booking system
+// import jobRoutes from "./routes/jobRoutes.js";
+// import applicationRoutes from "./routes/applicationRoutes.js";
+// import savedJobsRoutes from "./routes/savedJobsRoutes.js";
+// import proposalRoutes from "./routes/proposalRoutes.js";
+// import analyticsRoutes from "./routes/analyticsRoutes.js";
+
+// Hotel booking system routes
+import hotelRoutes from "./routes/hotelRoutes.js";
+import roomRoutes from "./routes/roomRoutes.js";
+import bookingRoutes from "./routes/bookingRoutes.js";
+import favoriteRoomsRoutes from "./routes/favoriteRoomsRoutes.js";
+import hotelAnalyticsRoutes from "./routes/hotelAnalyticsRoutes.js";
 import userRoutes from "./routes/userRoute.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
-import proposalRoutes from "./routes/proposalRoutes.js";
 import userModel from "./models/userModel.js";
-import { fileURLToPath } from "url";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,6 +42,8 @@ app.set("trust proxy", 1);
 const defaultAllowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
 ];
 const envOrigins = (process.env.ALLOWED_ORIGIN || "")
   .split(",")
@@ -229,17 +239,26 @@ app.use("/api/auth", authLimiter);
 app.use("/api/auth", authRouter);
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use("/api/jobs", jobRoutes);
-app.use("/api/applications", applicationRoutes);
-app.use("/api/save-jobs", savedJobsRoutes);
-app.use("/api/analytics", analyticsRoutes);
+
+// Job portal routes - commented out for hotel booking system
+// app.use("/api/jobs", jobRoutes);
+// app.use("/api/applications", applicationRoutes);
+// app.use("/api/save-jobs", savedJobsRoutes);
+// app.use("/api/proposals", proposalRoutes);
+// app.use("/api/analytics", analyticsRoutes);
+
+// Hotel booking system routes
+app.use("/api/hotels", hotelRoutes);
+app.use("/api/rooms", roomRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/favorite-rooms", favoriteRoomsRoutes);
+app.use("/api/hotel-analytics", hotelAnalyticsRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/reviews", reviewRoutes);
-app.use("/api/proposals", proposalRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -263,5 +282,5 @@ app.use((error, req, res, next) => {
   });
 });
 
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 4001;
 httpServer.listen(port, () => console.log(`Server is running on port ${port}`));
