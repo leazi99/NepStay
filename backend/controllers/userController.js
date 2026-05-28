@@ -17,18 +17,6 @@ const toPresencePayload = (user) => {
   };
 };
 
-const parseInterests = (value) => {
-  if (!value) return [];
-  if (Array.isArray(value)) {
-    return value.map((item) => String(item).trim()).filter(Boolean);
-  }
-
-  return String(value)
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-};
-
 export const getAllUser = async (req, res) => {
   try {
     const user = await userModel.findById(req.user._id);
@@ -47,27 +35,6 @@ export const getAllUser = async (req, res) => {
         email: user.email,
         role: user.role,
         avatar: user.avatar || "",
-        resume: user.resume || "",
-        studentIdCard: user.studentIdCard || "",
-        nationalIdCard: user.nationalIdCard || "",
-        studentInstitutionName: user.studentInstitutionName || "",
-        studentFullName: user.studentFullName || "",
-        studentDateOfBirth: user.studentDateOfBirth || "",
-        studentIdNumber: user.studentIdNumber || "",
-        studentContactEmail: user.studentContactEmail || "",
-        studentPhoneNumber: user.studentPhoneNumber || "",
-        studentAddressLine1: user.studentAddressLine1 || "",
-        studentAddressLine2: user.studentAddressLine2 || "",
-        studentCity: user.studentCity || "",
-        studentStateProvince: user.studentStateProvince || "",
-        studentPostalCode: user.studentPostalCode || "",
-        identityVerificationStatus:
-          user.identityVerificationStatus || "not_submitted",
-        linkedinUrl: user.linkedinUrl || "",
-        bio: user.bio || "",
-        interests: user.interests || [],
-        latestEducation: user.latestEducation || "",
-        specialization: user.specialization || "",
         themePreference: user.themePreference || "light",
         isVerified: user.isVerified,
       },
@@ -82,34 +49,7 @@ export const getAllUser = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const {
-      name,
-      avatar,
-      companyName,
-      companyDescription,
-      companyLogo,
-      companyWebsite,
-      resume,
-      studentIdCard,
-      nationalIdCard,
-      studentInstitutionName,
-      studentFullName,
-      studentDateOfBirth,
-      studentIdNumber,
-      studentContactEmail,
-      studentPhoneNumber,
-      studentAddressLine1,
-      studentAddressLine2,
-      studentCity,
-      studentStateProvince,
-      studentPostalCode,
-      linkedinUrl,
-      bio,
-      interests,
-      latestEducation,
-      specialization,
-      themePreference,
-    } = req.body;
+    const { name, avatar, themePreference } = req.body;
 
     const user = await userModel.findById(req.user._id);
     if (!user) {
@@ -121,74 +61,9 @@ export const updateProfile = async (req, res) => {
 
     if (typeof name === "string") user.name = name.trim() || user.name;
     if (typeof avatar === "string") user.avatar = avatar;
-    if (typeof resume === "string") user.resume = resume;
-    if (typeof studentIdCard === "string") user.studentIdCard = studentIdCard;
-    if (typeof nationalIdCard === "string")
-      user.nationalIdCard = nationalIdCard;
-    if (typeof linkedinUrl === "string") user.linkedinUrl = linkedinUrl.trim();
-    if (typeof bio === "string") user.bio = bio.trim();
-    if (interests !== undefined) user.interests = parseInterests(interests);
-    if (typeof latestEducation === "string") {
-      user.latestEducation = latestEducation.trim();
-    }
-    if (typeof specialization === "string") {
-      user.specialization = specialization.trim();
-    }
-    if (typeof studentInstitutionName === "string") {
-      user.studentInstitutionName = studentInstitutionName.trim();
-    }
-    if (typeof studentFullName === "string") {
-      user.studentFullName = studentFullName.trim();
-    }
-    if (typeof studentDateOfBirth === "string") {
-      user.studentDateOfBirth = studentDateOfBirth.trim();
-    }
-    if (typeof studentIdNumber === "string") {
-      user.studentIdNumber = studentIdNumber.trim();
-    }
-    if (typeof studentContactEmail === "string") {
-      user.studentContactEmail = studentContactEmail.trim();
-    }
-    if (typeof studentPhoneNumber === "string") {
-      user.studentPhoneNumber = studentPhoneNumber.trim();
-    }
-    if (typeof studentAddressLine1 === "string") {
-      user.studentAddressLine1 = studentAddressLine1.trim();
-    }
-    if (typeof studentAddressLine2 === "string") {
-      user.studentAddressLine2 = studentAddressLine2.trim();
-    }
-    if (typeof studentCity === "string") {
-      user.studentCity = studentCity.trim();
-    }
-    if (typeof studentStateProvince === "string") {
-      user.studentStateProvince = studentStateProvince.trim();
-    }
-    if (typeof studentPostalCode === "string") {
-      user.studentPostalCode = studentPostalCode.trim();
-    }
-
-    if (user.identityVerificationStatus !== "verified") {
-      if (user.studentIdCard && user.nationalIdCard) {
-        user.identityVerificationStatus = "pending";
-      } else {
-        user.identityVerificationStatus = "not_submitted";
-      }
-    }
 
     if (themePreference === "light" || themePreference === "dark") {
       user.themePreference = themePreference;
-    }
-
-    if (user.role === "employer") {
-      if (typeof companyName === "string") user.companyName = companyName;
-      if (typeof companyDescription === "string") {
-        user.companyDescription = companyDescription;
-      }
-      if (typeof companyLogo === "string") user.companyLogo = companyLogo;
-      if (typeof companyWebsite === "string") {
-        user.companyWebsite = companyWebsite.trim();
-      }
     }
 
     await user.save();
@@ -201,32 +76,7 @@ export const updateProfile = async (req, res) => {
         email: user.email,
         role: user.role,
         avatar: user.avatar || "",
-        resume: user.resume || "",
-        studentIdCard: user.studentIdCard || "",
-        nationalIdCard: user.nationalIdCard || "",
-        studentInstitutionName: user.studentInstitutionName || "",
-        studentFullName: user.studentFullName || "",
-        studentDateOfBirth: user.studentDateOfBirth || "",
-        studentIdNumber: user.studentIdNumber || "",
-        studentContactEmail: user.studentContactEmail || "",
-        studentPhoneNumber: user.studentPhoneNumber || "",
-        studentAddressLine1: user.studentAddressLine1 || "",
-        studentAddressLine2: user.studentAddressLine2 || "",
-        studentCity: user.studentCity || "",
-        studentStateProvince: user.studentStateProvince || "",
-        studentPostalCode: user.studentPostalCode || "",
-        identityVerificationStatus:
-          user.identityVerificationStatus || "not_submitted",
-        linkedinUrl: user.linkedinUrl || "",
-        bio: user.bio || "",
-        interests: user.interests || [],
-        latestEducation: user.latestEducation || "",
-        specialization: user.specialization || "",
         themePreference: user.themePreference || "light",
-        companyName: user.companyName || "",
-        companyDescription: user.companyDescription || "",
-        companyLogo: user.companyLogo || "",
-        companyWebsite: user.companyWebsite || "",
       },
       message: "Profile updated successfully",
     });
@@ -288,35 +138,15 @@ export const changePassword = async (req, res) => {
 };
 
 export const deleteResume = async (req, res) => {
-  try {
-    const user = await userModel.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    user.resume = "";
-    await user.save();
-
-    return res.json({
-      success: true,
-      message: "Resume deleted successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
+  return res.status(410).json({
+    success: false,
+    message: "Resume profile storage has been removed.",
+  });
 };
 
 export const getPublicProfile = async (req, res) => {
   try {
-    const user = await userModel
-      .findById(req.params.id)
-      .select("-password -studentIdCard -nationalIdCard");
+    const user = await userModel.findById(req.params.id).select("-password");
 
     if (!user) {
       return res.status(404).json({
@@ -330,7 +160,7 @@ export const getPublicProfile = async (req, res) => {
       const payments = await paymentModel
         .find({ freelancer: user._id, status: "completed" })
         .populate("job", "title")
-        .populate("employer", "name companyName")
+        .populate("employer", "name")
         .sort({ updatedAt: -1 });
 
       completedProjects = payments.map((payment) => ({
@@ -344,10 +174,7 @@ export const getPublicProfile = async (req, res) => {
         },
         employer: {
           _id: payment.employer?._id,
-          name:
-            payment.employer?.companyName ||
-            payment.employer?.name ||
-            "Employer",
+          name: payment.employer?.name || "Employer",
         },
       }));
     }
@@ -382,7 +209,6 @@ export const searchUsersForChat = async (req, res) => {
       filter.$or = [
         { name: { $regex: queryText, $options: "i" } },
         { email: { $regex: queryText, $options: "i" } },
-        { companyName: { $regex: queryText, $options: "i" } },
       ];
     }
 
@@ -392,7 +218,7 @@ export const searchUsersForChat = async (req, res) => {
 
     const users = await userModel
       .find(filter)
-      .select("name email role avatar companyName lastSeenAt")
+      .select("name email role avatar lastSeenAt")
       .sort({ name: 1 })
       .limit(limit);
 
@@ -402,7 +228,6 @@ export const searchUsersForChat = async (req, res) => {
       email: user.email,
       role: user.role,
       avatar: user.avatar || "",
-      companyName: user.companyName || "",
       ...toPresencePayload(user),
     }));
 

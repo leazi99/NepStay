@@ -84,20 +84,6 @@ const getPublicUser = (user) => ({
   role: user.role,
   isVerified: user.isVerified,
   avatar: user.avatar || "",
-  companyName: user.companyName || "",
-  companyDescription: user.companyDescription || "",
-  companyLogo: user.companyLogo || "",
-  companyWebsite: user.companyWebsite || "",
-  resume: user.resume || "",
-  studentIdCard: user.studentIdCard || "",
-  nationalIdCard: user.nationalIdCard || "",
-  identityVerificationStatus:
-    user.identityVerificationStatus || "not_submitted",
-  linkedinUrl: user.linkedinUrl || "",
-  bio: user.bio || "",
-  interests: user.interests || [],
-  latestEducation: user.latestEducation || "",
-  specialization: user.specialization || "",
   themePreference: user.themePreference || "light",
   suspensionEndsAt: user.suspensionEndsAt || null,
   suspensionReason: user.suspensionReason || "",
@@ -156,7 +142,7 @@ export const register = async (req, res) => {
     const mailOption = {
       from: process.env.SENDER_EMAIL,
       to: normalizedEmail,
-      subject: "Verify your KaamSathi account",
+      subject: "Verify your NepStay account",
       text: `Hello ${name}, your OTP for email verification is ${otp}. It is valid for 1 hour.`,
     };
 
@@ -171,15 +157,6 @@ export const register = async (req, res) => {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified,
-        studentIdCard: user.studentIdCard || "",
-        nationalIdCard: user.nationalIdCard || "",
-        identityVerificationStatus:
-          user.identityVerificationStatus || "not_submitted",
-        linkedinUrl: user.linkedinUrl || "",
-        bio: user.bio || "",
-        interests: user.interests || [],
-        latestEducation: user.latestEducation || "",
-        specialization: user.specialization || "",
         themePreference: user.themePreference || "light",
       },
     });
@@ -257,20 +234,6 @@ export const login = async (req, res) => {
         role: user.role,
         isVerified: user.isVerified,
         avatar: user.avatar || "",
-        companyName: user.companyName || "",
-        companyDescription: user.companyDescription || "",
-        companyLogo: user.companyLogo || "",
-        companyWebsite: user.companyWebsite || "",
-        resume: user.resume || "",
-        studentIdCard: user.studentIdCard || "",
-        nationalIdCard: user.nationalIdCard || "",
-        identityVerificationStatus:
-          user.identityVerificationStatus || "not_submitted",
-        linkedinUrl: user.linkedinUrl || "",
-        bio: user.bio || "",
-        interests: user.interests || [],
-        latestEducation: user.latestEducation || "",
-        specialization: user.specialization || "",
         themePreference: user.themePreference || "light",
       },
     });
@@ -398,9 +361,7 @@ export const isAuthenticated = async (req, res) => {
   try {
     const user = await userModel
       .findById(req.user.id)
-      .select(
-        "_id name email role isVerified avatar companyName companyDescription companyLogo companyWebsite resume studentIdCard nationalIdCard identityVerificationStatus linkedinUrl bio interests latestEducation specialization themePreference",
-      );
+      .select("_id name email role isVerified avatar themePreference");
 
     if (!user) {
       return res.status(401).json({
@@ -431,9 +392,7 @@ export const getSession = async (req, res) => {
   try {
     const user = await userModel
       .findById(req.user.id)
-      .select(
-        "_id name email role isVerified avatar companyName companyDescription companyLogo companyWebsite resume studentIdCard  identityVerificationStatus linkedinUrl bio interests latestEducation specialization themePreference",
-      );
+      .select("_id name email role isVerified avatar themePreference");
 
     if (!user) {
       return res.status(401).json({

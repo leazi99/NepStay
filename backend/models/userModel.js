@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const normalizeRole = (value) => {
   if (!value) return "customer";
   const role = String(value).toLowerCase();
-  if (role === "jobseeker" || role === "freelancer" || role === "guest") {
+  if (role === "employer" || role === "customer" || role === "staff") {
     return "customer";
   }
   if (
@@ -45,84 +45,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
-  resume: String,
-  studentIdCard: {
-    type: String,
-    default: "",
-  },
-  nationalIdCard: {
-    type: String,
-    default: "",
-  },
-  studentInstitutionName: {
-    type: String,
-    default: "",
-  },
-  studentFullName: {
-    type: String,
-    default: "",
-  },
-  studentDateOfBirth: {
-    type: String,
-    default: "",
-  },
-  studentIdNumber: {
-    type: String,
-    default: "",
-  },
-  studentContactEmail: {
-    type: String,
-    default: "",
-  },
-  studentPhoneNumber: {
-    type: String,
-    default: "",
-  },
-  studentAddressLine1: {
-    type: String,
-    default: "",
-  },
-  studentAddressLine2: {
-    type: String,
-    default: "",
-  },
-  studentCity: {
-    type: String,
-    default: "",
-  },
-  studentStateProvince: {
-    type: String,
-    default: "",
-  },
-  studentPostalCode: {
-    type: String,
-    default: "",
-  },
-  identityVerificationStatus: {
-    type: String,
-    enum: ["not_submitted", "pending", "verified", "rejected"],
-    default: "not_submitted",
-  },
-  linkedinUrl: {
-    type: String,
-    default: "",
-  },
-  bio: {
-    type: String,
-    default: "",
-  },
-  interests: {
-    type: [String],
-    default: [],
-  },
-  latestEducation: {
-    type: String,
-    default: "",
-  },
-  specialization: {
-    type: String,
-    default: "",
-  },
   themePreference: {
     type: String,
     enum: ["light", "dark"],
@@ -136,13 +58,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: "",
     trim: true,
-  },
-  companyName: String,
-  companyDescription: String,
-  companyLogo: String,
-  companyWebsite: {
-    type: String,
-    default: "",
   },
   verifyOtp: {
     type: String,

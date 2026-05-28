@@ -1,0 +1,678 @@
+import React, { useState } from 'react';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Loader,
+  AlertCircle,
+  CheckCircle,
+  ArrowRight,
+} from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import axiosInstance from '../../utils/axiosInstance';
+import { API_PATHS } from '../../utils/apiPaths';
+import { useAuth } from '../../context/AuthContext';
+import { validateEmail } from '../../utils/helper';
+
+const Login = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    rememberMe: false,
+  });
+  const [formState, setFormState] = useState({
+    loading: false,
+    errors: {},
+    showPassword: false,
+    success: false,
+  });
+
+  const normalizeRole = (role) => {
+    const value = String(role || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ');
+
+    if (['client', 'employer', 'staff', 'vendor'].includes(value)) return 'hotelstaff';
+    if (['freelancer', 'jobseeker', 'job seeker', 'guest'].includes(value)) return 'customer';
+    if (value === 'admin') return 'admin';
+    return value;
+  };
+
+  const isGuestProfileComplete = (userData) =>
+    Boolean(String(userData?.latestEducation || '').trim())
+    && Boolean(String(userData?.specialization || '').trim());
+
+  const validatePassword = (password) => {
+    if (!password) return 'Password is required';
+    return '';
+  };
+
+  const validateForm = () => {
+    const errors = {
+      email: validateEmail(formData.email),
+      password: validatePassword(formData.password),
+    };
+    Object.keys(errors).forEach((key) => {
+      if (!errors[key]) delete errors[key];
+    });
+    setFormState((prev) => ({ ...prev, errors }));
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+    if (formState.errors[name]) {
+      setFormState((prev) => ({
+        ...prev,
+        errors: { ...prev.errors, [name]: '' },
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setFormState((prev) => ({ ...prev, loading: true, errors: {} }));
+    try {
+      const { data } = await axiosInstance.post(API_PATHS.AUTH.LOGIN, {
+        email: formData.email,
+        password: formData.password,
+      });
+      if (!data.success) {
+        if (data.requiresVerification) {
+          navigate(`/verify-email?email=${encodeURIComponent(data.email || formData.email)}`);
+          return;
+        }
+        setFormState((prev) => ({
+          ...prev,
+          loading: false,
+          errors: { submit: data.message || 'Login failed. Please check your credentials.' },
+        }));
+        return;
+      }
+      login(data.user, data.token);
+      toast.success(`Welcome back, ${data.user?.name || 'User'}!`);
+      setFormState((prev) => ({ ...prev, loading: false, success: true }));
+      const role = normalizeRole(data.user?.role);
+
+      let nextPath = '/welcome';
+      if (role === 'admin') {
+        nextPath = '/admin-dashboard';
+      } else if (role === 'hotelstaff') {
+        nextPath = '/hotel-staff-dashboard';
+      } else if (role === 'customer' && isGuestProfileComplete(data.user)) {
+        nextPath = '/guest-dashboard';
+      }
+
+      setTimeout(() => {
+        navigate(nextPath);
+      }, 1500);
+    } catch (error) {
+      const networkError =
+        !error.response && (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED');
+      setFormState((prev) => ({
+        ...prev,
+        loading: false,
+        errors: {
+          submit:
+            error.response?.data?.message ||
+            (networkError
+              ? 'Unable to reach server. Please ensure backend is running.'
+              : 'Login failed. Please check your credentials.'),
+        },
+      }));
+    }
+  };
+
+
+  if (formState.success) {
+    return (
+      <div style={styles.page}>
+        <div style={{ ...styles.blob, ...styles.blob1 }} />
+        <div style={{ ...styles.blob, ...styles.blob2 }} />
+        <Motion.div
+          initial={{ opacity: 0, scale: 0.85 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          style={styles.successCard}
+        >
+          <Motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+            style={styles.successIcon}
+          >
+            <CheckCircle size={40} color="#fff" />
+          </Motion.div>
+          <h2 style={styles.successTitle}>You&apos;re in!</h2>
+          <p style={styles.successSub}>Redirecting to your dashboard…</p>
+          <div style={styles.successSpinner}>
+            <div style={styles.spinnerRing} />
+          </div>
+        </Motion.div>
+      </div>
+    );
+  }
+
+
+  return (
+    <div style={styles.page}>
+      <div style={{ ...styles.blob, ...styles.blob1 }} />
+      <div style={{ ...styles.blob, ...styles.blob2 }} />
+      <div style={styles.card}>
+
+
+
+        <Motion.div
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.55, ease: 'easeOut' }}
+          style={styles.rightPanel}
+        >
+          <div style={styles.formHeader}>
+            <h2 style={styles.formTitle}>Welcome back</h2>
+            <p style={styles.formSub}>Sign in to continue to your account</p>
+          </div>
+
+          <form onSubmit={handleSubmit} style={styles.form} noValidate>
+            <div style={styles.field}>
+              <label style={styles.label}>Email address</label>
+              <div style={styles.inputWrap}>
+                <Mail size={17} style={styles.inputIcon} />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Enter your mail"
+                  style={{
+                    ...styles.input,
+                    ...(formState.errors.email ? styles.inputError : styles.inputNormal),
+                  }}
+                />
+              </div>
+              <AnimatePresence>
+                {formState.errors.email && (
+                  <Motion.p
+                    key="email-err"
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    style={styles.errorMsg}
+                  >
+                    <AlertCircle size={13} />
+                    {formState.errors.email}
+                  </Motion.p>
+                )}
+              </AnimatePresence>
+            </div>
+
+
+            <div style={styles.field}>
+              <label style={styles.label}>Password</label>
+              <div style={styles.inputWrap}>
+                <Lock size={17} style={styles.inputIcon} />
+                <input
+                  type={formState.showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Enter your password"
+                  style={{
+                    ...styles.input,
+                    paddingRight: '44px',
+                    ...(formState.errors.password ? styles.inputError : styles.inputNormal),
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormState((prev) => ({ ...prev, showPassword: !prev.showPassword }))
+                  }
+                  style={styles.toggleBtn}
+                >
+                  {formState.showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </div>
+              <AnimatePresence>
+                {formState.errors.password && (
+                  <Motion.p
+                    key="pw-err"
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    style={styles.errorMsg}
+                  >
+                    <AlertCircle size={13} />
+                    {formState.errors.password}
+                  </Motion.p>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div style={styles.rememberRow}>
+              <label style={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  name="rememberMe"
+                  checked={formData.rememberMe}
+                  onChange={handleChange}
+                  style={styles.checkbox}
+                />
+                Remember me
+              </label>
+              <Link to="/forgot-password" style={styles.forgotLink}>
+                Forgot password?
+              </Link>
+            </div>
+
+            <div style={styles.verifyRow}>
+              <span style={styles.verifyHint}>Didn&apos;t verify your email yet?</span>
+              <Link to="/verify-email" style={styles.verifyLink}>
+                Verify Email
+              </Link>
+            </div>
+
+
+            <AnimatePresence>
+              {formState.errors.submit && (
+                <Motion.div
+                  key="submit-err"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  style={styles.errorBanner}
+                >
+                  <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                  <span>{formState.errors.submit}</span>
+                </Motion.div>
+              )}
+            </AnimatePresence>
+
+
+            <Motion.button
+              type="submit"
+              disabled={formState.loading}
+              whileHover={!formState.loading ? { scale: 1.02 } : {}}
+              whileTap={!formState.loading ? { scale: 0.98 } : {}}
+              style={{
+                ...styles.submitBtn,
+                opacity: formState.loading ? 0.7 : 1,
+                cursor: formState.loading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {formState.loading ? (
+                <>
+                  <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                  Signing in…
+                </>
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight size={18} />
+                </>
+              )}
+            </Motion.button>
+          </form>
+
+          <p style={styles.signupPrompt}>
+            Don&apos;t have an account?{' '}
+            <Link to="/signup" style={styles.signupLink}>
+              Create Here
+            </Link>
+          </p>
+        </Motion.div>
+      </div>
+
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes ringAnim {
+          0%   { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+
+const PURPLE = '#f59e0b';
+const BLUE = '#f97316';
+const GRAD = `linear-gradient(135deg, ${PURPLE} 0%, ${BLUE} 100%)`;
+
+const styles = {
+
+  page: {
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'radial-gradient(circle at top, #1f2937 0%, #0f172a 42%, #020617 100%)',
+    fontFamily: "'Inter', sans-serif",
+    padding: '24px 16px',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+
+
+  blob: {
+    position: 'absolute',
+    borderRadius: '50%',
+    filter: 'blur(80px)',
+    opacity: 0.25,
+    pointerEvents: 'none',
+  },
+  blob1: {
+    width: 420,
+    height: 420,
+    background: 'rgba(251, 146, 60, 0.18)',
+    top: '-140px',
+    left: '-120px',
+  },
+  blob2: {
+    width: 360,
+    height: 360,
+    background: 'rgba(56, 189, 248, 0.12)',
+    bottom: '-120px',
+    right: '-100px',
+  },
+
+
+  card: {
+    display: 'flex',
+    width: '100%',
+    maxWidth: 620,
+    minHeight: 560,
+    borderRadius: 32,
+    overflow: 'hidden',
+    boxShadow: '0 32px 90px rgba(0,0,0,0.45)',
+    position: 'relative',
+    zIndex: 1,
+    border: '1px solid rgba(255,255,255,0.08)',
+  },
+
+
+
+
+  rightPanel: {
+    flex: '1 1 100%',
+    background: 'rgba(15, 23, 42, 0.88)',
+    padding: '60px 56px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    backdropFilter: 'blur(22px)',
+  },
+  formHeader: {
+    marginBottom: 28,
+  },
+  formTitle: {
+    fontSize: 42,
+    fontWeight: 800,
+    color: '#f8fafc',
+    margin: '0 0 6px',
+    letterSpacing: '-1px',
+    textAlign: 'center'
+  },
+  formSub: {
+    color: '#cbd5e1',
+    fontSize: 18,
+    margin: 0,
+    textAlign: 'center',
+    fontWeight: 600,
+  },
+
+
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 20,
+  },
+  roleSelector: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 10,
+  },
+  roleOption: {
+    padding: '11px 12px',
+    borderRadius: 12,
+    border: '1.5px solid',
+    fontSize: 13,
+    fontWeight: 700,
+    fontFamily: "'Inter', sans-serif",
+    cursor: 'pointer',
+    transition: 'all 0.18s ease',
+  },
+  roleOptionActive: {
+    color: '#ffffff',
+    borderColor: '#7c3aed',
+    background: GRAD,
+    boxShadow: '0 8px 20px rgba(124,58,237,0.22)',
+  },
+  roleOptionInactive: {
+    color: '#374151',
+    borderColor: '#e2e8f0',
+    background: '#f8fafc',
+  },
+  field: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: 800,
+    color: '#e2e8f0',
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+  },
+  inputWrap: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  inputIcon: {
+    position: 'absolute',
+    left: 14,
+    color: '#f59e0b',
+    pointerEvents: 'none',
+  },
+  input: {
+    width: '100%',
+    padding: '12px 14px 12px 42px',
+    fontSize: 14,
+    borderRadius: 14,
+    border: '1.5px solid',
+    outline: 'none',
+    transition: 'border-color 0.18s, box-shadow 0.18s',
+    fontFamily: "'Inter', sans-serif",
+    color: '#f8fafc',
+    background: 'rgba(51, 65, 85, 0.82)',
+    boxSizing: 'border-box',
+  },
+  inputNormal: {
+    borderColor: 'rgba(148, 163, 184, 0.24)',
+    boxShadow: 'none',
+  },
+  inputError: {
+    borderColor: '#f87171',
+    boxShadow: '0 0 0 3px rgba(248,113,113,0.15)',
+    background: 'rgba(127, 29, 29, 0.25)',
+  },
+  toggleBtn: {
+    position: 'absolute',
+    right: 12,
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    color: '#9ca3af',
+    display: 'flex',
+    alignItems: 'center',
+    padding: 4,
+  },
+  errorMsg: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    color: '#fb7185',
+    fontSize: 12,
+    fontWeight: 500,
+    margin: 0,
+  },
+
+
+  rememberRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: -4,
+  },
+  checkboxLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    fontSize: 13,
+    color: '#cbd5e1',
+    cursor: 'pointer',
+    fontWeight: 600,
+    userSelect: 'none',
+  },
+  checkbox: {
+    accentColor: BLUE,
+    width: 15,
+    height: 15,
+    cursor: 'pointer',
+  },
+  forgotLink: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: '#f59e0b',
+    textDecoration: 'none',
+  },
+  verifyRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: -8,
+  },
+  verifyHint: {
+    fontSize: 12,
+    color: '#94a3b8',
+    fontWeight: 500,
+  },
+  verifyLink: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: '#f59e0b',
+    textDecoration: 'none',
+  },
+
+
+  errorBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '10px 14px',
+    borderRadius: 10,
+    background: 'rgba(127, 29, 29, 0.35)',
+    border: '1px solid rgba(248, 113, 113, 0.35)',
+    color: '#fecaca',
+    fontSize: 13,
+    fontWeight: 500,
+    overflow: 'hidden',
+  },
+
+
+  submitBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    width: '100%',
+    padding: '13px 20px',
+    background: GRAD,
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: 700,
+    border: 'none',
+    borderRadius: 14,
+    letterSpacing: '0.1px',
+    boxShadow: '0 14px 34px rgba(249,115,22,0.28)',
+    transition: 'box-shadow 0.2s',
+  },
+
+
+  signupPrompt: {
+    textAlign: 'center',
+    fontSize: 13,
+    color: '#cbd5e1',
+    marginTop: 24,
+    fontWeight: 500,
+  },
+  signupLink: {
+    color: '#f59e0b',
+    fontWeight: 700,
+    textDecoration: 'none',
+  },
+
+
+  successCard: {
+    background: 'rgba(15, 23, 42, 0.9)',
+    borderRadius: 24,
+    padding: '56px 48px',
+    maxWidth: 380,
+    width: '100%',
+    textAlign: 'center',
+    boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
+    border: '1px solid rgba(255,255,255,0.08)',
+  },
+  successIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: '50%',
+    background: GRAD,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: '0 auto 20px',
+    boxShadow: '0 8px 24px rgba(249,115,22,0.35)',
+  },
+  successTitle: {
+    fontSize: 26,
+    fontWeight: 800,
+    color: '#f8fafc',
+    margin: '0 0 8px',
+  },
+  successSub: {
+    color: '#cbd5e1',
+    fontSize: 14,
+    margin: '0 0 28px',
+  },
+  successSpinner: {
+    display: 'flex',
+    justifyContent: 'center',
+  },
+  spinnerRing: {
+    width: 28,
+    height: 28,
+    border: `3px solid rgba(249,115,22,0.18)`,
+    borderTop: `3px solid ${BLUE}`,
+    borderRadius: '50%',
+    animation: 'ringAnim 0.8s linear infinite',
+  },
+};
+
+export default Login;
